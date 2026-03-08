@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(pnpm nx test*)",
+      "Bash(pnpm nx lint*)",
+      "Bash(pnpm nx build*)",
+      "Bash(pnpm nx serve*)",
+      "Bash(pnpm nx run*)",
+      "Bash(pnpm nx affected*)",
+      "Bash(pnpm nx graph*)",
+      "Bash(pnpm install*)",
+      "Bash(pnpm check*)",
+      "Bash(pnpm format*)",
+      "Bash(docker compose ps*)",
+      "Bash(docker compose logs*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(rm -rf*)",
+      "Bash(git reset --hard*)",
+      "Bash(git stash drop*)",
+      "Bash(docker system prune*)"
+    ]
+  }
+}

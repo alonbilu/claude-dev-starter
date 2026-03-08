@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "biomejs.biome",
+    "firsttris.vscode-jest-runner",
+    "prisma.prisma",
+    "bradlc.vscode-tailwindcss",
+    "nrwl.angular-console",
+    "ms-playwright.playwright"
+  ]
+}

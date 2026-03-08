@@ -1,0 +1,54 @@
+services:
+  postgres:
+    # Use pgvector/pgvector:pg16 instead if the 'rag' integration is enabled
+    image: postgres:16
+    container_name: YOUR_APP_NAME-postgres
+    ports:
+      - "5442:5432"
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-test:
+    # Use pgvector/pgvector:pg16 instead if the 'rag' integration is enabled
+    image: postgres:16
+    container_name: YOUR_APP_NAME-postgres-test
+    ports:
+      - "5443:5432"
+    environment:
+      POSTGRES_DB: appdb_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: YOUR_APP_NAME-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  postgres_test_data:
+  redis_data:
