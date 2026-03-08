@@ -100,9 +100,14 @@ Two-tier cleanup system:
 |------|---------|
 | Node.js | 20+ |
 | pnpm | 9+ |
-| Docker Desktop | Latest |
+| Docker | Latest |
 | Claude Code CLI | Latest |
 | gh CLI | Latest (optional, for `/create-pr`) |
+
+**On Ubuntu 22.04+?** Install everything with one command:
+```bash
+bash scripts/install-prerequisites-ubuntu.sh
+```
 
 ### 7 Steps
 
