@@ -113,9 +113,9 @@ bash scripts/install-prerequisites-ubuntu.sh
 ### 4 Steps
 
 ```bash
-# 1. Clone the template
-git clone https://github.com/alon-codes/claude-dev-starter my-project
-cd my-project
+# 1. Clone the template — replace "my-project-name" with your actual project name
+git clone https://github.com/alonbilu/claude-dev-starter.git my-project-name
+cd my-project-name
 
 # 2. Open Claude Code — it will detect a fresh clone and prompt you automatically
 claude .

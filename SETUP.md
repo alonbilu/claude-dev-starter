@@ -14,9 +14,9 @@ You just cloned this template. Here's the exact sequence from zero to first feat
    Node 20+, pnpm 9, Docker, VS Code, Claude Code CLI, gh CLI
    On Ubuntu: bash scripts/install-prerequisites-ubuntu.sh
 
-2. Clone the template
-   git clone https://github.com/alon-codes/claude-dev-starter my-project
-   cd my-project
+2. Clone the template — replace "my-project-name" with your actual project name
+   git clone https://github.com/alonbilu/claude-dev-starter.git my-project-name
+   cd my-project-name
 
 3. Open Claude Code and run the setup wizard
    claude .
