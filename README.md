@@ -35,6 +35,7 @@ A structured 5-phase workflow that keeps multi-session features on track:
 /start-step [name] N       → Implement step N
 /start-step [name] all     → Autopilot all remaining steps with auto-commits
 /complete-feature [name]   → Archive + version bump
+/create-pr                 → Open GitHub PR with auto-generated description
 ```
 
 Each feature gets a `CONTEXT.md` — a 1-page quick-load file that resumes any session in ~15k tokens without re-reading the entire history.
