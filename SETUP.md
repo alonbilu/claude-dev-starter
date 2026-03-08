@@ -11,7 +11,8 @@ You just cloned this template. Here's the exact sequence from zero to first feat
 
 ```
 1. Install prerequisites
-   Node 20+, pnpm 9, Docker Desktop, VS Code, Claude Code CLI, gh CLI
+   Node 20+, pnpm 9, Docker, VS Code, Claude Code CLI, gh CLI
+   On Ubuntu: bash scripts/install-prerequisites-ubuntu.sh
 
 2. Configure your project (interactive wizard)
    Open Claude Code in this directory, then run:
@@ -73,6 +74,15 @@ Everything below explains WHY and HOW when you want to understand the system or 
 | Claude Code CLI | Latest | https://claude.ai/claude-code |
 | gh CLI | Latest | https://cli.github.com |
 | ngrok (optional) | Latest | https://ngrok.com (OAuth/webhooks only) |
+
+**On Ubuntu 22.04+?** Run the included install script — it handles everything automatically:
+
+```bash
+bash scripts/install-prerequisites-ubuntu.sh
+```
+
+Installs: Node.js 20 (via NodeSource), pnpm, Docker Engine, Claude Code CLI, gh CLI.
+After it finishes, log out and back in (needed for Docker group), then `gh auth login` and `claude`.
 
 ---
 
