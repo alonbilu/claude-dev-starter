@@ -4,8 +4,9 @@
 
 ## FIRST: Check for First-Time Setup
 
-Read `PROJECT.md`. If `YOUR_APP_NAME` still appears anywhere in the file, or if the project type
-hasn't been customized yet, **immediately say:**
+Read `PROJECT.md`. If it contains `configured: false`, this project has not been set up yet.
+
+**Immediately say** (do not do anything else first):
 
 ```
 Welcome! This looks like a freshly cloned Claude Dev Starter Kit.
@@ -22,7 +23,7 @@ Run /setup-project to get started. It will:
   3. Configure all files automatically for your stack
 ```
 
-Then wait for the user to run `/setup-project` before doing anything else.
+Then **wait** for the user to run `/setup-project` before doing anything else.
 
 ---
 

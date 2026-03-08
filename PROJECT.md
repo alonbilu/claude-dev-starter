@@ -6,6 +6,12 @@
 
 ---
 
+## Setup Status
+<!-- IMPORTANT: /setup-project sets this to true when done. Claude uses this to detect unconfigured projects. -->
+configured: false
+
+---
+
 ## Project Type
 <!-- Choose one: saas-web-app | api-only | fullstack-web | mobile-app | cli | library | static-site -->
 type: saas-web-app

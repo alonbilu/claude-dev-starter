@@ -215,11 +215,15 @@ Let's configure ports. Press Enter to accept defaults.
 ## Step 4 — Write PROJECT.md
 
 Write the fully populated `PROJECT.md` with:
+- `configured: true`  ← **CRITICAL: always include this line, replacing `configured: false`**
 - type: (chosen type)
 - active layers with [x] / [ ] checkboxes
 - enabled integrations with [x] checkboxes
 - target: (chosen deployment)
 - Ports section with the configured values
+
+This `configured: true` flag is what tells Claude in future sessions that setup is complete.
+Without it, Claude will keep showing the first-time setup prompt every session.
 
 ---
 
