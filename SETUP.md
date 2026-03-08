@@ -14,28 +14,42 @@ You just cloned this template. Here's the exact sequence from zero to first feat
    Node 20+, pnpm 9, Docker, VS Code, Claude Code CLI, gh CLI
    On Ubuntu: bash scripts/install-prerequisites-ubuntu.sh
 
-2. Configure your project (interactive wizard)
+2. Clone the template and connect it to your own GitHub repo
+   git clone https://github.com/alon-codes/claude-dev-starter my-project
+   cd my-project
+
+   # Disconnect from the template remote
+   git remote remove origin
+
+   # Create a new repo on GitHub and push (requires gh CLI)
+   gh repo create YOUR_ORG/my-project --private --source=. --remote=origin --push
+
+   # Alternative (without gh CLI):
+   # git remote add origin https://github.com/YOUR_ORG/my-project.git
+   # git push -u origin main
+
+3. Configure your project (interactive wizard)
    Open Claude Code in this directory, then run:
      /setup-project
    Asks about your project type, infrastructure, and ports,
    then configures all files automatically.
 
-3. Set up your dev environment secrets
+4. Set up your dev environment secrets
    bash scripts/setup-env.sh --env dev
    (Generates .env with auto-generated secrets + validates connectivity)
 
-4. Start Docker infrastructure
+5. Start Docker infrastructure
    docker compose up -d
 
-5. Install dependencies and initialize database (if applicable)
+6. Install dependencies and initialize database (if applicable)
    pnpm install
    pnpm nx run database:migrate:dev --name init
 
-6. Start developing
+7. Start developing
    pnpm nx serve api      # Terminal 1 → http://localhost:3333
    pnpm nx serve client   # Terminal 2 → http://localhost:4200
 
-7. Start your first feature
+8. Start your first feature
    /new-feature [your-feature-name]
 ```
 

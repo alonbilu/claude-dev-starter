@@ -110,14 +110,19 @@ Two-tier cleanup system:
 bash scripts/install-prerequisites-ubuntu.sh
 ```
 
-### 7 Steps
+### 8 Steps
 
 ```bash
-# 1. Clone and point to your own repo
+# 1. Clone the template and connect it to your own GitHub repo
 git clone https://github.com/alon-codes/claude-dev-starter my-project
 cd my-project
+
+# Disconnect from the template repo
 git remote remove origin
-git remote add origin https://github.com/YOUR_ORG/my-project.git
+
+# Create a new repo on GitHub and point this clone at it
+gh repo create YOUR_ORG/my-project --private --source=. --remote=origin --push
+# (or manually: git remote add origin https://github.com/YOUR_ORG/my-project.git && git push -u origin main)
 
 # 2. Open Claude Code and run the setup wizard
 claude .
@@ -137,7 +142,10 @@ pnpm nx run database:migrate:dev --name init
 pnpm nx serve api      # → http://localhost:3333
 pnpm nx serve client   # → http://localhost:4200
 
-# 7. Start your first feature
+# 7. Authenticate GitHub CLI (needed for /create-pr)
+gh auth login
+
+# 8. Start your first feature
 # In Claude: /new-feature my-first-feature
 ```
 
