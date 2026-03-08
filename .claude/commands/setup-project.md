@@ -53,6 +53,32 @@ Once they provide the name:
      ```
    - Stop here and wait.
 
+4. **Replace README.md** — the current README describes the template itself, not this project.
+   Write a clean project README using the project name and a one-line description (ask for it):
+   ```
+   In one sentence, what does this project do? (This will go in the README — you can always update it later)
+   ```
+   Then write `README.md` with this minimal structure:
+   ```markdown
+   # [project-name]
+
+   [one-line description]
+
+   ## Getting Started
+
+   ```bash
+   pnpm install
+   pnpm nx serve api      # http://localhost:[api-port]
+   pnpm nx serve client   # http://localhost:[client-port]
+   ```
+
+   ## Development
+
+   This project uses the [Claude Dev Starter Kit](https://github.com/alonbilu/claude-dev-starter) workflow.
+   See `docs/WORKFLOW-GUIDE.md` for the feature development process.
+   ```
+   Commit the new README: `git add README.md && git commit -m "chore: replace template README with project README"`
+
 **If the URL does NOT contain `claude-dev-starter`** — the remote is already customized. Skip this step silently and proceed to Step 1.
 
 ---
