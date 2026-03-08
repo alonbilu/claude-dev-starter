@@ -7,6 +7,56 @@ suggest sensible defaults, collect all answers, then configure the project autom
 
 ---
 
+## Step 0 — Connect to Your Own GitHub Repo
+
+Before anything else, check whether this repo is still pointing at the template remote:
+
+```bash
+git remote get-url origin
+```
+
+**If the URL contains `claude-dev-starter`** (i.e. still pointing at the template):
+
+Tell the user:
+```
+First, let's connect this project to its own GitHub repo.
+The current remote still points to the claude-dev-starter template — we need to change that.
+
+What should the new GitHub repo be called?
+Examples: my-project, acme-platform, devtools
+
+Format: OWNER/REPO-NAME  (e.g. alon-codes/my-project)
+Or just the repo name if creating under your personal account (e.g. my-project):
+```
+
+Once they provide the name:
+1. Run: `git remote remove origin`
+2. If `gh` CLI is available and authenticated (`gh auth status` succeeds):
+   - Ask: `Create as public or private? [private]:`
+   - Run: `gh repo create OWNER/REPO --private/public --source=. --remote=origin --push`
+   - Confirm success and show the new repo URL
+3. If `gh` is not available or not authenticated:
+   - Tell the user:
+     ```
+     gh CLI isn't authenticated. Please do one of the following, then come back:
+
+     Option A (recommended):
+       gh auth login
+       gh repo create OWNER/REPO --private --source=. --remote=origin --push
+
+     Option B (manual):
+       1. Create a new repo at https://github.com/new
+       2. git remote add origin https://github.com/OWNER/REPO.git
+       3. git push -u origin main
+
+     Once your remote is set up, run /setup-project again to continue.
+     ```
+   - Stop here and wait.
+
+**If the URL does NOT contain `claude-dev-starter`** — the remote is already customized. Skip this step silently and proceed to Step 1.
+
+---
+
 ## Step 1 — Collect Project Identity
 
 Ask these questions one at a time, in order:

@@ -14,42 +14,28 @@ You just cloned this template. Here's the exact sequence from zero to first feat
    Node 20+, pnpm 9, Docker, VS Code, Claude Code CLI, gh CLI
    On Ubuntu: bash scripts/install-prerequisites-ubuntu.sh
 
-2. Clone the template and connect it to your own GitHub repo
+2. Clone the template
    git clone https://github.com/alon-codes/claude-dev-starter my-project
    cd my-project
 
-   # Disconnect from the template remote
-   git remote remove origin
+3. Open Claude Code and run the setup wizard
+   claude .
+   /setup-project
 
-   # Create a new repo on GitHub and push (requires gh CLI)
-   gh repo create YOUR_ORG/my-project --private --source=. --remote=origin --push
+   The wizard will handle everything automatically:
+     a. Connect this repo to your own GitHub remote (replaces the template remote)
+     b. Ask about your project type, infrastructure, and ports
+     c. Configure all files automatically for your stack
+     d. Optionally run pnpm install, docker compose up, and initial migrations
 
-   # Alternative (without gh CLI):
-   # git remote add origin https://github.com/YOUR_ORG/my-project.git
-   # git push -u origin main
-
-3. Configure your project (interactive wizard)
-   Open Claude Code in this directory, then run:
-     /setup-project
-   Asks about your project type, infrastructure, and ports,
-   then configures all files automatically.
-
-4. Set up your dev environment secrets
+4. Set up your dev environment secrets  (if /setup-project didn't already)
    bash scripts/setup-env.sh --env dev
-   (Generates .env with auto-generated secrets + validates connectivity)
 
-5. Start Docker infrastructure
-   docker compose up -d
-
-6. Install dependencies and initialize database (if applicable)
-   pnpm install
-   pnpm nx run database:migrate:dev --name init
-
-7. Start developing
+5. Start developing
    pnpm nx serve api      # Terminal 1 → http://localhost:3333
    pnpm nx serve client   # Terminal 2 → http://localhost:4200
 
-8. Start your first feature
+6. Start your first feature
    /new-feature [your-feature-name]
 ```
 

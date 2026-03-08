@@ -110,43 +110,28 @@ Two-tier cleanup system:
 bash scripts/install-prerequisites-ubuntu.sh
 ```
 
-### 8 Steps
+### 4 Steps
 
 ```bash
-# 1. Clone the template and connect it to your own GitHub repo
+# 1. Clone the template
 git clone https://github.com/alon-codes/claude-dev-starter my-project
 cd my-project
 
-# Disconnect from the template repo
-git remote remove origin
-
-# Create a new repo on GitHub and point this clone at it
-gh repo create YOUR_ORG/my-project --private --source=. --remote=origin --push
-# (or manually: git remote add origin https://github.com/YOUR_ORG/my-project.git && git push -u origin main)
-
-# 2. Open Claude Code and run the setup wizard
+# 2. Open Claude Code — it will detect a fresh clone and prompt you automatically
 claude .
-# Then in Claude: /setup-project
+# Claude will say: "Run /setup-project to get started"
 
-# 3. Set up dev environment secrets
-bash scripts/setup-env.sh --env dev
+# 3. Run the setup wizard
+# /setup-project
+#
+# The wizard handles everything:
+#   - Connects repo to your own GitHub remote (replaces the template remote)
+#   - Asks project type, infrastructure, ports
+#   - Patches all config files automatically
+#   - Runs pnpm install, docker compose up, initial migration (with permission)
 
-# 4. Start infrastructure
-docker compose up -d
-
-# 5. Install dependencies + init database
-pnpm install
-pnpm nx run database:migrate:dev --name init
-
-# 6. Start developing
-pnpm nx serve api      # → http://localhost:3333
-pnpm nx serve client   # → http://localhost:4200
-
-# 7. Authenticate GitHub CLI (needed for /create-pr)
-gh auth login
-
-# 8. Start your first feature
-# In Claude: /new-feature my-first-feature
+# 4. Start your first feature
+# /new-feature my-first-feature
 ```
 
 ---

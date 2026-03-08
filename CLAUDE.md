@@ -16,8 +16,10 @@ Here's what you have:
   - Smart context window management (brain.md + /trim-context)
   - Interactive project setup that configures everything for your stack
 
-Run /setup-project to get started — I'll walk you through it step by step
-and configure all the files automatically for your project type.
+Run /setup-project to get started. It will:
+  1. Connect this repo to your own GitHub remote (replacing the template remote)
+  2. Ask about your project type, infrastructure, and ports
+  3. Configure all files automatically for your stack
 ```
 
 Then wait for the user to run `/setup-project` before doing anything else.
