@@ -1,90 +1,87 @@
 #!/bin/bash
-# Claude Code custom status line
-# Reads JSON from stdin (Claude Code hook data) + ccusage for token breakdown
+# Claude Code custom status line (Max plan optimized)
+# Shows: Context usage with warning | Cache efficiency | Session duration | Branch
 #
-# Requires: ccusage (npm install -g ccusage), jq
+# Requires: jq, git
 
 input=$(cat)
 
-# --- Helpers ---
-fmt_k() {
-  local n=$1
-  if (( n >= 1000 )); then
-    local result
-    result=$(awk "BEGIN { printf \"%.1f\", $n / 1000 }")
-    printf "%sk" "$result"
-  else
-    printf "%d" "$n"
-  fi
-}
-
-# --- ANSI colors (approximate the HTML theme) ---
-GRAY='\033[90m'
-PINK='\033[35m'
-GREEN='\033[92m'
+# --- ANSI colors ---
+RED='\033[91m'
 YELLOW='\033[93m'
+GREEN='\033[92m'
 BLUE='\033[94m'
-PURPLE='\033[95m'
+GRAY='\033[90m'
+CYAN='\033[96m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-# --- Context window data (from Claude Code stdin JSON) ---
+# --- Extract session data ---
+session_id=$(echo "$input" | jq -r '.session_id // "unknown"')
+model=$(echo "$input" | jq -r '.model.display_name // "unknown"')
+
+# Context window data
 ctx_used=$(echo "$input" | jq -r '.context_window.total_input_tokens // 0')
 ctx_limit=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
 ctx_percent=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
-model=$(echo "$input" | jq -r '.model.display_name // "unknown"')
-session_id=$(echo "$input" | jq -r '.session_id // "unknown"')
 
-# --- Token data from ccusage (cached to avoid slowdown) ---
-cache_file="/tmp/claude-sl-tokens-${session_id}.json"
-now=$(date +%s)
-cache_mtime=$(stat -c %Y "$cache_file" 2>/dev/null || echo 0)
-cache_age=$(( now - cache_mtime ))
+# Current session token counts
+session_input=$(echo "$input" | jq -r '.context_window.current_usage.input_tokens // 0')
+session_output=$(echo "$input" | jq -r '.context_window.current_usage.output_tokens // 0')
+session_cache_read=$(echo "$input" | jq -r '.context_window.current_usage.cache_read_input_tokens // 0')
+session_cache_create=$(echo "$input" | jq -r '.context_window.current_usage.cache_creation_input_tokens // 0')
 
-if [[ $cache_age -gt 30 ]] || [[ ! -f "$cache_file" ]]; then
-  ccusage session --json --since "$(date +%Y%m%d)" 2>/dev/null > "${cache_file}.tmp" && \
-    mv "${cache_file}.tmp" "$cache_file"
+# Session duration
+session_duration_ms=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
+session_duration_min=$(( session_duration_ms / 60000 ))
+session_hours=$(( session_duration_min / 60 ))
+session_mins=$(( session_duration_min % 60 ))
+
+# --- Context warning color ---
+ctx_color=$GREEN
+ctx_indicator=""
+if (( ${ctx_percent%.*} > 85 )); then
+  ctx_color=$RED
+  ctx_indicator=" ⚠️"
+elif (( ${ctx_percent%.*} > 70 )); then
+  ctx_color=$YELLOW
+  ctx_indicator=" ⚡"
 fi
 
-in_tokens=0; out_tokens=0; cached_tokens=0; total_tokens=0
-if [[ -f "$cache_file" ]]; then
-  in_tokens=$(jq '[.sessions[].inputTokens] | add // 0' "$cache_file" 2>/dev/null || echo 0)
-  out_tokens=$(jq '[.sessions[].outputTokens] | add // 0' "$cache_file" 2>/dev/null || echo 0)
-  cached_tokens=$(jq '[.sessions[].cacheReadTokens] | add // 0' "$cache_file" 2>/dev/null || echo 0)
-  total_tokens=$(jq '[.sessions[].totalTokens] | add // 0' "$cache_file" 2>/dev/null || echo 0)
-fi
-
-# --- Session duration ---
-session_start_file="/tmp/claude-session-start-${session_id}"
-if [[ ! -f "$session_start_file" ]]; then
-  echo "$now" > "$session_start_file"
-fi
-start=$(cat "$session_start_file")
-elapsed=$(( now - start ))
-hours=$(( elapsed / 3600 ))
-mins=$(( (elapsed % 3600) / 60 ))
-if (( hours > 0 )); then
-  duration="${hours}hr ${mins}m"
+# --- Cache efficiency ---
+# Cache read / (cache read + input) = cache hit rate
+cache_denominator=$(( session_cache_read + session_input ))
+if (( cache_denominator > 0 )); then
+  cache_hit=$(awk "BEGIN { printf \"%.0f\", ($session_cache_read / $cache_denominator) * 100 }")
 else
-  duration="${mins}m"
+  cache_hit=0
 fi
 
-# --- Model display name ---
-case "$model" in
-  *opus*4*6*|*opus-4-6*) model_display="Opus 4.6" ;;
-  *sonnet*4*6*|*sonnet-4-6*) model_display="Sonnet 4.6" ;;
-  *haiku*4*5*|*haiku-4-5*) model_display="Haiku 4.5" ;;
-  *opus*) model_display="Opus" ;;
-  *sonnet*) model_display="Sonnet" ;;
-  *haiku*) model_display="Haiku" ;;
-  *) model_display="$model" ;;
-esac
+# Cache color: green if >80%, yellow if >60%, red otherwise
+cache_color=$GREEN
+if (( cache_hit < 60 )); then
+  cache_color=$RED
+elif (( cache_hit < 80 )); then
+  cache_color=$YELLOW
+fi
 
-# --- Format context percent without trailing zeros ---
-ctx_pct_fmt=$(awk "BEGIN { printf \"%.1f\", $ctx_percent }")
+# --- Git branch ---
+branch=$(git -C "$(pwd)" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
 
-# --- Output ---
-printf "${GRAY}In:${RESET} %s | ${PINK}Out: %s${RESET} | ${GREEN}Cached: %s${RESET} | ${YELLOW}Total: %s${RESET} | ${BLUE}Ctx: %s${RESET} | ${PURPLE}Ctx: %s%%${RESET}\n" \
-  "$(fmt_k "$in_tokens")" "$(fmt_k "$out_tokens")" "$(fmt_k "$cached_tokens")" "$(fmt_k "$total_tokens")" \
-  "$(fmt_k "$ctx_used")" "$ctx_pct_fmt"
-printf "${BOLD}Session: %s${RESET} | ${BOLD}Model: %s${RESET}\n" "$duration" "$model_display"
+# --- Format displays ---
+ctx_fmt=$(awk "BEGIN { printf \"%.0f\", $ctx_used / 1000 }")
+session_fmt=$(awk "BEGIN { printf \"%.0f\", ($session_input + $session_output + $session_cache_create + $session_cache_read) / 1000 }")
+
+if (( session_hours > 0 )); then
+  duration_display="${session_hours}h ${session_mins}m"
+else
+  duration_display="${session_mins}m"
+fi
+
+# --- Output (two lines) ---
+# Line 1: Context | Cache | Branch | Session Duration
+printf "${ctx_color}${BOLD}Ctx: %sk${RESET}${ctx_color} (%s%%)${ctx_indicator}${RESET} | ${cache_color}Cache: %s%%${RESET} | ${GRAY}Branch: %s${RESET} | ${CYAN}Session: %s (%sk tokens)${RESET}\n" \
+  "$ctx_fmt" "${ctx_percent%.*}" "$cache_hit" "$branch" "$duration_display" "$session_fmt"
+
+# Line 2: Model indicator
+printf "${GRAY}Model: %s${RESET}\n" "$model"
