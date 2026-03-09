@@ -21,9 +21,12 @@ session_id=$(echo "$input" | jq -r '.session_id // "unknown"')
 model=$(echo "$input" | jq -r '.model.display_name // "unknown"')
 
 # Context window data
-ctx_used=$(echo "$input" | jq -r '.context_window.total_input_tokens // 0')
 ctx_limit=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
 ctx_percent=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
+
+# Calculate actual context used from percentage (more reliable than total_input_tokens)
+# Since used_percentage is what Claude Code calculates, derive actual tokens from it
+ctx_used=$(awk "BEGIN { printf \"%.0f\", ($ctx_percent / 100) * $ctx_limit }")
 
 # Current session token counts
 session_input=$(echo "$input" | jq -r '.context_window.current_usage.input_tokens // 0')
