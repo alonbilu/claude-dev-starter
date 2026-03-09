@@ -43,7 +43,7 @@
 
 > Add insights as you discover them. Format: one-liner + link to detail if needed.
 
-*(empty — add as you build)*
+- **Custom statusline configured** — Shows context window %, cache efficiency, branch, session duration. Auto-configured in all clones. (`.claude/statusline/statusline.sh`)
 
 ---
 

@@ -297,8 +297,9 @@ Ready to finish setup? I can run these steps for you:
   → pnpm install
   Run this now? [yes/no/skip]
 
-  Step B: Install ccusage (powers the token usage status line)
+  Step B: Install ccusage (powers the context metrics status line)
   → npm install -g ccusage
+  The custom status line shows context window %, cache efficiency, branch, and session duration.
   Run this now? [yes/no/skip]
 
   Step C: Start Docker infrastructure
@@ -356,11 +357,20 @@ Install any of these now? Or run them later with the commands above.
 
 When all done:
 ```
-Your project is ready.
+Your project is ready!
+
+You now have:
+  • Custom status line showing context usage, cache efficiency, branch, session metrics
+    (see .claude/STATUSLINE.md for details)
+  • Pre-commit hooks with Biome linting
+  • Feature workflow with spec-first planning
+  • Team-wide patterns and gotchas in .claude/brain.md
 
 Start your first feature:
   /new-feature [feature-name]
 
 Or explore the workflow guide:
   docs/WORKFLOW-GUIDE.md
+
+Check the status line as you work — it helps you stay within context limits.
 ```
