@@ -355,9 +355,87 @@ Install any of these now? Or run them later with the commands above.
 
 ---
 
+## Step 8 — Archive Setup Documentation (Saves Context)
+
+Setup is now complete. These files were helpful for getting started but are no longer needed in active context:
+
+**SETUP.md** (comprehensive onboarding guide — 14k+ tokens)
+- Referenced in git history if new team members clone
+- Ask the user:
+```
+SETUP.md is a comprehensive onboarding guide. Now that setup is complete, would you like to:
+
+  1. Delete it permanently (saves context, recoverable from git history)
+  2. Archive it to .claude/archived-docs/ (not loaded in context, but visible if needed)
+  3. Keep it in the repo (still consumes context every session)
+
+Choose [1/2/3]: [1 recommended]
+```
+
+If user chooses **1 (delete):**
+  - Run: `rm SETUP.md && git add -A && git commit -m "chore: remove SETUP.md after project initialization"`
+
+If user chooses **2 (archive):**
+  - Run: `mkdir -p .claude/archived-docs && mv SETUP.md .claude/archived-docs/ && git add -A && git commit -m "chore: archive SETUP.md after project initialization"`
+
+**README.md** (verify it's project-specific, not template)
+- If it still shows the template intro ("A project template that makes Claude Code work..."), ask:
+```
+README.md is still the template README. Would you like to:
+
+  1. Replace it with a project-specific README
+     (One-line description of what THIS project does)
+  2. Keep the template README
+  3. Archive the template and create a new one
+
+Choose [1/2/3]: [1 recommended]
+```
+
+If user chooses **1 (replace):**
+  ```
+  In one sentence, what does this project do? (This will become your README header)
+  ```
+  Then write `README.md`:
+  ```markdown
+  # [Project Name]
+
+  [One-line description]
+
+  ## Getting Started
+
+  ```bash
+  pnpm install
+  pnpm nx serve api      # http://localhost:[api-port]
+  pnpm nx serve client   # http://localhost:[client-port]
+  ```
+
+  ## Development
+
+  This project uses the [Claude Dev Starter Kit](https://github.com/alonbilu/claude-dev-starter) workflow.
+  See `docs/WORKFLOW-GUIDE.md` for the feature development process.
+  ```
+  Commit: `git add README.md && git commit -m "chore: add project-specific README"`
+
+If user chooses **2 (keep template):** skip, move on.
+
+If user chooses **3 (archive):**
+  - Create new README as above, archive old one: `mkdir -p .claude/archived-docs && mv README.md.old .claude/archived-docs/`
+
+**Finally, clean up this setup file itself:**
+
+```
+Setup wizard is complete! Cleaning up...
+  → Removing .claude/commands/setup-project.md (won't be needed again)
+```
+
+Run:
+  - `rm .claude/commands/setup-project.md && git add -A && git commit -m "chore: remove setup-project.md after configuration"`
+
+---
+
 When all done:
 ```
-Your project is ready!
+Your project is ready! Context saved by archiving setup docs.
 
 You now have:
   • Custom status line showing context usage, cache efficiency, branch, session metrics
