@@ -7,6 +7,64 @@ suggest sensible defaults, collect all answers, then configure the project autom
 
 ---
 
+## Step 0 — Pre-Flight Validation
+
+Before starting setup, validate the environment:
+
+**Check prerequisites:**
+
+1. **Node.js 20+**
+   ```bash
+   node --version
+   ```
+   If not found or < 20: STOP. Tell user:
+   ```
+   Node.js 20 or higher is required.
+   Install from: https://nodejs.org/ (LTS recommended)
+   Then run /setup-project again.
+   ```
+
+2. **pnpm 9+**
+   ```bash
+   pnpm --version
+   ```
+   If not found: STOP. Tell user:
+   ```
+   pnpm 9+ is required (npm/yarn won't work).
+   Install with: npm install -g pnpm
+   Then run /setup-project again.
+   ```
+
+3. **Git initialized**
+   ```bash
+   git status
+   ```
+   If error: STOP. Tell user:
+   ```
+   This must be a git repository.
+   Initialize with: git init && git add . && git commit -m "initial"
+   Then run /setup-project again.
+   ```
+
+4. **Docker (optional but recommended)**
+   ```bash
+   docker --version
+   ```
+   If not found: WARN
+   ```
+   ⚠️  Docker not found. You'll need it to run PostgreSQL/Redis locally.
+   Install from: https://www.docker.com/
+   Or you can set up managed databases later.
+   Continuing...
+   ```
+
+**If all checks pass:**
+```
+✓ Pre-flight checks passed. Starting setup wizard...
+```
+
+---
+
 ## Step 0 — Connect to Your Own GitHub Repo
 
 Before anything else, check whether this repo is still pointing at the template remote:
@@ -316,7 +374,60 @@ Ready to finish setup? I can run these steps for you:
 ```
 
 For each approved step: run it, show output summary, confirm success, move to next.
-If a step fails: diagnose the error and suggest a fix before offering to retry.
+
+**Error handling for each step:**
+
+**Step A — pnpm install**
+```
+Common issues:
+  • "command not found: pnpm" → install with: npm install -g pnpm
+  • "ERR_EACCES permission denied" → fix with: npm config set prefix ~/.npm-global
+  • "lockfile version mismatch" → delete pnpm-lock.yaml and retry
+
+If fails: offer to diagnose or skip (can run manually later)
+```
+
+**Step B — ccusage (context metrics)**
+```
+Common issues:
+  • "npm ERR! 404" → ccusage not available in npm
+  • "permission denied" → try: sudo npm install -g ccusage
+
+If fails: mark optional, explain it powers the status line
+```
+
+**Step C — docker compose up**
+```
+Common issues:
+  • "docker: command not found" → Docker not installed
+  • "Cannot connect to Docker daemon" → Docker not running
+  • "port already allocated" → conflict with existing container, suggest docker compose down
+  • "pull access denied" → Docker auth issue, suggest docker login
+
+If fails: diagnose which service failed (postgres/redis) and suggest fixes
+```
+
+**Step D — database migrate**
+```
+Common issues:
+  • "could not connect to server" → PostgreSQL not ready (wait 10s, retry)
+  • "FATAL: database does not exist" → run: pnpm nx run database:generate first
+  • "permission denied" → DATABASE_URL env var issue
+
+If fails: suggest running: docker compose logs postgres (to inspect logs)
+```
+
+**Step E — build**
+```
+Common issues:
+  • "error TS7030: Not all code paths return a value" → TypeScript error, show snippet
+  • "Cannot find module" → dependency missing, suggest: pnpm install
+  • "Biome check failed" → lint error, suggest: pnpm check:fix
+
+If fails: show error snippet, offer specific fix based on error message
+```
+
+If a step fails: diagnose the error, show specific recovery command, offer to retry.
 
 ---
 

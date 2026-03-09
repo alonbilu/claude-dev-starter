@@ -16,6 +16,40 @@ Start Step {{STEP_NUMBER}} for feature: {{FEATURE_NAME}}
 
 ---
 
+## Branch Setup (Auto-Create if Needed)
+
+Before implementing:
+
+1. **Check if feature branch exists:**
+   ```bash
+   git branch | grep -q "feature/F[XXX]-{{FEATURE_NAME}}"
+   ```
+
+2. **If branch does NOT exist, offer to create it:**
+   ```
+   The feature branch doesn't exist yet. Create it?
+
+   git switch -c feature/F[XXX]-{{FEATURE_NAME}}
+
+   [Yes/No]:
+   ```
+
+   **If Yes:** Create branch, switch to it, confirm
+
+   **If No:** Ask: "Continue on `{{CURRENT_BRANCH}}`? (not recommended)"
+
+3. **If branch exists but not checked out:**
+   Ask to switch:
+   ```
+   Switch to feature/F[XXX]-{{FEATURE_NAME}}?
+
+   git switch feature/F[XXX]-{{FEATURE_NAME}}
+   ```
+
+This ensures all step commits go to the feature branch, not main.
+
+---
+
 ## Execution
 
 1. Read `4-dev-plan.md` → find Step {{STEP_NUMBER}}
