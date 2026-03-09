@@ -26,19 +26,23 @@ This template eliminates all of that. It's a starting point that encodes everyth
 - A clear protocol for *when* and *how* to update both
 
 ### 🔄 Feature Development Workflow
-A structured 5-phase workflow that keeps multi-session features on track:
+A structured 6-phase workflow that keeps multi-session features on track:
 
 ```
-/new-feature [name]        → Capture the idea
-/discuss-feature [name]    → Claude asks questions, proposes approach
-/plan-feature [name]       → Spec + atomic dev plan (2–12 steps, complexity-scaled)
-/start-step [name] N       → Implement step N
+/new-feature [name]        → Capture the idea (creates 1-idea.md)
+/discuss-feature [name]    → Claude asks questions, proposes approach (creates 2-discussion.md)
+/plan-feature [name]       → Spec + atomic dev plan (creates 3-spec.md + 4-dev-plan.md + STATUS.md)
+/start-step [name] N       → Implement step N (auto-creates feature branch, updates STATUS.md)
 /start-step [name] all     → Autopilot all remaining steps with auto-commits
 /complete-feature [name]   → Archive + version bump
 /create-pr                 → Open GitHub PR with auto-generated description
 ```
 
-Each feature gets a `CONTEXT.md` — a 1-page quick-load file that resumes any session in ~15k tokens without re-reading the entire history.
+Each feature gets TWO quick-reference files:
+- **`CONTEXT.md`** — 1-page quick-load that resumes any session in ~15k tokens (what you're building, key decisions, next action)
+- **`STATUS.md`** — persistent progress tracker across sessions (step completion, session logs, gotchas, blockers)
+
+See [`docs/WORKFLOW-OPTIONS.md`](docs/WORKFLOW-OPTIONS.md) to understand when to use features vs services vs submodules.
 
 ### ⚙️ Project Type System
 `PROJECT.md` declares what kind of project this is. Claude adapts its rules accordingly.
@@ -55,11 +59,15 @@ Each feature gets a `CONTEXT.md` — a 1-page quick-load file that resumes any s
 Optional integrations (off by default): `payments` · `email` · `storage` · `llm` · `rag` · `queue` · `realtime`
 
 ### 🧙 `/setup-project` Interactive Wizard
-Run once after cloning. Asks about your project type, infrastructure choices, and ports — then:
+Run once after cloning. Validates Node/pnpm/Docker, asks about your project type, infrastructure choices, and ports — then:
+- Validates pre-flight requirements (Node 20+, pnpm 9+, git, Docker) with helpful errors
+- Connects repo to your own GitHub remote
 - Populates `PROJECT.md`
 - Updates `docker-compose.yml` (ports, container names, pgvector if rag enabled)
 - Updates `.env.example`, `main.ts`, `vite.config.ts`, scripts
 - Offers to run `pnpm install`, `docker compose up`, and initial migrations with your permission
+- **At the end**, asks if you want to archive/delete `SETUP.md` (saves ~14k context tokens)
+- Auto-deletes the `setup-project.md` command file so it won't be needed again
 
 ### 🔍 The Two Reuse Rules (Encoded in Rules Files)
 Claude is instructed to follow two non-negotiable rules:
@@ -130,9 +138,14 @@ claude .
 #   - Patches all config files automatically
 #   - Runs pnpm install, docker compose up, initial migration (with permission)
 
-# 4. Start your first feature
-# /new-feature my-first-feature
+# 4. Verify setup (optional but recommended)
+bash scripts/validate-setup.sh
+
+# 5. Start your first feature
+/new-feature my-first-feature
 ```
+
+**After `/setup-project` completes**, the wizard will optionally archive `SETUP.md` (saves ~14k context tokens) and delete `setup-project.md` (won't need it again).
 
 ---
 
@@ -184,13 +197,23 @@ claude-dev-starter/
 │       └── ai-workflow.md       ← Session protocol, feature workflow, brain.md protocol
 │
 ├── docs/
-│   ├── WORKFLOW-GUIDE.md        ← Step-by-step feature workflow walkthrough
-│   ├── FEATURE-STATUS.md        ← Central feature tracking dashboard
-│   ├── ENTITY-CLASSIFICATION.md ← When to create modules/services/processors
+│   ├── WORKFLOW-GUIDE.md           ← Step-by-step feature workflow walkthrough
+│   ├── WORKFLOW-OPTIONS.md         ← When to use /new-feature vs /new-service vs /new-submodule
+│   ├── MIGRATION-FROM-EXISTING.md  ← How to adopt this template in existing projects
+│   ├── FEATURE-STATUS.md           ← Central feature tracking dashboard
+│   ├── ENTITY-CLASSIFICATION.md    ← When to create modules/services/processors
+│   ├── templates/
+│   │   └── feature/
+│   │       ├── 1-idea.md           ← Feature idea template (what + why)
+│   │       ├── 2-discussion.md     ← Discussion template (questions + approach)
+│   │       ├── 3-spec.md           ← Specification template (full technical spec)
+│   │       ├── 4-dev-plan.md       ← Development plan template (atomic steps)
+│   │       ├── STATUS.md           ← Progress & session log template
+│   │       └── CONTEXT.md          ← 1-page quick-load template for session resumption
 │   └── features/
-│       ├── active/              ← Work in progress
-│       ├── completed/           ← Archived features
-│       └── backlog/             ← Future ideas
+│       ├── active/                 ← Work in progress
+│       ├── completed/              ← Archived features
+│       └── backlog/                ← Future ideas
 │
 ├── docker-compose.yml           ← PostgreSQL (dev + test) + Redis
 ├── biome.json                   ← Linting + formatting config
@@ -201,6 +224,7 @@ claude-dev-starter/
 │
 └── scripts/
     ├── setup-env.sh             ← Env wizard (dev/staging/production)
+    ├── validate-setup.sh        ← Verify setup is complete: Node, Docker, builds, tests, etc.
     ├── dev.sh                   ← Development environment orchestrator
     ├── start-db.sh              ← Quick DB-only startup
     ├── start-ngrok.sh           ← ngrok tunnel for OAuth/webhook testing
@@ -212,16 +236,17 @@ claude-dev-starter/
 
 ---
 
-## The 6 Commandments
+## The 7 Commandments
 
 These are encoded in `CLAUDE.md` and enforced by the rules files. Claude follows these on every session.
 
 1. **Search before creating** — check for existing code before writing anything new
 2. **Write for reuse** — build generically, put shared code in `libs/shared/` from day one
 3. **Zod is truth** — all types defined as Zod schemas in `libs/shared/types/`; same schema for API, forms, seeding
-4. **Apps are thin** — controllers and pages are routing only; ALL business logic in `libs/domain/`
+4. **No logic in controllers** — controllers and pages are HTTP/routing only; ALL business logic in `libs/domain/`
 5. **One mission per session** — complete one feature step fully before switching; run `/update-status` at end of every session
-6. **No raw SQL** — use Prisma for all DB access; complex queries go to repositories
+6. **Never defer type changes** — when a Zod schema changes, update ALL propagation targets (migrations, DTOs, forms, tests) in the same session
+7. **Always use `gh` CLI** — use GitHub CLI for all GitHub operations (repos, PRs, issues, releases)
 
 ---
 
@@ -282,6 +307,30 @@ docs/features/
 
 ---
 
+## Workflow Options
+
+This template supports **three development workflows**. Most projects use `/new-feature`:
+
+| Workflow | Use When | Commands |
+|----------|----------|----------|
+| **Feature** (default) | Building user-facing capabilities, API endpoints, UI flows | `/new-feature`, `/discuss-feature`, `/plan-feature`, `/start-step` |
+| **Service** | Backend-only: queues, webhooks, sync services, background jobs | `/new-service`, `/implement-service` |
+| **SubModule** | Features within a bounded domain (advanced: requires module structure) | `/new-submodule`, `/implement-submodule` |
+
+**Most projects:** Start with `/new-feature` for everything. See [`docs/WORKFLOW-OPTIONS.md`](docs/WORKFLOW-OPTIONS.md) for detailed decision tree and when to graduate to Services or SubModules.
+
+---
+
+## Migrating an Existing Project
+
+If you have an existing project and want to adopt this template:
+
+1. **Read** [`docs/MIGRATION-FROM-EXISTING.md`](docs/MIGRATION-FROM-EXISTING.md) — 5-phase incremental adoption strategy
+2. **Key point:** You don't have to adopt everything at once. Copy files you want, customize rules for your stack, migrate at your pace.
+3. **Stack customization:** Update `.claude/rules/*.md` to match your tech choices (Express, Drizzle, Vue, etc.)
+
+---
+
 ## Adapting to Your Stack
 
 The workflow system (features, brain.md, knowledge/, CONTEXT.md) is stack-agnostic. Only the rules files and gotchas are stack-specific.
@@ -292,6 +341,7 @@ If you use a different stack:
 3. Replace `.claude/knowledge/stack-gotchas.md` with gotchas relevant to your stack
 4. Update `CLAUDE.md` stack overview section
 5. Update `package.json.template.md` with your dependencies
+6. Refer to [`docs/MIGRATION-FROM-EXISTING.md`](docs/MIGRATION-FROM-EXISTING.md) for detailed customization guidance
 6. Update `docker-compose.yml` for your infrastructure
 
 ---
