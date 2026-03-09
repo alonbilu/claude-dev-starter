@@ -56,7 +56,7 @@ libs/shared/types/src/lib/
 **Commits:**
 - `feat([scope]): description (F[XXX] step 1/N)` (hash)
 
-**Next session:** Start step 2 — [description]
+**Next session:** Run `/start-coding [feature-name] 2` — [description of step 2]
 
 **Gotchas found:**
 - [Anything that tripped you up or future sessions should know]
