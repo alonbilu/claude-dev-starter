@@ -1,0 +1,177 @@
+---
+description: Show help — list all available workflow commands
+---
+
+# Claude Dev Starter Kit — Command Help
+
+## Feature Workflow (Main Path)
+
+The core 6-phase workflow for building features:
+
+| Command | Purpose | Next |
+|---------|---------|------|
+| **`/new-feature [name]`** | Start a new feature — capture the idea | `/discuss-feature` |
+| **`/discuss-feature [name]`** | Explore the approach — Claude asks questions | `/plan-feature` |
+| **`/plan-feature [name]`** | Generate spec + dev plan in one session | `/start-coding` |
+| **`/start-coding [name] N`** | Implement step N of the dev plan | `/start-coding [name] (N+1)` or `/complete-feature` |
+| **`/start-coding [name] all`** | Autopilot — implement all remaining steps | `/complete-feature` |
+| **`/update-status [name]`** | (MANDATORY) Update progress at end of every session | *next feature* |
+| **`/resume-feature [name]`** | Resume work on a feature from a previous session | `/start-coding` |
+| **`/complete-feature [name]`** | Archive + version bump when feature ships | `/create-pr` |
+| **`/create-pr`** | Create GitHub PR with auto-generated description | GitHub |
+
+---
+
+## Specialized Workflows
+
+For backend-only or hierarchical work:
+
+| Workflow | Commands |
+|----------|----------|
+| **Backend Services** (queues, webhooks, sync) | `/new-service [name]` → `/implement-service [name]` |
+| **Hierarchical Features** (features within a domain) | `/new-submodule [parent] [name]` → `/implement-submodule [parent] [name]` |
+
+---
+
+## Hotfix Workflow (Emergency Fixes)
+
+For critical production bugs:
+
+| Command | Purpose | Next |
+|---------|---------|------|
+| **`/hotfix`** | Start a hotfix for a production bug | */implement* |
+| **`/complete-hotfix`** | Finish hotfix, patch version bump, changelog | `/create-pr` |
+
+---
+
+## Utilities & Maintenance
+
+Helpers for keeping the project organized:
+
+| Command | Purpose |
+|---------|---------|
+| **`/trim-context`** | Intelligent cleanup: archive stale docs, trim brain.md, propose removals |
+| **`/view-features`** | See all features status: active, in progress, completed |
+| **`/setup-project`** | (Run once after clone) Configure project type, ports, integrations |
+| **`/revise-spec [name]`** | Mid-feature: update spec when requirements change |
+| **`/generate-spec [name]`** | Generate technical specification from discussion |
+| **`/plan-execution [name]`** | Generate dev plan from completed spec |
+| **`/release-milestone`** | Create a milestone release (major/minor version bump) |
+
+---
+
+## Quick Reference by Goal
+
+### "I'm starting a new feature"
+```
+/new-feature my-feature-name
+```
+
+### "I'm resuming work on a feature I started before"
+```
+/resume-feature my-feature-name
+```
+
+### "I'm ready to implement a step"
+```
+/start-coding my-feature-name 1        # step 1
+/start-coding my-feature-name 2        # step 2
+/start-coding my-feature-name all      # all remaining steps
+```
+
+### "I'm done for today"
+```
+/update-status my-feature-name
+```
+
+### "Feature is complete and ready to ship"
+```
+/complete-feature my-feature-name
+/create-pr
+```
+
+### "I need to fix a production bug (hotfix)"
+```
+/hotfix
+/complete-hotfix
+/create-pr
+```
+
+### "My context window is getting too full"
+```
+/trim-context
+```
+
+### "I need to see what we're working on"
+```
+/view-features
+```
+
+---
+
+## Command Naming Guide
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `/new-*` | Create something new | `/new-feature`, `/new-service`, `/new-submodule` |
+| `/discuss-*` | Explore and clarify | `/discuss-feature` |
+| `/plan-*` | Generate plans/specs | `/plan-feature`, `/plan-execution` |
+| `/start-*` | Begin implementation | `/start-coding` |
+| `/implement-*` | Execute a plan | `/implement-service`, `/implement-submodule` |
+| `/complete-*` | Finish and archive | `/complete-feature`, `/complete-hotfix` |
+| `/resume-*` | Resume interrupted work | `/resume-feature` |
+| `/update-*` | Persist progress | `/update-status` |
+| `/*-status` | Check status | `/view-features`, `/update-status` |
+
+---
+
+## Workflow Levels
+
+### Level 1: Basic (Start Here)
+Required for all projects:
+- `/new-feature`, `/discuss-feature`, `/plan-feature`, `/start-coding`, `/update-status`, `/complete-feature`, `/create-pr`
+
+### Level 2: Intermediate
+Once the basics feel smooth:
+- `/resume-feature`, `/trim-context`, `/view-features`, `/revise-spec`
+
+### Level 3: Advanced
+For specialized workflows:
+- `/new-service`, `/implement-service`, `/hotfix`, `/complete-hotfix`
+- `/new-submodule`, `/implement-submodule`
+- `/release-milestone`
+
+---
+
+## Tips
+
+**Always run `/update-status` at the end of every session** — this is what makes multi-session features work without losing context.
+
+**Use `/trim-context` monthly** — keeps the context window lean so you have more space for actual code.
+
+**Choose your workflow once** — most projects use `/new-feature` for everything. Only use services/submodules if you have a specific need.
+
+**Commands are not required to memorize** — this help is always available. Start with `/new-feature` and lean on Claude to guide you through the next steps.
+
+---
+
+## Glossary
+
+| Term | Meaning |
+|------|---------|
+| **Feature** | User-facing capability (API, UI, workflow) |
+| **Service** | Backend-only process (queue worker, webhook, sync) |
+| **SubModule** | Feature within a bounded domain (hierarchical) |
+| **Step** | Atomic unit of work in a dev plan (usually 1–2 hours) |
+| **Status.md** | Session progress tracker (updated every session) |
+| **Context.md** | 1-page quick-load for session resumption |
+| **Dev Plan** | Atomic steps with token budgets (2–12 steps) |
+| **Spec** | Technical specification (DB, API, UI, testing) |
+
+---
+
+For detailed workflows, see:
+- [`docs/WORKFLOW-GUIDE.md`](../WORKFLOW-GUIDE.md) — step-by-step walkthrough
+- [`docs/WORKFLOW-OPTIONS.md`](../WORKFLOW-OPTIONS.md) — when to use each pattern
+- [`docs/MIGRATION-FROM-EXISTING.md`](../MIGRATION-FROM-EXISTING.md) — adopting this template
+- [`CLAUDE.md`](../../CLAUDE.md) — full instructions for Claude
