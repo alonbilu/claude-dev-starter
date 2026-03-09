@@ -18,7 +18,25 @@ The core 6-phase workflow for building features:
 | **`/update-status [name]`** | (MANDATORY) Update progress at end of every session | *next feature* |
 | **`/resume-feature [name]`** | Resume work on a feature from a previous session | `/start-coding` |
 | **`/complete-feature [name]`** | Archive + version bump when feature ships | `/create-pr` |
-| **`/create-pr`** | Create GitHub PR with auto-generated description | GitHub |
+| **`/create-pr`** | Create GitHub PR with auto-generated description | GitHub review & merge |
+| **`gh pr view [N]`** | (GitHub) Review PR details and checks | GitHub |
+| **`gh pr merge [N]`** | (GitHub) Merge PR to main | Done ✓ |
+
+---
+
+## GitHub Workflow (After `/create-pr`)
+
+After creating a PR with `/create-pr`, continue with GitHub operations:
+
+| Command | Purpose |
+|---------|---------|
+| **`gh pr view [N]`** | See PR details, status, checks |
+| **`gh pr checks [N]`** | View CI/CD test results |
+| **`gh pr review [N] --approve`** | Approve the PR (for reviewers) |
+| **`gh pr merge [N] --delete-branch`** | Merge PR and delete feature branch |
+| **`gh release view [version]`** | See release details (auto-created) |
+
+**Full guide:** See [`docs/GITHUB-WORKFLOW.md`](../../docs/GITHUB-WORKFLOW.md) and [`docs/GITHUB-CLI-REFERENCE.md`](../../docs/GITHUB-CLI-REFERENCE.md)
 
 ---
 
@@ -67,6 +85,11 @@ Helpers for keeping the project organized:
 /new-feature my-feature-name
 ```
 
+### "I want to explore the approach before planning"
+```
+/discuss-feature my-feature-name
+```
+
 ### "I'm resuming work on a feature I started before"
 ```
 /resume-feature my-feature-name
@@ -88,6 +111,19 @@ Helpers for keeping the project organized:
 ```
 /complete-feature my-feature-name
 /create-pr
+```
+
+### "I need to review or merge a PR (GitHub)"
+```
+gh pr view 42
+gh pr checks 42
+gh pr review 42 --approve              # approve it
+gh pr merge 42 --delete-branch         # merge it
+```
+
+### "I need to see release details"
+```
+gh release view v1.2.0
 ```
 
 ### "I need to fix a production bug (hotfix)"
@@ -171,7 +207,9 @@ For specialized workflows:
 ---
 
 For detailed workflows, see:
-- [`docs/WORKFLOW-GUIDE.md`](../WORKFLOW-GUIDE.md) — step-by-step walkthrough
-- [`docs/WORKFLOW-OPTIONS.md`](../WORKFLOW-OPTIONS.md) — when to use each pattern
+- [`docs/WORKFLOW-GUIDE.md`](../WORKFLOW-GUIDE.md) — complete step-by-step walkthrough (idea → discussion → spec → plan → implement → complete → PR → merge)
+- [`docs/GITHUB-WORKFLOW.md`](../GITHUB-WORKFLOW.md) — GitHub PR review and merge operations
+- [`docs/GITHUB-CLI-REFERENCE.md`](../GITHUB-CLI-REFERENCE.md) — complete `gh` CLI command reference
+- [`docs/WORKFLOW-OPTIONS.md`](../WORKFLOW-OPTIONS.md) — when to use Features vs Services vs SubModules
 - [`docs/MIGRATION-FROM-EXISTING.md`](../MIGRATION-FROM-EXISTING.md) — adopting this template
 - [`CLAUDE.md`](../../CLAUDE.md) — full instructions for Claude

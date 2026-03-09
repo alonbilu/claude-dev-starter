@@ -16,7 +16,7 @@ Claude identifies which entities to create or modify.
 
 ---
 
-## The 5 Phases
+## The 6 Phases (5 Claude + 1 GitHub)
 
 ### Phase 1: Idea (you write this)
 
@@ -105,7 +105,7 @@ git push origin feature/F001-google-oauth
 
 ---
 
-### Phase 5: Completion
+### Phase 5: Completion & PR Creation
 
 ```bash
 /complete-feature google-oauth
@@ -116,11 +116,42 @@ Claude will:
 - Run final validation (`test`, `lint`, `build`)
 - Archive feature docs to `docs/features/completed/`
 - Bump version + update CHANGELOG
+- Prepare the feature for PR creation
 
 Then:
 ```bash
 /create-pr
 ```
+
+**Result:**
+- GitHub PR created with auto-generated description
+- Feature branch pushed (if not already)
+- PR URL printed (e.g., `https://github.com/org/repo/pull/42`)
+
+---
+
+### Phase 6: GitHub (Review & Merge)
+
+After `/create-pr`, the feature moves to GitHub for review and merge.
+
+**For team members reviewing:**
+```bash
+gh pr view 42          # See PR details
+gh pr checks 42        # Check CI status
+gh pr review 42 --approve   # Approve it
+```
+
+**For maintainers merging:**
+```bash
+gh pr merge 42 --delete-branch   # Merge + auto-delete feature branch
+```
+
+**Result:**
+- Feature merged to `main`
+- Feature branch deleted
+- Release created + tagged (if auto-release configured)
+
+See **[GitHub Workflow](./GITHUB-WORKFLOW.md)** for complete GitHub operations guide.
 
 ---
 
@@ -159,6 +190,25 @@ Claude: [implements Step 1: Prisma schema + migration]
 You: git add ... && git commit -m "..." && git push
      /start-coding user-invitations 2
 ...
+
+You: [after all steps implemented]
+     /update-status user-invitations    # MANDATORY before switching tasks
+     /complete-feature user-invitations
+Claude: [validates all steps, runs tests, updates version/CHANGELOG]
+        "Feature complete. Run /create-pr to create GitHub PR"
+
+You: /create-pr
+Claude: [creates GitHub PR with auto-generated description]
+        "PR created: https://github.com/org/repo/pull/42"
+
+[Team review on GitHub]
+You: gh pr view 42
+     gh pr checks 42
+     [teammate approves]
+
+[Merge to main]
+You: gh pr merge 42 --delete-branch
+Result: Feature merged to main, branch deleted, release created (v1.2.0)
 ```
 
 ---
@@ -218,11 +268,24 @@ git commit -m "feat(scope): description (F[XXX] step N/Total)"
 git push origin feature/F[XXX]-[name]
 
 # When complete
+/complete-feature [name]
 /create-pr
+# ↓ Creates GitHub PR with auto-generated description
+# ↓ Share the PR URL with your team
+
+# Team reviews on GitHub
+gh pr view 42
+gh pr checks 42
+
+# Merge when approved
+gh pr merge 42 --squash --delete-branch
 ```
 
 **Always commit specific files** (`git add path/to/file.ts`) — not `git add -A`. This avoids
 accidentally staging `.env` files, large binaries, or unrelated changes.
+
+**After merge:** Version bump + CHANGELOG are automatically updated by `/complete-feature`.
+Releases are created automatically if your project has auto-release configured.
 
 ---
 
@@ -248,6 +311,8 @@ docs/features/
 
 ## Quick Command Reference
 
+### Claude Workflow Commands
+
 | Command | When |
 |---------|------|
 | `/new-feature [name]` | Starting a new feature |
@@ -258,7 +323,19 @@ docs/features/
 | `/resume-feature [name]` | Start of any session working on this feature |
 | `/update-status [name]` | End of every session (MANDATORY) |
 | `/complete-feature [name]` | When all steps done and validated |
-| `/create-pr` | After /complete-feature |
+| `/create-pr` | After /complete-feature (creates GitHub PR) |
 | `/view-features` | See all features at a glance |
 | `/trim-context` | When always-loaded files are getting bloated |
 | `/setup-project` | First time only — configure the template |
+
+### GitHub CLI Commands (After `/create-pr`)
+
+| Command | Purpose |
+|---------|---------|
+| `gh pr view 42` | See PR details and status |
+| `gh pr checks 42` | Check CI/CD test results |
+| `gh pr review 42 --approve` | Approve the PR |
+| `gh pr merge 42 --delete-branch` | Merge PR and delete feature branch |
+| `gh release view v1.2.0` | See release details |
+
+**Full reference:** See [`GITHUB-CLI-REFERENCE.md`](./GITHUB-CLI-REFERENCE.md) for complete `gh` command list
