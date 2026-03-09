@@ -61,7 +61,7 @@ Skip steps that don't apply (e.g. no frontend → skip 7–9).
 
 - Identify natural session break points (where to stop between sessions)
 - Create `STATUS.md` with step checklist
-- Tell user: "Run `/start-step {{FEATURE_NAME}} 1` to begin implementation"
+- Tell user: "Run `/start-coding {{FEATURE_NAME}} 1` to begin implementation"
 - Remind user to create a feature branch: `git checkout -b feature/F[XXX]-{{FEATURE_NAME}}`
 
 Usage:

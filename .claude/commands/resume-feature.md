@@ -35,7 +35,7 @@ Last session: [date] ([duration])
 🚧 Blockers: [None / list]
 ```
 
-Then ask: "Ready to continue? I'll pick up with Step [N]." → when confirmed, proceed as per `/start-step`.
+Then ask: "Ready to continue? I'll pick up with Step [N]." → when confirmed, proceed as per `/start-coding`.
 
 ## Rules
 

@@ -2,7 +2,7 @@
 description: Start implementing a specific step of the dev plan
 ---
 
-Start Step {{STEP_NUMBER}} for feature: {{FEATURE_NAME}}
+Start Coding Step {{STEP_NUMBER}} for feature: {{FEATURE_NAME}}
 
 ## Prerequisites (MUST CHECK FIRST)
 
@@ -83,6 +83,6 @@ This ensures all step commits go to the feature branch, not main.
 - Write tests in the same step as the code (not after)
 
 Usage:
-/start-step google-oauth 1
-/start-step google-oauth 5
-/start-step google-oauth all
+/start-coding google-oauth 1
+/start-coding google-oauth 5
+/start-coding google-oauth all

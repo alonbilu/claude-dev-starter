@@ -80,12 +80,12 @@ PHASE 3: SPEC + DEV PLAN (main branch)
   → Offers to create the feature branch
 
 PHASE 4a: STEP-BY-STEP IMPLEMENTATION (feature branch)
-  /start-step [name] N
+  /start-coding [name] N
   → Implements one step
   → After each step: "Commit and push before we continue"
 
 PHASE 4b: AUTOPILOT IMPLEMENTATION (feature branch)
-  /start-step [name] all
+  /start-coding [name] all
   → Implements ALL remaining steps automatically
   → Auto-commits + pushes between each step
   → Stops and reports if a step fails
@@ -176,7 +176,7 @@ When you find a gotcha or learn a reusable pattern mid-session:
 3. Continue working without prompting the user
 
 ### End-of-step (proactive):
-After each `/start-step` and `/update-status`:
+After each `/start-coding` and `/update-status`:
 1. Review what was just implemented
 2. Ask: "Did I learn anything not already in brain.md or MEMORY.md?"
 3. If yes → write immediately, mention briefly: `[Added to stack-gotchas.md: ...]`

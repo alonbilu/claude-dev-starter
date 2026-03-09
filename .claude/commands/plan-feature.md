@@ -75,8 +75,8 @@ Tell user:
 ```
 ✅ Feature planned! Next step:
 
-/start-step {{FEATURE_NAME}} 1    ← implement step 1
-/start-step {{FEATURE_NAME}} all  ← or auto-pilot all steps
+/start-coding {{FEATURE_NAME}} 1    ← implement step 1
+/start-coding {{FEATURE_NAME}} all  ← or auto-pilot all steps
 ```
 
 ---
@@ -105,7 +105,7 @@ Generating development plan...
   • Step 5: Frontend UI + callback
 ✓ Plan complete
 
-Next: /start-step google-oauth 1
+Next: /start-coding google-oauth 1
 ```
 
 ---

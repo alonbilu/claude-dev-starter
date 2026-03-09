@@ -32,8 +32,8 @@ A structured 6-phase workflow that keeps multi-session features on track:
 /new-feature [name]        → Capture the idea (creates 1-idea.md)
 /discuss-feature [name]    → Claude asks questions, proposes approach (creates 2-discussion.md)
 /plan-feature [name]       → Spec + atomic dev plan (creates 3-spec.md + 4-dev-plan.md + STATUS.md)
-/start-step [name] N       → Implement step N (auto-creates feature branch, updates STATUS.md)
-/start-step [name] all     → Autopilot all remaining steps with auto-commits
+/start-coding [name] N       → Implement step N (auto-creates feature branch, updates STATUS.md)
+/start-coding [name] all     → Autopilot all remaining steps with auto-commits
 /complete-feature [name]   → Archive + version bump
 /create-pr                 → Open GitHub PR with auto-generated description
 ```
@@ -313,7 +313,7 @@ This template supports **three development workflows**. Most projects use `/new-
 
 | Workflow | Use When | Commands |
 |----------|----------|----------|
-| **Feature** (default) | Building user-facing capabilities, API endpoints, UI flows | `/new-feature`, `/discuss-feature`, `/plan-feature`, `/start-step` |
+| **Feature** (default) | Building user-facing capabilities, API endpoints, UI flows | `/new-feature`, `/discuss-feature`, `/plan-feature`, `/start-coding` |
 | **Service** | Backend-only: queues, webhooks, sync services, background jobs | `/new-service`, `/implement-service` |
 | **SubModule** | Features within a bounded domain (advanced: requires module structure) | `/new-submodule`, `/implement-submodule` |
 

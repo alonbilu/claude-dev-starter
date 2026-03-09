@@ -224,8 +224,8 @@ Every feature follows a 5-phase workflow:
 1. /new-feature [name]        → Create idea document
 2. /discuss-feature [name]    → Claude asks questions, identifies entities
 3. /plan-feature [name]       → Spec + dev plan (dynamic step count: 2–12)
-4. /start-step [name] N       → Implement step by step
-   /start-step [name] all     → Or autopilot all steps (auto-commit between each)
+4. /start-coding [name] N       → Implement step by step
+   /start-coding [name] all     → Or autopilot all steps (auto-commit between each)
 5. /complete-feature [name]   → Archive + version bump
    /create-pr                 → GitHub PR
 ```
@@ -360,8 +360,8 @@ migration preview + confirm, 3-retry health check, auto-rollback on failure.
 | `/new-feature [name]` | Start a new feature |
 | `/discuss-feature [name]` | Discussion phase |
 | `/plan-feature [name]` | Generate spec + dev plan |
-| `/start-step [name] N` | Implement step N |
-| `/start-step [name] all` | Autopilot all remaining steps |
+| `/start-coding [name] N` | Implement step N |
+| `/start-coding [name] all` | Autopilot all remaining steps |
 | `/update-status [name]` | Update progress — MANDATORY at end of each session |
 | `/resume-feature [name]` | Resume from CONTEXT.md |
 | `/complete-feature [name]` | Archive + version bump |

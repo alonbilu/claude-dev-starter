@@ -102,7 +102,7 @@ Pick ONE workflow command to start using. Recommended order:
    - Complete `/discuss-feature`
    - Run `/generate-spec`
    - Try `/plan-execution` to auto-generate dev plan
-   - Implement using `/start-step`
+   - Implement using `/start-coding`
 
 3. **Evaluate:**
    - Does the workflow help?
@@ -191,7 +191,7 @@ Once Phase 1–4 are solid, gradually adopt more commands:
 - Commit after each feature planning phase
 
 **Week 2:**
-- Add `/start-step` for atomic implementation (forces better commits)
+- Add `/start-coding` for atomic implementation (forces better commits)
 - Start using `/update-status` religiously after each session
 
 **Week 3:**
@@ -259,7 +259,7 @@ git commit -m "chore: remove Claude Dev Starter Kit (rollback)"
 ### Issue: "The workflow is too heavyweight for small changes"
 
 **Solution:** Don't use it for everything. Use for features, skip for bugfixes.
-- Features use full workflow (`/new-feature` → `/plan-feature` → `/start-step`)
+- Features use full workflow (`/new-feature` → `/plan-feature` → `/start-coding`)
 - Bugfixes use simple commits (no workflow)
 - Hotfixes use `/hotfix` command if needed
 

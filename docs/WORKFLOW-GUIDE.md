@@ -82,16 +82,16 @@ git checkout -b feature/F001-google-oauth
 
 **Step-by-step (safer, you stay in control):**
 ```bash
-/start-step google-oauth 1
+/start-coding google-oauth 1
 # Review, approve, commit
-/start-step google-oauth 2
+/start-coding google-oauth 2
 # Review, approve, commit
 # ...
 ```
 
 **Autopilot (faster, less control):**
 ```bash
-/start-step google-oauth all
+/start-coding google-oauth all
 # Claude implements all remaining steps, auto-commits between each
 # Stops and reports if any step fails
 ```
@@ -151,13 +151,13 @@ Claude: [assesses: M complexity, 6 steps]
 
 You: git checkout -b feature/F002-user-invitations
 
-You: /start-step user-invitations 1
+You: /start-coding user-invitations 1
 Claude: [implements Step 1: Prisma schema + migration]
         [writes tests, verifies they pass]
         "Step 1 complete. Commit: feat(users): add UserInvitation model (F002 step 1/6)"
 
 You: git add ... && git commit -m "..." && git push
-     /start-step user-invitations 2
+     /start-coding user-invitations 2
 ...
 ```
 
@@ -253,8 +253,8 @@ docs/features/
 | `/new-feature [name]` | Starting a new feature |
 | `/discuss-feature [name]` | After filling in 1-idea.md |
 | `/plan-feature [name]` | After discussion is complete |
-| `/start-step [name] N` | Implement step N |
-| `/start-step [name] all` | Autopilot all remaining steps |
+| `/start-coding [name] N` | Implement step N |
+| `/start-coding [name] all` | Autopilot all remaining steps |
 | `/resume-feature [name]` | Start of any session working on this feature |
 | `/update-status [name]` | End of every session (MANDATORY) |
 | `/complete-feature [name]` | When all steps done and validated |

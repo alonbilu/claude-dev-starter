@@ -157,7 +157,7 @@ Done! Summary:
 - Steps 1-3 marked for rework
 - Estimated additional time: +4 hours
 
-Next action: `/start-step google-oauth 1` to begin rework.
+Next action: `/start-coding google-oauth 1` to begin rework.
 ```
 
 ---

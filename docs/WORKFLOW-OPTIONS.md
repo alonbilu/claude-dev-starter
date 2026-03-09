@@ -23,7 +23,7 @@ docs/features/active/F[XXX]-feature-name/
 1. `/new-feature` → capture idea
 2. `/discuss-feature` → explore approach
 3. `/plan-feature` → spec + dev plan (or `/generate-spec` + `/plan-execution`)
-4. `/start-step` → implement step-by-step
+4. `/start-coding` → implement step-by-step
 5. `/complete-feature` → archive + version bump
 
 **When to use:**

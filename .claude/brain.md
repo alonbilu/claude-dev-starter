@@ -58,7 +58,7 @@
 
 ## brain.md Update Protocol
 - **On discovery (reactive):** When you find a gotcha mid-session, write to knowledge/ immediately
-- **End of step (proactive):** After each `/start-step`, check: "Did I learn anything new?"
+- **End of step (proactive):** After each `/start-coding`, check: "Did I learn anything new?"
   - If yes → write to appropriate knowledge file, one-liner summary here
   - If no → move on silently
 - **End of feature:** Add a one-liner summary of key insights to the "Project-Specific Insights" section

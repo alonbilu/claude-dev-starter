@@ -184,8 +184,8 @@ pnpm check:fix                    # Biome fix entire workspace
 /new-feature [name]          # Start: create idea document
 /discuss-feature [name]      # Discussion: Claude asks questions, identifies entities
 /plan-feature [name]         # Spec + dev plan
-/start-step [name] N         # Implement step N
-/start-step [name] all       # Autopilot: all steps, auto-commit between each
+/start-coding [name] N         # Implement step N
+/start-coding [name] all       # Autopilot: all steps, auto-commit between each
 /update-status [name]        # MANDATORY: end of every session
 /resume-feature [name]       # Resume: loads CONTEXT.md + STATUS.md (~15k tokens)
 /complete-feature [name]     # Archive + version bump
