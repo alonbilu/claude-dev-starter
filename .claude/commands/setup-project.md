@@ -297,15 +297,19 @@ Ready to finish setup? I can run these steps for you:
   → pnpm install
   Run this now? [yes/no/skip]
 
-  Step B: Start Docker infrastructure
+  Step B: Install ccusage (powers the token usage status line)
+  → npm install -g ccusage
+  Run this now? [yes/no/skip]
+
+  Step C: Start Docker infrastructure
   → docker compose up -d
   Run this now? [yes/no/skip]
 
-  Step C: Run initial database migration  ← only if database layer is active
+  Step D: Run initial database migration  ← only if database layer is active
   → pnpm nx run database:migrate:dev --name init
   Run this now? [yes/no/skip]
 
-  Step D: Verify build
+  Step E: Verify build
   → pnpm nx build api
   Run this now? [yes/no/skip]
 ```

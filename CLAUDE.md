@@ -47,11 +47,12 @@ Then **wait** for the user to run `/setup-project` before doing anything else.
 - **Validation:** Zod (single source of truth)
 - **Testing:** Jest ONLY (never Vitest)
 - **Linting:** Biome ONLY (never ESLint)
+- **GitHub:** Always use `gh` CLI (never raw GitHub API or browser URLs)
 - **API port:** 3333 | **Client port:** 4200
 
 ---
 
-## The 6 Commandments
+## The 7 Commandments
 
 ### 1. Search Before Creating 🔍
 **Before writing ANY new code**, search for existing implementations:
@@ -91,6 +92,17 @@ task first, then ask. Never let scope creep sneak in.
 ### 6. Never Defer Type Changes ⚡
 When a Zod schema changes, update all propagation targets (schema, migration, DTOs, services,
 forms, seeds, tests) **in the same session**. Type drift across sessions causes subtle bugs.
+
+### 7. Always Use `gh` CLI 🐙
+For ALL GitHub operations — creating repos, PRs, issues, viewing checks, releases, comments —
+**always use the `gh` CLI**. Never use raw `curl` to the GitHub API or construct GitHub URLs manually.
+```bash
+gh pr create --title "..." --body "..."
+gh issue list
+gh repo create
+gh pr checks
+gh release create
+```
 
 ---
 
