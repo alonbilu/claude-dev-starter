@@ -623,19 +623,210 @@ Install any of these now? Or run them later with the commands above.
 
 ---
 
-## Step 8 — Archive Setup Documentation (Saves Context)
+## Step 8 — Post-Setup Trim (Saves ~3k tokens/session)
 
-Setup is now complete. These files were helpful for getting started but are no longer needed in active context:
+Setup is complete. Now trim setup-only content from always-loaded files and archive setup docs.
+This saves ~3k tokens per session (~5% of the always-loaded context budget).
+
+**Tell the user:**
+```
+Setup complete! Now I'll trim setup-only content from always-loaded files.
+This saves ~3k tokens per session — content that was only needed during setup.
+
+Trimming...
+```
+
+**Then perform ALL of the following trims automatically (no user prompt needed):**
+
+---
+
+### Trim 1: CLAUDE.md — Remove setup-check section (~300 tokens)
+
+Remove the entire "FIRST: Check for First-Time Setup" section (from `## FIRST:` through the
+`---` separator before `## Read at Start of EVERY Session`). This block checks for `configured: false`
+which is now `true` — it will never trigger again.
+
+**Remove this block from CLAUDE.md:**
+```
+## FIRST: Check for First-Time Setup
+
+Read `PROJECT.md`. If it contains `configured: false`, this project has not been set up yet.
+
+**Immediately say** (do not do anything else first):
+
+...entire welcome message block...
+
+Then **wait** for the user to run `/setup-project` before doing anything else.
+
+---
+```
+
+---
+
+### Trim 2: ai-workflow.md — Remove setup check from session start (~500 tokens)
+
+In the "At the Start of Every Session" section, remove **Step 1** (the unconfigured project check).
+Keep Steps 2 and 3 (reading brain.md and checking active features — those are always relevant).
+Renumber Step 2 → Step 1, Step 3 → Step 2.
+
+**Remove this block from ai-workflow.md:**
+```
+**Step 1: Check for unconfigured project**
+Read `PROJECT.md`. If `APP_NAME` is still `YOUR_APP_NAME` or the project type is the template default
+with no customization, say:
+...
+```
+
+---
+
+### Trim 3: PROJECT.md — Remove setup instructions (~250 tokens)
+
+Remove the instructional comments that explain how to use `/setup-project`. After setup,
+these are noise. Keep the actual configuration data.
+
+**Replace the header and comments in PROJECT.md with a clean version:**
+
+Before (remove):
+```
+> **Instructions:** Run `/setup-project` in Claude Code to fill this in interactively.
+> The wizard will ask you questions, suggest sensible defaults, and update all code files automatically.
+> Do NOT edit the Ports section manually after running `/setup-project`.
+
+---
+
+## Setup Status
+<!-- IMPORTANT: /setup-project sets this to true when done. Claude uses this to detect unconfigured projects. -->
+configured: false
+```
+
+After (replace with):
+```
+configured: true
+```
+
+Also remove all HTML comments (`<!-- ... -->`) throughout the file — they explain template choices
+that are already made.
+
+---
+
+### Trim 4: brain.md — Move meta-guidance to ai-workflow.md (~600 tokens)
+
+Remove the "brain.md Update Protocol" and "MEMORY.md vs brain.md" sections from brain.md.
+These are instructions for Claude about HOW to update brain.md — they belong in the rules file
+(ai-workflow.md), not in brain.md itself where they consume always-loaded context.
+
+**Remove these sections from brain.md:**
+```
+## brain.md Update Protocol
+- **On discovery (reactive):** ...
+- **End of step (proactive):** ...
+- **End of feature:** ...
+
+---
+
+## MEMORY.md vs brain.md
+| | `MEMORY.md` | `brain.md` |
+...
+```
+
+**Append to ai-workflow.md** (at the end, under a new section):
+```
+## brain.md Update Protocol
+
+- **On discovery (reactive):** When you find a gotcha mid-session, write to knowledge/ immediately,
+  add one-liner to brain.md
+- **End of step (proactive):** After each `/start-coding`, ask: "Did I learn anything new?"
+  - If yes → write to appropriate knowledge file, one-liner summary in brain.md
+  - If no → move on silently
+- **End of feature:** Add a one-liner summary of key insights to brain.md "Project-Specific Insights"
+
+### MEMORY.md vs brain.md
+
+| | `MEMORY.md` | `brain.md` |
+|---|---|---|
+| Location | `~/.claude/projects/.../memory/` (outside repo) | `.claude/brain.md` (inside repo) |
+| Version controlled | No | Yes |
+| Purpose | Claude's private reminders & user preferences | Team-wide gotchas, patterns, decisions |
+| Write to it when | User expresses a preference / Claude-specific note | Anyone joining would need to know this |
+```
+
+This moves ~600 tokens from always-loaded (brain.md) to always-loaded (ai-workflow.md) — but
+ai-workflow.md is the correct home for Claude behavioral instructions, and brain.md stays lean
+for actual project memory.
+
+---
+
+### Trim 5: deployment.md — Remove deployment target menu (~350 tokens)
+
+Remove the "Deployment Target Options" section that lists all 6 possible targets with descriptions
+and the "Run `/setup-project` to wire the correct scripts" instruction. The target is already
+configured in PROJECT.md — the menu is setup-only content.
+
+**Remove this block from deployment.md:**
+```
+## Deployment Target Options
+
+Configure in `PROJECT.md` → `target:`. Options:
+
+| Target | Setup |
+...entire table...
+
+Run `/setup-project` to wire the correct scripts for your chosen target.
+```
+
+---
+
+### Trim 6: database.md — Remove pgvector section if rag not enabled (~500 tokens)
+
+**Only if `rag` integration is NOT enabled in PROJECT.md**, remove the entire "pgvector (RAG Integration Only)"
+section from database.md. This section is irrelevant if the project doesn't use vector search.
+
+**Remove this block from database.md (only if rag: disabled):**
+```
+## pgvector (RAG Integration Only)
+
+Only needed when `rag` integration is enabled in `PROJECT.md`.
+...entire section including schema example and index...
+```
+
+If rag IS enabled, keep this section — it's actively needed.
+
+---
+
+### After all trims, commit:
+
+```bash
+git add CLAUDE.md .claude/rules/ai-workflow.md .claude/rules/database.md \
+       .claude/rules/deployment.md .claude/brain.md PROJECT.md
+git commit -m "chore: post-setup trim — remove setup-only content from always-loaded files (~3k tokens saved)"
+```
+
+**Print summary:**
+```
+Post-setup trim complete. Removed setup-only content from always-loaded files:
+
+  CLAUDE.md          — removed setup-check section          (~300 tokens)
+  ai-workflow.md     — removed unconfigured project check   (~500 tokens)
+  PROJECT.md         — removed setup instructions/comments  (~250 tokens)
+  brain.md           — moved meta-guidance to ai-workflow   (~600 tokens)
+  deployment.md      — removed deployment target menu       (~350 tokens)
+  database.md        — removed pgvector section (if unused) (~500 tokens)
+  ──────────────────────────────────────────────────────────
+  Total saved: ~2.5-3k tokens per session
+```
+
+---
+
+### Archive setup documentation
 
 **SETUP.md** (comprehensive onboarding guide — 14k+ tokens)
-- Referenced in git history if new team members clone
 - Ask the user:
 ```
 SETUP.md is a comprehensive onboarding guide. Now that setup is complete, would you like to:
 
   1. Delete it permanently (saves context, recoverable from git history)
   2. Archive it to .claude/archived-docs/ (not loaded in context, but visible if needed)
-  3. Keep it in the repo (still consumes context every session)
+  3. Keep it in the repo
 
 Choose [1/2/3]: [1 recommended]
 ```
@@ -647,12 +838,11 @@ If user chooses **2 (archive):**
   - Run: `mkdir -p .claude/archived-docs && mv SETUP.md .claude/archived-docs/ && git add -A && git commit -m "chore: archive SETUP.md after project initialization"`
 
 **README.md** (verify it's project-specific, not template)
-- If it still shows the template intro ("A project template that makes Claude Code work..."), ask:
+- If it still shows the template intro ("A development framework for Claude Code"), ask:
 ```
 README.md is still the template README. Would you like to:
 
   1. Replace it with a project-specific README
-     (One-line description of what THIS project does)
   2. Keep the template README
   3. Archive the template and create a new one
 
@@ -689,10 +879,12 @@ If user chooses **2 (keep template):** skip, move on.
 If user chooses **3 (archive):**
   - Create new README as above, archive old one: `mkdir -p .claude/archived-docs && mv README.md.old .claude/archived-docs/`
 
-**Finally, clean up this setup file itself:**
+---
+
+### Clean up this setup file
 
 ```
-Setup wizard is complete! Cleaning up...
+Setup wizard is complete! Final cleanup...
   → Removing .claude/commands/setup-project.md (won't be needed again)
 ```
 
@@ -701,15 +893,23 @@ Run:
 
 ---
 
-When all done:
+### Done message
+
 ```
-Your project is ready! Context saved by archiving setup docs.
+Your project is ready!
+
+Context savings from post-setup trim:
+  • ~3k tokens/session removed from always-loaded files (setup-only content)
+  • SETUP.md archived/deleted (~14k tokens)
+  • setup-project.md deleted (won't load again)
 
 You now have:
   • Custom status line showing context usage, cache efficiency, branch, session metrics
     (see .claude/STATUSLINE.md for details)
   • Pre-commit hooks with Biome linting
+  • Auto-format after every edit + Prisma auto-generate
   • Feature workflow with spec-first planning
+  • Specialized subagents (db-expert, test-writer, api-builder, ui-builder)
   • Team-wide patterns and gotchas in .claude/brain.md
 
 Start your first feature:
