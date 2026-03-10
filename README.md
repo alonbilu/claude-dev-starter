@@ -364,6 +364,20 @@ Full details in `.claude/knowledge/stack-gotchas.md`:
 
 ---
 
+## Power User Tips
+
+| Technique | When | What it does |
+|-----------|------|-------------|
+| `/clear` | Between unrelated tasks | Resets context completely. Rules + brain.md reload automatically. |
+| `/compact` | Mid-session, context heavy | Compresses conversation history so you can keep working. |
+| Parallel sessions | Large features | Run separate Claude Code instances for DB/API and frontend work. Each loads the same rules independently. |
+| `/start-coding [name] all` | Confident in the plan | Autopilot mode — implements all remaining steps with auto-commit between each. |
+| `/trim-context` | Monthly | Audits and archives stale docs to keep context lean. |
+
+**Context window lifecycle:** Start session (~47k baseline) → work → `/compact` when heavy → `/clear` when switching tasks → `/update-status` before ending.
+
+---
+
 ## Adapting to Your Stack
 
 The workflow system (features, brain.md, knowledge/, agents) is stack-agnostic. Only rules files and gotchas are stack-specific.

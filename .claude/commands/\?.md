@@ -244,7 +244,13 @@ For specialized workflows:
 
 **Always run `/update-status` at the end of every session** — this is what makes multi-session features work without losing context.
 
+**Use `/clear` between unrelated tasks** — resets context completely. Institutional memory (brain.md, rules) reloads automatically.
+
+**Use `/compact` when context gets heavy** — compresses conversation history mid-session so you can keep working without starting fresh.
+
 **Use `/trim-context` monthly** — keeps the context window lean so you have more space for actual code.
+
+**Run parallel Claude sessions for large features** — e.g., one session for DB/API work, another for frontend. Each session loads the same rules and brain.md independently.
 
 **Choose your workflow once** — most projects use `/new-feature` for everything. Only use services/submodules if you have a specific need.
 

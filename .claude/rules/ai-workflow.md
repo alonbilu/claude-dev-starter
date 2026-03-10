@@ -184,13 +184,29 @@ After each `/start-coding` and `/update-status`:
 
 ---
 
-## Context Window Awareness
+## Context Window Management
 
-After completing each step, estimate context usage. If approaching ~70% used:
+### During a step (~50-70% context used)
+Run `/compact` to compress conversation history without losing key context. Continue working.
+
+### After completing a step (~70%+ context used)
 ```
 Context is getting full (~70%). Recommend committing this step, then starting
 a fresh session for step N+1. Run /update-status [name] now.
 ```
+
+### Between unrelated tasks
+Run `/clear` to reset context completely. This is free — institutional memory (brain.md, rules, knowledge) reloads automatically on the next message.
+
+### ⚠️ Before `/clear` or `/compact` — Save Progress First
+If there is an active feature (check brain.md → "Active Feature Work"), **always** run `/update-status [name]` before `/clear` or `/compact`. This ensures no session context is lost.
+
+If the user asks to `/clear` while a feature is active, remind them:
+```
+Active feature detected: [name]. Running /update-status first to save progress.
+```
+
+**Rule of thumb:** `/compact` to squeeze more out of a session. `/clear` when switching to a different task entirely. Always save status before either.
 
 ---
 
