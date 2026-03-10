@@ -198,15 +198,19 @@ a fresh session for step N+1. Run /update-status [name] now.
 ### Between unrelated tasks
 Run `/clear` to reset context completely. This is free — institutional memory (brain.md, rules, knowledge) reloads automatically on the next message.
 
-### ⚠️ Before `/clear` or `/compact` — Save Progress First
-If there is an active feature (check brain.md → "Active Feature Work"), **always** run `/update-status [name]` before `/clear` or `/compact`. This ensures no session context is lost.
+### ⚠️ Before ANY context reset — Save Progress First
+This applies to `/clear`, `/compact`, **and auto-compaction** (triggered automatically at ~26k tokens remaining).
 
-If the user asks to `/clear` while a feature is active, remind them:
+If there is an active feature (check brain.md → "Active Feature Work"), **always** run `/update-status [name]` before any context compression or reset. This ensures no session context is lost.
+
+**Proactive protection:** When context reaches ~60% used and an active feature exists, proactively run `/update-status [name]` — don't wait for auto-compaction to hit. Auto-compaction happens without warning, so save early.
+
+If the user requests `/clear` or `/compact` while a feature is active:
 ```
 Active feature detected: [name]. Running /update-status first to save progress.
 ```
 
-**Rule of thumb:** `/compact` to squeeze more out of a session. `/clear` when switching to a different task entirely. Always save status before either.
+**Rule of thumb:** `/compact` to squeeze more out of a session. `/clear` when switching tasks. Save status before either — and proactively before auto-compaction kicks in.
 
 ---
 
