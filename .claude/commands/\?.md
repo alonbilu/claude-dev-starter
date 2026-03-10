@@ -102,6 +102,7 @@ These run automatically — no commands needed:
 | **Auto-format** | Every file edit (`.ts/.tsx/.js/.jsx`) | Runs Biome auto-fix on the changed file |
 | **Prisma generate** | Editing `schema.prisma` | Auto-runs `pnpm nx run database:generate` |
 | **Status reminder** | End of session | Reminds to run `/update-status` if active feature exists |
+| **Auto-save before compaction** | Context ~60% used | Proactively saves feature status before auto-compaction erases unsaved progress |
 
 ---
 

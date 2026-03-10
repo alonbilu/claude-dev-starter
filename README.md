@@ -239,6 +239,7 @@ See [`docs/WORKFLOW-OPTIONS.md`](docs/WORKFLOW-OPTIONS.md) and [`docs/ENTITY-CLA
 | **Auto-format** | Every file edit (`.ts/.tsx/.js/.jsx`) | Runs Biome auto-fix on the changed file |
 | **Prisma generate** | Editing `schema.prisma` | Auto-runs `pnpm nx run database:generate` |
 | **Status reminder** | End of session | Reminds to run `/update-status` if active feature exists |
+| **Auto-save before compaction** | Context ~60% used | Proactively saves feature status before auto-compaction can erase unsaved progress |
 | **Pre-commit** | Every `git commit` | Auto-fixes staged files with Biome |
 
 These are configured as Claude Code hooks in `.claude/settings.json` — no manual setup needed.
@@ -374,7 +375,9 @@ Full details in `.claude/knowledge/stack-gotchas.md`:
 | `/start-coding [name] all` | Confident in the plan | Autopilot mode — implements all remaining steps with auto-commit between each. |
 | `/trim-context` | Monthly | Audits and archives stale docs to keep context lean. |
 
-**Context window lifecycle:** Start session (~47k baseline) → work → `/compact` when heavy → `/clear` when switching tasks → `/update-status` before ending.
+**Context window lifecycle:** Start session (~47k baseline) → work → auto-saves status at ~60% → `/compact` when heavy → `/clear` when switching tasks → `/update-status` before ending.
+
+**Auto-compaction protection:** Claude Code auto-compacts at ~26k tokens remaining. The framework proactively saves feature status at ~60% context usage so nothing is lost when that happens.
 
 ---
 
