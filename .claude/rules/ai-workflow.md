@@ -199,18 +199,33 @@ a fresh session for step N+1. Run /update-status [name] now.
 Run `/clear` to reset context completely. This is free — institutional memory (brain.md, rules, knowledge) reloads automatically on the next message.
 
 ### ⚠️ Before ANY context reset — Save Progress First
-This applies to `/clear`, `/compact`, **and auto-compaction** (triggered automatically at ~26k tokens remaining).
+This applies to `/clear`, `/compact`, **and auto-compaction** (triggered automatically at ~95% context).
 
-If there is an active feature (check brain.md → "Active Feature Work"), **always** run `/update-status [name]` before any context compression or reset. This ensures no session context is lost.
+If there is an active feature (check brain.md → "Active Feature Work"), **always** run `/update-status [name]` before any context compression or reset.
 
-**Proactive protection:** When context reaches ~60% used and an active feature exists, proactively run `/update-status [name]` — don't wait for auto-compaction to hit. Auto-compaction happens without warning, so save early.
+### Two-checkpoint auto-save (active feature only)
 
-If the user requests `/clear` or `/compact` while a feature is active:
+| Checkpoint | When | Action |
+|------------|------|--------|
+| **First save** | ~60% context used | Run `/update-status [name]` — early snapshot of progress |
+| **Second save** | ~85% context used | Run `/update-status [name]` again — captures work done since first save. Suggest `/compact` or new session. |
+
+Both checkpoints only trigger when brain.md shows an active feature. Skip silently if no feature is in progress.
+
+After second save, tell the user:
+```
+Status saved (85% context used). Recommend either:
+  /compact — to continue in this session
+  /clear   — to start fresh (status is already saved)
+```
+
+### On user-initiated `/clear` or `/compact`
+If a feature is active, save first:
 ```
 Active feature detected: [name]. Running /update-status first to save progress.
 ```
 
-**Rule of thumb:** `/compact` to squeeze more out of a session. `/clear` when switching tasks. Save status before either — and proactively before auto-compaction kicks in.
+**Rule of thumb:** `/compact` to squeeze more out of a session. `/clear` when switching tasks. The two-checkpoint system ensures status is always saved before auto-compaction can hit.
 
 ---
 
