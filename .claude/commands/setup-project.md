@@ -512,6 +512,21 @@ Let's configure ports. Press Enter to accept defaults.
 
 ---
 
+## Step 3b — Context Auto-Save Checkpoints
+
+```
+Context auto-save checkpoints — saves feature status before auto-compaction can erase progress.
+
+  First save at   [60]% — early snapshot
+  Second save at  [85]% — final save + prompt to /compact or start fresh
+
+Press Enter to keep defaults, or enter custom values (10-95):
+```
+
+Only show this if the user changed ports (i.e., they're the type to customize). Otherwise accept defaults silently.
+
+---
+
 ## Step 4 — Write PROJECT.md
 
 Write the fully populated `PROJECT.md` with:
@@ -521,6 +536,7 @@ Write the fully populated `PROJECT.md` with:
 - enabled integrations with [x] checkboxes
 - target: (chosen deployment)
 - Ports section with the configured values
+- Context auto-save checkpoints (first_save, second_save)
 
 This `configured: true` flag is what tells Claude in future sessions that setup is complete.
 Without it, Claude will keep showing the first-time setup prompt every session.

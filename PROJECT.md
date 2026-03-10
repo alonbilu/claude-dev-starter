@@ -47,5 +47,10 @@ db_dev: 5442
 db_test: 5443
 redis: 6379
 
+## Context Auto-Save Checkpoints
+<!-- When an active feature exists, Claude saves status at these thresholds -->
+first_save: 60
+second_save: 85
+
 ## Notes
 <!-- Any project-specific notes Claude should always keep in mind -->

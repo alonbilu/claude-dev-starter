@@ -205,16 +205,18 @@ If there is an active feature (check brain.md → "Active Feature Work"), **alwa
 
 ### Two-checkpoint auto-save (active feature only)
 
+Thresholds are configured in `PROJECT.md` → "Context Auto-Save Checkpoints" (default: 60% and 85%).
+
 | Checkpoint | When | Action |
 |------------|------|--------|
-| **First save** | ~60% context used | Run `/update-status [name]` — early snapshot of progress |
-| **Second save** | ~85% context used | Run `/update-status [name]` again — captures work done since first save. Suggest `/compact` or new session. |
+| **First save** | `first_save`% context used | Run `/update-status [name]` — early snapshot of progress |
+| **Second save** | `second_save`% context used | Run `/update-status [name]` again — captures work done since first save. Suggest `/compact` or new session. |
 
 Both checkpoints only trigger when brain.md shows an active feature. Skip silently if no feature is in progress.
 
 After second save, tell the user:
 ```
-Status saved (85% context used). Recommend either:
+Status saved ([second_save]% context used). Recommend either:
   /compact — to continue in this session
   /clear   — to start fresh (status is already saved)
 ```
