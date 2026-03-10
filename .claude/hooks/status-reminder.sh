@@ -12,6 +12,21 @@ if echo "$INPUT" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; th
   exit 0
 fi
 
+# Weekly update check reminder
+LAST_CHECK_FILE=".claude/.last-update-check"
+if [ -f "$LAST_CHECK_FILE" ]; then
+  LAST_CHECK=$(cat "$LAST_CHECK_FILE" 2>/dev/null || echo "0")
+  NOW=$(date +%s)
+  DAYS_SINCE=$(( (NOW - LAST_CHECK) / 86400 ))
+  if [ "$DAYS_SINCE" -ge 7 ]; then
+    echo "{\"decision\": \"block\", \"reason\": \"It's been $DAYS_SINCE days since your last stack version check. Run /check-updates to see if any dependencies have important upgrades.\"}"
+    exit 0
+  fi
+else
+  # Create the file on first run so the 7-day countdown starts
+  date +%s > "$LAST_CHECK_FILE" 2>/dev/null || true
+fi
+
 # Look for any active feature with a STATUS.md
 ACTIVE_FEATURES=$(find docs/features/active -name "STATUS.md" -type f 2>/dev/null | head -5)
 

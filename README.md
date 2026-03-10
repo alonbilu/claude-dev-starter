@@ -170,6 +170,7 @@ The rules, gotchas, and patterns are tuned for this stack. If you swap tools, up
 | `/setup-project` | Initial project configuration (run once) |
 | `/revise-spec [name]` | Update spec mid-feature |
 | `/release-milestone` | Major/minor version bump |
+| `/check-updates` | Weekly stack version check — major upgrades and security fixes |
 | `/help` or `/?` | Show all commands |
 
 ### GitHub (After `/create-pr`)

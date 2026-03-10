@@ -54,3 +54,6 @@ HANDOVER.md
 
 # Claude context trim backups (auto-generated, not needed in git)
 .claude/context-trim-backup-*/
+
+# Local state files (machine-specific, not shared)
+.claude/.last-update-check

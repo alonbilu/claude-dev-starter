@@ -89,6 +89,7 @@ Helpers for keeping the project organized:
 | **`/generate-spec [name]`** | Generate technical specification from discussion |
 | **`/plan-execution [name]`** | Generate dev plan from completed spec |
 | **`/release-milestone`** | Create a milestone release (major/minor version bump) |
+| **`/check-updates`** | Weekly: check for major dependency upgrades and security fixes |
 
 ---
 
