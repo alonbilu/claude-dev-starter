@@ -66,20 +66,41 @@ docs/services/service-name/
 
 ---
 
-## Advanced Workflow: SubModules (Hierarchical)
+## Advanced Workflow: Modules & SubModules (Hierarchical)
 
-Use `/new-submodule` when building **features within a bounded context** (Module structure).
+Use Modules when your project has **explicit domain boundaries** (bounded contexts).
+
+### Creating a Module
+
+```bash
+/new-module billing
+```
+
+A Module is a top-level domain area (e.g., users, billing, notifications). It creates:
+- `docs/modules/[name]/spec.md` — module specification
+- `libs/domain/[name]/` — Nx domain library
+
+### Adding SubModules to a Module
+
+```bash
+/new-submodule billing invoice-generation
+/implement-submodule billing invoice-generation
+```
+
+SubModules are capabilities within a Module (e.g., invoice-generation inside billing).
 
 **Structure:**
 ```
-docs/modules/parent-module/
+docs/modules/billing/
 ├── spec.md
 └── submodules/
-    └── sub-feature-name/
+    ├── invoicing/
+    │   └── idea-spec.md
+    └── refunds/
         └── idea-spec.md
 ```
 
-**When to use:**
+**When to use Modules:**
 - ✅ Your project has explicit domain modules (User, Billing, Reporting)
 - ✅ You want features organized under their parent module
 - ✅ Multiple related features under one module (e.g., Billing: invoicing, subscriptions, refunds)
@@ -88,22 +109,53 @@ docs/modules/parent-module/
 - ❌ You don't have a module structure yet (start with `/new-feature`)
 - ❌ Features are standalone or cross-cutting
 
-**Example:** In a Billing module, add "invoice-generation" as a submodule
+**Example:** Create a Billing module, then add "invoice-generation" and "refunds" as submodules
+
+---
+
+## Quick Actions (Lightweight — No Feature Docs)
+
+For tasks that don't need the full feature workflow:
+
+| Command | When | Time |
+|---------|------|------|
+| **`/quick [task]`** | Small fix, <5 files, no schema changes | 5-15 min |
+| **`/debug [error]`** | Systematic error debugging | 10-30 min |
+| **`/scaffold [type] [name]`** | Generate boilerplate (endpoint, page, hook, service, domain-lib) | 5 min |
+
+**Examples:**
+```bash
+/quick fix typo in 404 page
+/debug pnpm nx test api fails with "service is undefined"
+/scaffold endpoint users
+```
 
 ---
 
 ## Decision Tree
 
 ```
-Is this a feature or process?
+How big is this task?
 
-├─ USER-FACING capability
+├─ SMALL fix (5-15 min, <5 files)
+│  └─ Use: /quick ✅
+│
+├─ DEBUGGING an error
+│  └─ Use: /debug ✅
+│
+├─ BOILERPLATE generation
+│  └─ Use: /scaffold ✅
+│
+├─ USER-FACING capability (API + UI + DB)
 │  ├─ API endpoint, UI page, workflow
 │  └─ Use: /new-feature ✅
 │
 ├─ BACKEND-ONLY process
 │  ├─ Queue worker, webhook, sync service
 │  └─ Use: /new-service ✅
+│
+├─ NEW DOMAIN AREA (bounded context)
+│  └─ Use: /new-module ✅
 │
 └─ FEATURE under an existing Module
    ├─ If you have module structure
@@ -114,14 +166,15 @@ Is this a feature or process?
 
 ## Quick Comparison
 
-| Aspect | Feature | Service | SubModule |
-|--------|---------|---------|-----------|
-| **User-facing?** | Yes (usually) | No | Yes (usually) |
-| **Complexity** | 2–12 steps | Simple | 4 steps |
-| **Has Frontend?** | Often | No | Often |
-| **Phases** | 6 (idea → discuss → spec → plan → implement → complete) | 1 (spec only) | 4 (idea-spec → implement) |
-| **Best for** | New capabilities | Background work | Modular features |
-| **Example** | OAuth login | Email queue | Billing invoice generation |
+| Aspect | Quick | Feature | Service | Module | SubModule |
+|--------|-------|---------|---------|--------|-----------|
+| **Purpose** | Small fix | New capability | Background process | Domain area | Module capability |
+| **User-facing?** | Varies | Yes (usually) | No | N/A (container) | Yes (usually) |
+| **Complexity** | 5-15 min | 2–12 steps | Simple | Simple | 4 steps |
+| **Has Frontend?** | Maybe | Often | No | No | Often |
+| **Creates docs?** | No | Yes (6 phases) | Yes (spec only) | Yes (spec) | Yes (idea-spec) |
+| **Command** | `/quick` | `/new-feature` | `/new-service` | `/new-module` | `/new-submodule` |
+| **Example** | Fix typo | OAuth login | Email queue | Billing domain | Invoice generation |
 
 ---
 

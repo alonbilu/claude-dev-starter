@@ -209,9 +209,12 @@ Once Phase 1–4 are solid, gradually adopt more commands:
 These are nice-to-haves, not blockers:
 
 - ❌ `/new-service` — only if you have dedicated background services
-- ❌ `/new-submodule` — only if you have explicit domain modules
+- ❌ `/new-module` / `/new-submodule` — only if you have explicit domain modules
 - ❌ `/hotfix` — only if you have hotfix branches
 - ❌ `/release-milestone` — only if you do semantic versioning
+- ❌ `/scaffold` — useful but not required (you can write boilerplate manually)
+
+**Start with:** `/new-feature` for planned work, `/quick` for small fixes, `/debug` for errors.
 
 ---
 

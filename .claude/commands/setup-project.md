@@ -151,33 +151,88 @@ What's the name of this project? (used in Docker container names, scripts, and l
 Example: my-app, acme-platform, devtools
 ```
 
-**Q2: Project type**
+**Q2: Project description**
 ```
-What type of project is this?
+In one sentence, what does this project do?
+(Helps me recommend the right stack configuration)
+```
 
-  1. saas-web-app    — Full-stack: frontend + backend API + database + auth
-  2. api-only        — Backend API only (no frontend)
-  3. fullstack-web   — Frontend + backend (no billing/credits layer)
-  4. cli             — Command-line tool (no frontend, no database)
+**Q3: Project type**
+
+Based on their description, recommend a type. Show the recommended stack for each:
+
+```
+Based on your description, I'd recommend:
+
+  ➤ 1. saas-web-app (recommended)
+       Stack: React + Vite + NestJS + Prisma + PostgreSQL + Better Auth
+       UI: Tailwind + Shadcn/ui | Forms: React Hook Form + Zod
+       Data: TanStack Query v5 | Testing: Jest | Linting: Biome
+
+  2. api-only        — NestJS + Prisma + PostgreSQL (no frontend)
+  3. fullstack-web   — Same as saas-web-app but no billing/auth layer
+  4. cli             — Node.js CLI (no frontend, no database)
   5. library         — Reusable package (types, utils, SDK)
-  6. static-site     — Static frontend only
+  6. static-site     — React + Vite (no backend)
 
-Enter a number or type the name [1]:
+Enter a number [1]:
 ```
 
-**Q3: Active layers** (skip layers that don't apply to the chosen type — e.g. cli skips frontend)
+**Important:** The default stack (saas-web-app) is battle-tested and pre-configured in all template files.
+Choosing it means everything works out of the box. Other types may require manual adjustments.
+
+**Q4: Stack confirmation** (only ask if they chose saas-web-app or fullstack-web)
 ```
-Which layers are active in this project? (press Enter to accept defaults for your project type)
+Here's your default stack — all pre-configured and ready to go:
 
-  [x] frontend   — React/Next/mobile UI
-  [x] backend    — NestJS/Express/Fastify API
-  [x] database   — Prisma + PostgreSQL
-  [x] auth       — Better Auth / NextAuth / Clerk
+  Frontend:   React + Vite + Tailwind + Shadcn/ui
+  State:      TanStack Query v5 (server) + Zustand (client, if needed)
+  Forms:      React Hook Form + Zod resolver
+  Backend:    NestJS (with Nx workspace)
+  Database:   Prisma + PostgreSQL 16
+  Auth:       Better Auth (cookie-based sessions)
+  Validation: Zod (single source of truth for types)
+  Testing:    Jest (never Vitest — breaks NestJS DI)
+  Linting:    Biome (never ESLint)
+  Monorepo:   Nx + pnpm
 
-Type layer names to toggle (space-separated), or press Enter to accept:
+Want to change any of these? [no/yes]:
 ```
 
-**Q4: Optional integrations** (only show integrations relevant to the active layers)
+If they say **yes**, ask which specific tool they want to swap and warn about compatibility:
+```
+Which tool do you want to change?
+Note: Some swaps require manual configuration changes.
+
+  - Frontend framework (React → Next.js, Svelte, etc.)
+  - CSS framework (Tailwind → CSS Modules, Styled Components, etc.)
+  - Backend framework (NestJS → Express, Fastify, etc.)
+  - Database (PostgreSQL → MySQL, SQLite, MongoDB, etc.)
+  - Auth provider (Better Auth → NextAuth, Clerk, etc.)
+  - ORM (Prisma → Drizzle, TypeORM, etc.)
+
+Type the tool category to change, or "done" when finished:
+```
+
+For each swap, warn about what breaks and what needs manual adjustment.
+Then update PROJECT.md and relevant config files accordingly.
+
+If they say **no** (default), proceed with the pre-configured stack.
+
+**Q5: Active layers** (pre-selected based on project type, just confirm)
+```
+Active layers for your [type] project:
+
+  [x] frontend      — React + Vite + Tailwind + Shadcn/ui
+  [x] backend       — NestJS + Zod validation
+  [x] database      — Prisma + PostgreSQL 16
+  [x] auth          — Better Auth (cookie-based sessions)
+  [ ] mobile        — React Native (not included by default)
+
+Press Enter to accept, or type layer names to toggle:
+```
+
+**Q6: Optional integrations** (only show integrations relevant to the active layers)
 ```
 Which optional integrations do you need?
 
@@ -192,18 +247,18 @@ Which optional integrations do you need?
 Type integration names to enable (space-separated), or press Enter to skip all:
 ```
 
-**Q5: Deployment target**
+**Q7: Deployment target**
 ```
 Where will this be deployed?
 
-  1. digital-ocean    — DigitalOcean Droplet or App Platform
+  1. digital-ocean    — DigitalOcean Droplet or App Platform (recommended)
   2. vercel           — Vercel (frontend) + separate API
   3. aws              — AWS (EC2, ECS, Lambda)
   4. docker-self-hosted — Self-hosted Docker Compose
   5. cloudflare       — Cloudflare Pages/Workers
   6. none             — Not decided yet
 
-Enter a number or type the name [1]:
+Enter a number [1]:
 ```
 
 ---

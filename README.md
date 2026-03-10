@@ -1,8 +1,8 @@
 # Claude Dev Starter Kit
 
-> A project template that makes Claude Code work effectively from session 1 — and keeps it that way.
+> A development framework for Claude Code — structured workflows, automation, and institutional memory for multi-session projects.
 
-Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This template pre-loads Claude with your architecture rules, critical gotchas, a feature workflow, institutional memory, and environment tooling — so every session starts at full speed.
+Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
 ---
 
@@ -13,91 +13,43 @@ When you start a new project with Claude Code, you spend the first few sessions:
 - Re-discovering gotchas you already solved in a previous project
 - Rebuilding workflow conventions from scratch
 - Setting up environment scripts, linting, and pre-commit hooks manually
+- Manually formatting code and running generators after every edit
 
-This template eliminates all of that. It's a starting point that encodes everything needed for Claude to work well across long multi-session projects — tested on a production SaaS application over 30+ features and 100+ sessions.
+This framework eliminates all of that. It encodes everything needed for Claude to work well across long multi-session projects — tested on a production SaaS application over 30+ features and 100+ sessions.
 
 ---
 
-## Features
+## What's Included
 
-### 🧠 Institutional Memory System
-- **`brain.md`** (≤200 lines, always loaded) — institutional memory: active feature work, top gotchas, project-specific insights
-- **`.claude/knowledge/`** — detailed on-demand files: `stack-gotchas.md`, `patterns.md`, `decisions.md` (not loaded every session, keeping the context budget lean)
-- A clear protocol for *when* and *how* to update both
+### Structured Workflows
+- **Feature workflow** — 6-phase lifecycle: idea → discuss → spec → plan → implement → complete → PR → merge
+- **Quick actions** — `/quick`, `/debug`, `/scaffold`, `/review` for tasks that don't need the full workflow
+- **Entity hierarchy** — Features, Modules, SubModules, Services for organizing work at different scales
+- **Hotfix workflow** — Emergency production bug fixes with patch version bump
 
-### 🔄 Feature Development Workflow
-A structured 6-phase workflow that keeps multi-session features on track:
+### Automation
+- **Auto-format** — Biome runs automatically after every file edit (`.ts/.tsx/.js/.jsx`)
+- **Prisma generate** — Auto-runs after `schema.prisma` edits
+- **Status reminder** — Reminds to run `/update-status` at end of every session
+- **Pre-commit hooks** — Husky + lint-staged auto-fix staged files on every commit
 
-```
-/new-feature [name]        → Capture the idea (creates 1-idea.md)
-/discuss-feature [name]    → Claude asks questions, proposes approach (creates 2-discussion.md)
-/plan-feature [name]       → Spec + atomic dev plan (creates 3-spec.md + 4-dev-plan.md + STATUS.md)
-/start-coding [name] N       → Implement step N (auto-creates feature branch, updates STATUS.md)
-/start-coding [name] all     → Autopilot all remaining steps with auto-commits
-/complete-feature [name]   → Archive + version bump
-/create-pr                 → Open GitHub PR with auto-generated description
-```
+### Specialized Subagents
+Claude delegates to focused agents with domain-specific context:
+- **db-expert** — Prisma schema, migrations, repositories, queries
+- **test-writer** — Jest tests, mocks, factories, coverage
+- **api-builder** — NestJS controllers, DTOs, modules, guards
+- **ui-builder** — React pages, components, forms, TanStack Query hooks
 
-Each feature gets TWO quick-reference files:
-- **`CONTEXT.md`** — 1-page quick-load that resumes any session in ~15k tokens (what you're building, key decisions, next action)
-- **`STATUS.md`** — persistent progress tracker across sessions (step completion, session logs, gotchas, blockers)
+### Institutional Memory
+- **`brain.md`** — always-loaded memory (≤200 lines): active work, top gotchas, insights
+- **`.claude/knowledge/`** — on-demand files: `stack-gotchas.md`, `patterns.md`, `decisions.md`
+- **Feature docs** — `CONTEXT.md` + `STATUS.md` per feature for cross-session continuity
 
-See [`docs/WORKFLOW-OPTIONS.md`](docs/WORKFLOW-OPTIONS.md) to understand when to use features vs services vs submodules.
-
-### ⚙️ Project Type System
-`PROJECT.md` declares what kind of project this is. Claude adapts its rules accordingly.
-
-| Type | Use case |
-|------|----------|
-| `saas-web-app` | Full-stack: frontend + API + DB + auth |
-| `api-only` | Backend API only |
-| `fullstack-web` | Frontend + API (no billing layer) |
-| `cli` | Command-line tool |
-| `library` | Reusable package or SDK |
-| `static-site` | Static frontend only |
-
-Optional integrations (off by default): `payments` · `email` · `storage` · `llm` · `rag` · `queue` · `realtime`
-
-### 🧙 `/setup-project` Interactive Wizard
-Run once after cloning. Validates Node/pnpm/Docker, asks about your project type, infrastructure choices, and ports — then:
-- Validates pre-flight requirements (Node 20+, pnpm 9+, git, Docker) with helpful errors
-- Connects repo to your own GitHub remote
-- Populates `PROJECT.md`
-- Updates `docker-compose.yml` (ports, container names, pgvector if rag enabled)
-- Updates `.env.example`, `main.ts`, `vite.config.ts`, scripts
-- Offers to run `pnpm install`, `docker compose up`, and initial migrations with your permission
-- **At the end**, asks if you want to archive/delete `SETUP.md` (saves ~14k context tokens)
-- Auto-deletes the `setup-project.md` command file so it won't be needed again
-
-### 🔍 The Two Reuse Rules (Encoded in Rules Files)
-Claude is instructed to follow two non-negotiable rules:
-1. **Search before creating** — always searches for existing code before writing new code
-2. **Write for reuse from day one** — builds generically, puts shared code in `libs/shared/`
-
-### 🔐 Environment Setup Wizard
-`scripts/setup-env.sh --env dev|staging|production` walks through every env var:
-- Prompts one at a time with current value shown
-- Type `generate` for any secret → `openssl rand -base64 32` auto-runs
-- Validates required fields, warns on `localhost` in production
-- Enforces `chmod 600`, refuses weak production secrets
-
-### 🚀 Deploy Scripts with Safety Gates
-`scripts/production-deploy.sh` enforces:
-- Explicit `deploy` confirmation
-- Clean `main` branch check
-- No `localhost` in `.env.production`
-- Migration preview + confirmation
-- 3-retry health check with **auto-rollback** on failure
-
-### 🪟 Context Window Management
-Two-tier cleanup system:
-- **`bash scripts/trim-context.sh`** — mechanical: archives completed features, trims STATUS.md session logs, warns when `brain.md` exceeds 200 lines
-- **`/trim-context`** (Claude command) — intelligent: scans for stale brain.md sections, duplicate rules, inactive integration rules — proposes cuts with before/after sizes, backs up before applying
-
-### 🧹 Biome + Pre-Commit Hook
-- `biome.json` — battle-tested config with NestJS decorator support
-- Husky + lint-staged wired up — auto-fixes staged files on every commit
-- Never ESLint, never Prettier — Biome does both
+### CI/CD & DevOps
+- **GitHub Actions CI** — lint, test (with PostgreSQL), build on every PR
+- **PR template** — structured PR descriptions with checklists
+- **Deploy scripts** — staging and production with safety gates and auto-rollback
+- **Environment wizard** — interactive setup for dev/staging/production `.env` files
 
 ---
 
@@ -121,138 +73,186 @@ bash scripts/install-prerequisites-ubuntu.sh
 ### 4 Steps
 
 ```bash
-# 1. Clone the template — replace "my-project-name" with your actual project name
+# 1. Clone the template
 git clone https://github.com/alonbilu/claude-dev-starter.git my-project-name
 cd my-project-name
 
-# 2. Open Claude Code — it will detect a fresh clone and prompt you automatically
+# 2. Open Claude Code — it detects a fresh clone automatically
 claude .
-# Claude will say: "Run /setup-project to get started"
+# Claude says: "Run /setup-project to get started"
 
 # 3. Run the setup wizard
 # /setup-project
 #
-# The wizard handles everything:
-#   - Connects repo to your own GitHub remote (replaces the template remote)
-#   - Asks project type, infrastructure, ports
+# The wizard:
+#   - Connects repo to your own GitHub remote
+#   - Confirms or customizes your stack (defaults to React + NestJS + Prisma)
 #   - Patches all config files automatically
-#   - Runs pnpm install, docker compose up, initial migration (with permission)
+#   - Runs pnpm install, docker compose up, initial migration
 
-# 4. Verify setup (optional but recommended)
-bash scripts/validate-setup.sh
-
-# 5. Start your first feature
+# 4. Start your first feature
 /new-feature my-first-feature
 ```
 
-**After `/setup-project` completes**, the wizard will optionally archive `SETUP.md` (saves ~14k context tokens) and delete `setup-project.md` (won't need it again).
+---
+
+## Default Stack
+
+The framework defaults to this production-tested stack. During `/setup-project`, you can swap any tool with a compatibility-checked alternative.
+
+| Layer | Default | Alternatives |
+|-------|---------|-------------|
+| Monorepo | Nx 20 + pnpm 9 | — |
+| Frontend | React 18 + Vite 6 + Tailwind v3 + Shadcn/ui | Vue, Svelte, Next.js |
+| State | TanStack Query v5 + React Hook Form + Zod | SWR, Redux |
+| Backend | NestJS 11 + esbuild | Express, Fastify, Hono |
+| Auth | Better Auth 1.4 | NextAuth, Clerk, Supabase Auth |
+| Database | Prisma 7 + PostgreSQL 16 | Drizzle, TypeORM, Knex |
+| Validation | Zod 3 (single source of truth) | — |
+| Testing | Jest + ts-jest | (**never Vitest** — breaks NestJS DI) |
+| Linting | Biome 1.9 | (**never ESLint**) |
+
+The rules, gotchas, and patterns are tuned for this stack. If you swap tools, update the rules files to match.
 
 ---
 
-## Stack
+## Commands Reference
 
-This template is opinionated about the following stack (the defaults you get out of the box):
+### Feature Workflow (Main Path)
 
-| Layer | Technology |
-|-------|-----------|
-| Monorepo | Nx 20 + pnpm 9 |
-| Frontend | React 18 + Vite 6 + TanStack Query v5 + React Hook Form + Zod + Tailwind v3 + Shadcn/ui |
-| Backend | NestJS 11 + esbuild (`@anatine/esbuild-decorators`) |
-| Auth | Better Auth 1.4 + `@thallesp/nestjs-better-auth` |
-| Database | Prisma 7 + PostgreSQL 16 |
-| Validation | Zod 3 (single source of truth — same schema for API, forms, seeding) |
-| Testing | Jest + ts-jest (**never Vitest** — breaks NestJS DI) |
-| Linting | Biome 1.9 (**never ESLint** — deprecated in this stack) |
+| Command | Purpose |
+|---------|---------|
+| `/new-feature [name]` | Start a new feature — capture the idea |
+| `/discuss-feature [name]` | Explore approach — Claude asks questions |
+| `/plan-feature [name]` | Generate spec + dev plan |
+| `/start-coding [name] N` | Implement step N |
+| `/start-coding [name] all` | Autopilot — implement all remaining steps |
+| `/update-status [name]` | **MANDATORY** — update progress at end of every session |
+| `/resume-feature [name]` | Resume from a previous session |
+| `/complete-feature [name]` | Archive + version bump |
+| `/create-pr` | Create GitHub PR |
 
-The rules, gotchas, and patterns in this template are tuned for this stack. If you use a different stack (e.g. Express instead of NestJS, Drizzle instead of Prisma), the workflow system still applies — update the rules files to match your stack.
+### Quick Actions (No Feature Docs)
+
+| Command | Purpose |
+|---------|---------|
+| `/quick [task]` | Quick fix or small change (5-15 min) |
+| `/debug [error]` | Systematic debugging: reproduce → check gotchas → isolate → fix → document |
+| `/scaffold [type] [name]` | Scaffold: `endpoint`, `page`, `hook`, `service`, or `domain-lib` |
+| `/review` | Pre-PR self-review: lint, tests, code quality checklist |
+
+### Entity Workflows
+
+| Command | Purpose |
+|---------|---------|
+| `/new-module [name]` | Create a top-level domain module |
+| `/new-submodule [parent] [name]` | Add SubModule to a Module |
+| `/implement-submodule [parent] [name]` | Implement a SubModule |
+| `/new-service [name]` | Create a backend service |
+| `/implement-service [name]` | Implement a service |
+| `/hotfix` | Start emergency production fix |
+| `/complete-hotfix` | Complete hotfix with patch version bump |
+
+### Utilities
+
+| Command | Purpose |
+|---------|---------|
+| `/view-features` | See all features status |
+| `/trim-context` | Clean up context window bloat |
+| `/setup-project` | Initial project configuration (run once) |
+| `/revise-spec [name]` | Update spec mid-feature |
+| `/release-milestone` | Major/minor version bump |
+| `/help` or `/?` | Show all commands |
+
+### GitHub (After `/create-pr`)
+
+```bash
+gh pr view 42                    # See PR details
+gh pr checks 42                  # Check CI status
+gh pr review 42 --approve        # Approve
+gh pr merge 42 --delete-branch   # Merge + cleanup
+```
 
 ---
 
-## Repository Structure
+## How the Feature Workflow Works
 
 ```
-claude-dev-starter/
-├── SETUP.md                     ← Detailed setup guide
-├── PROJECT.md                   ← Project identity card (configure via /setup-project)
-├── CLAUDE.md                    ← Claude's session instructions (always loaded)
-│
-├── .claude/
-│   ├── brain.md                 ← Institutional memory (≤200 lines, always loaded)
-│   ├── settings.json            ← Auto-approve safe ops; gate destructive ones
-│   ├── commands/
-│   │   ├── setup-project.md     ← /setup-project wizard
-│   │   └── trim-context.md      ← /trim-context intelligent cleanup
-│   ├── knowledge/               ← On-demand — NOT loaded every session
-│   │   ├── stack-gotchas.md     ← Critical pitfalls with fixes
-│   │   ├── patterns.md          ← Reusable backend + frontend patterns
-│   │   └── decisions.md         ← Architecture decision log template
-│   └── rules/                   ← Loaded every session (referenced in CLAUDE.md)
-│       ├── architecture.md      ← Layering, reuse rules, import boundaries
-│       ├── api.md               ← NestJS, Better Auth, validation
-│       ├── database.md          ← Prisma 7, migrations, camelCase column gotcha
-│       ├── frontend.md          ← React, TanStack Query v5, forms
-│       ├── testing.md           ← Jest setup, patterns, coverage requirements
-│       ├── code-quality.md      ← Biome, lint-staged, suppression rules
-│       ├── deployment.md        ← Docker, env files, deploy scripts
-│       └── ai-workflow.md       ← Session protocol, feature workflow, brain.md protocol
-│
-├── docs/
-│   ├── WORKFLOW-GUIDE.md           ← Step-by-step feature workflow walkthrough
-│   ├── WORKFLOW-OPTIONS.md         ← When to use /new-feature vs /new-service vs /new-submodule
-│   ├── MIGRATION-FROM-EXISTING.md  ← How to adopt this template in existing projects
-│   ├── FEATURE-STATUS.md           ← Central feature tracking dashboard
-│   ├── ENTITY-CLASSIFICATION.md    ← When to create modules/services/processors
-│   ├── templates/
-│   │   └── feature/
-│   │       ├── 1-idea.md           ← Feature idea template (what + why)
-│   │       ├── 2-discussion.md     ← Discussion template (questions + approach)
-│   │       ├── 3-spec.md           ← Specification template (full technical spec)
-│   │       ├── 4-dev-plan.md       ← Development plan template (atomic steps)
-│   │       ├── STATUS.md           ← Progress & session log template
-│   │       └── CONTEXT.md          ← 1-page quick-load template for session resumption
-│   └── features/
-│       ├── active/                 ← Work in progress
-│       ├── completed/              ← Archived features
-│       └── backlog/                ← Future ideas
-│
-├── docker-compose.yml           ← PostgreSQL (dev + test) + Redis
-├── biome.json                   ← Linting + formatting config
-├── package.json.template.md     ← Dependency reference for new workspaces
-├── .env.example                 ← All env vars documented (committed, no secrets)
-├── .vscode/                     ← Format-on-save, recommended extensions
-├── .husky/pre-commit            ← Runs Biome on staged files
-│
-└── scripts/
-    ├── setup-env.sh             ← Env wizard (dev/staging/production)
-    ├── validate-setup.sh        ← Verify setup is complete: Node, Docker, builds, tests, etc.
-    ├── dev.sh                   ← Development environment orchestrator
-    ├── start-db.sh              ← Quick DB-only startup
-    ├── start-ngrok.sh           ← ngrok tunnel for OAuth/webhook testing
-    ├── staging-setup.sh         ← One-time server bootstrap (Ubuntu 22+)
-    ├── staging-deploy.sh        ← Incremental staging deploy
-    ├── production-deploy.sh     ← Production deploy with safety gates + rollback
-    └── trim-context.sh          ← Context window audit + mechanical cleanup
+/new-feature user-auth
+  → Creates docs/features/active/F001-user-auth/1-idea.md
+
+/discuss-feature user-auth
+  → Claude asks questions, proposes approaches
+  → Creates 2-discussion.md
+
+/plan-feature user-auth
+  → Assesses complexity (XS/S/M/L), generates spec + dev plan
+  → Creates 3-spec.md, 4-dev-plan.md, STATUS.md, CONTEXT.md
+  → Creates feature branch
+
+/start-coding user-auth 1        # step-by-step
+/start-coding user-auth all      # or autopilot
+
+/complete-feature user-auth      # archive + version bump
+/create-pr                       # open GitHub PR
+gh pr merge 42 --delete-branch   # merge when approved
 ```
+
+**Step sizing:** XS (2-3 steps), S (3-5), M (5-8), L (8-12) — Claude sizes automatically.
+
+**Session resumption:** `/resume-feature [name]` loads CONTEXT.md + STATUS.md + branch health check (~15-20k tokens).
+
+**Multi-session continuity:** `/update-status` at end of every session is what makes 10+ session features work.
+
+---
+
+## Entity Hierarchy
+
+The framework supports different organizational units for different scales of work:
+
+| Entity | When to Use | Commands |
+|--------|-------------|----------|
+| **Feature** | User-facing capability (API + UI + DB) | `/new-feature` → `/plan-feature` → `/start-coding` |
+| **Module** | Top-level domain area (users, billing, notifications) | `/new-module` → then add SubModules |
+| **SubModule** | Feature within a bounded domain | `/new-submodule` → `/implement-submodule` |
+| **Service** | Backend-only process (queue worker, webhook, sync) | `/new-service` → `/implement-service` |
+
+**Most projects:** Start with `/new-feature` for everything. Graduate to Modules/SubModules only when you have 5+ features in the same domain.
+
+See [`docs/WORKFLOW-OPTIONS.md`](docs/WORKFLOW-OPTIONS.md) and [`docs/ENTITY-CLASSIFICATION.md`](docs/ENTITY-CLASSIFICATION.md) for detailed decision trees.
+
+---
+
+## Built-In Automation
+
+| Automation | Trigger | What it does |
+|-----------|---------|-------------|
+| **Auto-format** | Every file edit (`.ts/.tsx/.js/.jsx`) | Runs Biome auto-fix on the changed file |
+| **Prisma generate** | Editing `schema.prisma` | Auto-runs `pnpm nx run database:generate` |
+| **Status reminder** | End of session | Reminds to run `/update-status` if active feature exists |
+| **Pre-commit** | Every `git commit` | Auto-fixes staged files with Biome |
+
+These are configured as Claude Code hooks in `.claude/settings.json` — no manual setup needed.
 
 ---
 
 ## The 7 Commandments
 
-These are encoded in `CLAUDE.md` and enforced by the rules files. Claude follows these on every session.
+Encoded in `CLAUDE.md` and enforced by rules files:
 
 1. **Search before creating** — check for existing code before writing anything new
 2. **Write for reuse** — build generically, put shared code in `libs/shared/` from day one
-3. **Zod is truth** — all types defined as Zod schemas in `libs/shared/types/`; same schema for API, forms, seeding
-4. **No logic in controllers** — controllers and pages are HTTP/routing only; ALL business logic in `libs/domain/`
-5. **One mission per session** — complete one feature step fully before switching; run `/update-status` at end of every session
-6. **Never defer type changes** — when a Zod schema changes, update ALL propagation targets (migrations, DTOs, forms, tests) in the same session
-7. **Always use `gh` CLI** — use GitHub CLI for all GitHub operations (repos, PRs, issues, releases)
+3. **Zod is truth** — all types as Zod schemas; same schema for API, forms, seeding
+4. **No logic in controllers** — controllers are HTTP plumbing; logic in `libs/domain/`
+5. **One mission per session** — complete one step before switching; `/update-status` at end
+6. **Never defer type changes** — schema changes propagate to all targets in the same session
+7. **Always use `gh` CLI** — GitHub CLI for all GitHub operations
 
 ---
 
 ## Context Budget
 
-Always-loaded files cost ~47k tokens per session (~26% of a typical 180k context window):
+Always-loaded files cost ~47k tokens per session (~26% of a 180k context window):
 
 | Files | Tokens |
 |-------|--------|
@@ -261,100 +261,128 @@ Always-loaded files cost ~47k tokens per session (~26% of a typical 180k context
 | .claude/rules/ (8 files) | ~40k |
 | **Total baseline** | **~47k** |
 
-Knowledge files (`.claude/knowledge/`) are NOT always loaded — only when explicitly referenced. This keeps the baseline lean so the rest of the window is available for actual code.
+Commands, knowledge files, and agents are loaded on-demand only — keeping the baseline lean.
 
-Run `/trim-context` every few weeks to keep this number from growing as the project accumulates history.
+Run `/trim-context` every few weeks to prevent growth.
 
 ---
 
-## Critical Gotchas (The Top 5)
+## Repository Structure
 
-Full details in `.claude/knowledge/stack-gotchas.md`. The most important:
+```
+claude-dev-starter/
+├── CLAUDE.md                        ← Claude's session instructions (always loaded)
+├── PROJECT.md                       ← Project identity (configure via /setup-project)
+│
+├── .claude/
+│   ├── brain.md                     ← Institutional memory (≤200 lines)
+│   ├── settings.json                ← Permissions, hooks, statusline
+│   ├── commands/                    ← Workflow commands (on-demand)
+│   │   ├── new-feature.md           ← /new-feature
+│   │   ├── discuss-feature.md       ← /discuss-feature
+│   │   ├── plan-feature.md          ← /plan-feature
+│   │   ├── start-coding.md          ← /start-coding
+│   │   ├── quick.md                 ← /quick (lightweight tasks)
+│   │   ├── debug.md                 ← /debug (systematic debugging)
+│   │   ├── scaffold.md              ← /scaffold (boilerplate generation)
+│   │   ├── review.md                ← /review (pre-PR self-review)
+│   │   ├── new-module.md            ← /new-module (domain modules)
+│   │   └── ...                      ← 20+ more commands
+│   ├── agents/                      ← Specialized subagents
+│   │   ├── db-expert.md             ← Prisma, migrations, queries
+│   │   ├── test-writer.md           ← Jest tests, mocks, coverage
+│   │   ├── api-builder.md           ← NestJS controllers, DTOs
+│   │   └── ui-builder.md            ← React, TanStack Query, forms
+│   ├── hooks/                       ← Automation scripts
+│   │   ├── biome-format.sh          ← Auto-format after edits
+│   │   ├── prisma-generate.sh       ← Auto-generate after schema changes
+│   │   └── status-reminder.sh       ← End-of-session reminder
+│   ├── knowledge/                   ← On-demand reference (not always loaded)
+│   │   ├── stack-gotchas.md         ← Critical pitfalls with fixes
+│   │   ├── patterns.md              ← Reusable code patterns
+│   │   └── decisions.md             ← Architecture decision log
+│   └── rules/                       ← Always loaded (referenced in CLAUDE.md)
+│       ├── architecture.md          ← Layering, reuse, import boundaries
+│       ├── api.md                   ← NestJS, Better Auth, validation
+│       ├── database.md              ← Prisma 7, migrations, gotchas
+│       ├── frontend.md              ← React, TanStack Query, forms
+│       ├── testing.md               ← Jest setup, coverage requirements
+│       ├── code-quality.md          ← Biome, lint-staged, conventions
+│       ├── deployment.md            ← Docker, environments, deploy scripts
+│       └── ai-workflow.md           ← Feature workflow, brain.md protocol
+│
+├── .github/
+│   ├── workflows/ci.yml             ← CI: lint, test, build on every PR
+│   └── pull_request_template.md     ← Structured PR template
+│
+├── docs/
+│   ├── WORKFLOW-GUIDE.md            ← Step-by-step walkthrough
+│   ├── WORKFLOW-OPTIONS.md          ← Features vs Services vs Modules
+│   ├── ENTITY-CLASSIFICATION.md     ← Entity hierarchy guide
+│   ├── GITHUB-WORKFLOW.md           ← PR review & merge operations
+│   ├── GITHUB-CLI-REFERENCE.md      ← gh CLI command reference
+│   ├── MIGRATION-FROM-EXISTING.md   ← Adopting in existing projects
+│   └── templates/feature/           ← Feature document templates
+│
+├── scripts/
+│   ├── setup-env.sh                 ← Env file wizard
+│   ├── validate-setup.sh            ← Setup verification
+│   ├── dev.sh                       ← Development orchestrator
+│   ├── staging-deploy.sh            ← Staging deploy
+│   ├── production-deploy.sh         ← Production deploy + rollback
+│   └── trim-context.sh              ← Context audit + cleanup
+│
+├── docker-compose.yml               ← PostgreSQL + Redis
+├── biome.json                       ← Linting + formatting
+└── .env.example                     ← All env vars documented
+```
+
+---
+
+## Critical Gotchas (Top 5)
+
+Full details in `.claude/knowledge/stack-gotchas.md`:
 
 | Gotcha | Fix |
 |--------|-----|
 | NestJS DI injects `undefined` | Never `import type` for services; always `import { Service }` |
-| esbuild strips decorator metadata | Always `@Inject(Service)` on every constructor param — explicitly |
-| NestJS tests fail with Vitest | Use Jest only — Vitest's esbuild doesn't preserve `emitDecoratorMetadata` |
-| Prisma 7 datasource error | Remove `url = env(...)` from datasource block — Prisma 7 reads it automatically |
+| esbuild strips decorator metadata | Always `@Inject(Service)` on every constructor param |
+| NestJS tests fail with Vitest | Use Jest only — Vitest doesn't preserve `emitDecoratorMetadata` |
+| Prisma 7 datasource error | Remove `url = env(...)` from datasource block |
 | lint-staged stash lost | NEVER `git stash drop` after a failed pre-commit hook |
-
----
-
-## How the Feature Workflow Works
-
-```
-docs/features/
-└── active/
-    └── F001-user-auth/
-        ├── 1-idea.md      ← you write this
-        ├── 2-discussion.md ← Claude fills during /discuss-feature
-        ├── 3-spec.md       ← Claude generates during /plan-feature
-        ├── 4-dev-plan.md   ← atomic steps with token budgets
-        ├── STATUS.md       ← updated every session (the "cursor")
-        └── CONTEXT.md      ← 1-page quick-load for /resume-feature
-```
-
-**Step sizing:** Claude assesses complexity (XS/S/M/L) and sizes steps accordingly:
-- XS: 2–3 steps (~60k tokens/step budget)
-- S: 3–5 steps
-- M: 5–8 steps (new lib or schema change)
-- L: 8–12 steps (multiple new libs or major feature)
-
-**Session resumption:** `/resume-feature [name]` loads CONTEXT.md + STATUS.md — enough to pick up exactly where you left off, in ~15–20k tokens.
-
-**Multi-session continuity:** `/update-status [name]` is mandatory at the end of every session. This is what makes features that span 10+ sessions work without losing context.
-
----
-
-## Workflow Options
-
-This template supports **three development workflows**. Most projects use `/new-feature`:
-
-| Workflow | Use When | Commands |
-|----------|----------|----------|
-| **Feature** (default) | Building user-facing capabilities, API endpoints, UI flows | `/new-feature`, `/discuss-feature`, `/plan-feature`, `/start-coding` |
-| **Service** | Backend-only: queues, webhooks, sync services, background jobs | `/new-service`, `/implement-service` |
-| **SubModule** | Features within a bounded domain (advanced: requires module structure) | `/new-submodule`, `/implement-submodule` |
-
-**Most projects:** Start with `/new-feature` for everything. See [`docs/WORKFLOW-OPTIONS.md`](docs/WORKFLOW-OPTIONS.md) for detailed decision tree and when to graduate to Services or SubModules.
-
----
-
-## Migrating an Existing Project
-
-If you have an existing project and want to adopt this template:
-
-1. **Read** [`docs/MIGRATION-FROM-EXISTING.md`](docs/MIGRATION-FROM-EXISTING.md) — 5-phase incremental adoption strategy
-2. **Key point:** You don't have to adopt everything at once. Copy files you want, customize rules for your stack, migrate at your pace.
-3. **Stack customization:** Update `.claude/rules/*.md` to match your tech choices (Express, Drizzle, Vue, etc.)
 
 ---
 
 ## Adapting to Your Stack
 
-The workflow system (features, brain.md, knowledge/, CONTEXT.md) is stack-agnostic. Only the rules files and gotchas are stack-specific.
+The workflow system (features, brain.md, knowledge/, agents) is stack-agnostic. Only rules files and gotchas are stack-specific.
 
-If you use a different stack:
-1. Run `/setup-project` and select your project type
-2. Update `.claude/rules/*.md` to reflect your tech choices
-3. Replace `.claude/knowledge/stack-gotchas.md` with gotchas relevant to your stack
-4. Update `CLAUDE.md` stack overview section
-5. Update `package.json.template.md` with your dependencies
-6. Refer to [`docs/MIGRATION-FROM-EXISTING.md`](docs/MIGRATION-FROM-EXISTING.md) for detailed customization guidance
-6. Update `docker-compose.yml` for your infrastructure
+1. Run `/setup-project` — confirm or swap stack tools during setup
+2. Update `.claude/rules/*.md` for your tech choices
+3. Replace `.claude/knowledge/stack-gotchas.md` with your stack's gotchas
+4. Update `.claude/agents/*.md` for your frameworks
+5. See [`docs/MIGRATION-FROM-EXISTING.md`](docs/MIGRATION-FROM-EXISTING.md) for detailed guidance
+
+---
+
+## Migrating an Existing Project
+
+If you have an existing project:
+
+1. **Read** [`docs/MIGRATION-FROM-EXISTING.md`](docs/MIGRATION-FROM-EXISTING.md) — 5-phase incremental adoption
+2. Copy the files you want, customize rules for your stack
+3. Start with the workflow commands (`/new-feature`) and institutional memory (`brain.md`) — adopt the rest gradually
 
 ---
 
 ## Contributing
 
-Issues and PRs welcome. This template improves over time as new patterns and gotchas are discovered.
-
-When contributing:
+Issues and PRs welcome. When contributing:
 - Keep `CLAUDE.md` generic — no framework-specific rules that don't apply to all project types
-- Add stack-specific gotchas to `.claude/knowledge/stack-gotchas.md` with the technology clearly labeled
+- Add stack-specific gotchas to `.claude/knowledge/stack-gotchas.md`
 - Test workflow commands end-to-end before submitting
 - Keep `brain.md` under 200 lines
+- Maintain zero impact on always-loaded context budget
 
 ---
 

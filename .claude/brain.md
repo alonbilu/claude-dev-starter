@@ -14,6 +14,8 @@
 | Architecture decisions log | `.claude/knowledge/decisions.md` |
 | Workflow commands | `docs/WORKFLOW-GUIDE.md` |
 | Entity type guide | `docs/ENTITY-CLASSIFICATION.md` |
+| Built-in hooks (auto-format, prisma, status) | `.claude/hooks/` |
+| Specialized subagents (db, test, api, ui) | `.claude/agents/` |
 
 ---
 

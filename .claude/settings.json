@@ -3,6 +3,33 @@
     "type": "command",
     "command": "bash .claude/statusline/statusline.sh"
   },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/biome-format.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/prisma-generate.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/status-reminder.sh"
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Read",
@@ -23,14 +50,33 @@
       "Bash(git status*)",
       "Bash(git log*)",
       "Bash(git diff*)",
-      "Bash(git branch*)"
+      "Bash(git branch*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git switch *)",
+      "Bash(git checkout -b *)",
+      "Bash(git show *)",
+      "Bash(gh pr *)",
+      "Bash(gh issue *)",
+      "Bash(gh repo view*)",
+      "Bash(gh release *)",
+      "Bash(npx biome *)",
+      "Bash(curl localhost*)"
     ],
     "deny": [
       "Bash(git push --force*)",
       "Bash(rm -rf*)",
       "Bash(git reset --hard*)",
       "Bash(git stash drop*)",
-      "Bash(docker system prune*)"
+      "Bash(docker system prune*)",
+      "Write(.env)",
+      "Write(.env.staging)",
+      "Write(.env.production)",
+      "Write(.env.local)",
+      "Edit(.env)",
+      "Edit(.env.staging)",
+      "Edit(.env.production)",
+      "Edit(.env.local)"
     ]
   }
 }

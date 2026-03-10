@@ -261,3 +261,56 @@ When ANY Zod schema in `libs/shared/types` changes, update ALL of these in the S
 - [ ] No duplicate code created — searched before writing
 - [ ] All types imported from shared types lib
 - [ ] STATUS.md updated
+
+---
+
+## Quick Actions (Lightweight Alternatives)
+
+Not everything needs the full feature workflow. Use these for small tasks:
+
+| Command | When to use | Creates docs? |
+|---------|-------------|---------------|
+| `/quick [task]` | Small fix, 5-15 min, <5 files | No |
+| `/debug [error]` | Debugging an error systematically | No (but may update stack-gotchas.md) |
+| `/scaffold [type] [name]` | Generate boilerplate (endpoint, page, hook, service, domain-lib) | No |
+
+**Scope guard:** If a `/quick` task grows beyond 15 minutes or needs a new DB table, stop and suggest `/new-feature` instead.
+
+---
+
+## Module Workflow
+
+For projects with explicit domain boundaries:
+
+```
+/new-module [name]                    # Create top-level domain module
+/new-submodule [parent] [name]        # Add SubModule to a Module
+/implement-submodule [parent] [name]  # Implement the SubModule
+```
+
+Modules are created when a new bounded context emerges. SubModules are capabilities within a Module.
+
+---
+
+## Automation & Subagents
+
+### Built-In Hooks (Automatic — No User Action Required)
+
+| Hook | Trigger | Action |
+|------|---------|--------|
+| biome-format | Write/Edit on `.ts/.tsx/.js/.jsx` | Auto-runs `biome check --write` |
+| prisma-generate | Write/Edit on `schema.prisma` | Auto-runs `pnpm nx run database:generate` |
+| status-reminder | Session end | Reminds to run `/update-status` if active feature exists |
+
+### Specialized Subagents (Automatic Delegation)
+
+Claude delegates to focused agents based on task context:
+
+| Agent | Loads | When triggered |
+|-------|-------|----------------|
+| **db-expert** | database.md + Prisma gotchas | Schema changes, migrations, repositories |
+| **test-writer** | testing.md + test gotchas | Writing or fixing tests |
+| **api-builder** | api.md + NestJS gotchas | Creating controllers, DTOs, modules |
+| **ui-builder** | frontend.md + React gotchas | Creating pages, components, forms |
+
+You don't invoke these manually — Claude uses them automatically for better output quality and context efficiency.

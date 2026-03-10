@@ -47,6 +47,7 @@ For backend-only or hierarchical work:
 | Workflow | Commands |
 |----------|----------|
 | **Backend Services** (queues, webhooks, sync) | `/new-service [name]` → `/implement-service [name]` |
+| **Domain Modules** (bounded contexts) | `/new-module [name]` → then `/new-submodule [name] [sub]` |
 | **Hierarchical Features** (features within a domain) | `/new-submodule [parent] [name]` → `/implement-submodule [parent] [name]` |
 
 ---
@@ -59,6 +60,19 @@ For critical production bugs:
 |---------|---------|------|
 | **`/hotfix`** | Start a hotfix for a production bug | */implement* |
 | **`/complete-hotfix`** | Finish hotfix, patch version bump, changelog | `/create-pr` |
+
+---
+
+## Quick Actions (No Feature Docs)
+
+For small tasks that don't need the full feature workflow:
+
+| Command | Purpose |
+|---------|---------|
+| **`/quick [task]`** | Quick fix or small change (5-15 min, no docs/branch) |
+| **`/debug [error]`** | Systematic debugging: reproduce → check gotchas → isolate → fix → document |
+| **`/scaffold [type] [name]`** | Scaffold: `endpoint`, `page`, `hook`, `service`, or `domain-lib` |
+| **`/review`** | Pre-PR self-review: lint, tests, code quality checklist |
 
 ---
 
@@ -75,6 +89,31 @@ Helpers for keeping the project organized:
 | **`/generate-spec [name]`** | Generate technical specification from discussion |
 | **`/plan-execution [name]`** | Generate dev plan from completed spec |
 | **`/release-milestone`** | Create a milestone release (major/minor version bump) |
+
+---
+
+## Automation (Built-In)
+
+These run automatically — no commands needed:
+
+| Automation | Trigger | What it does |
+|-----------|---------|-------------|
+| **Auto-format** | Every file edit (`.ts/.tsx/.js/.jsx`) | Runs Biome auto-fix on the changed file |
+| **Prisma generate** | Editing `schema.prisma` | Auto-runs `pnpm nx run database:generate` |
+| **Status reminder** | End of session | Reminds to run `/update-status` if active feature exists |
+
+---
+
+## Specialized Subagents
+
+Claude delegates to focused agents automatically when appropriate:
+
+| Agent | Specialization |
+|-------|---------------|
+| **db-expert** | Prisma schema, migrations, repositories, queries |
+| **test-writer** | Jest tests, mocks, factories, coverage |
+| **api-builder** | NestJS controllers, DTOs, modules, guards |
+| **ui-builder** | React pages, components, forms, TanStack Query hooks |
 
 ---
 
@@ -124,6 +163,27 @@ gh pr merge 42 --delete-branch         # merge it
 ### "I need to see release details"
 ```
 gh release view v1.2.0
+```
+
+### "I need a quick fix (no feature docs)"
+```
+/quick add lastName to user form
+/quick fix typo in 404 page
+```
+
+### "I'm debugging an error"
+```
+/debug TypeError: Cannot read properties of undefined
+/debug pnpm nx test api fails with "service is undefined"
+```
+
+### "I need to scaffold boilerplate"
+```
+/scaffold endpoint users
+/scaffold page dashboard
+/scaffold hook useProjects
+/scaffold service billing
+/scaffold domain-lib notifications
 ```
 
 ### "I need to fix a production bug (hotfix)"

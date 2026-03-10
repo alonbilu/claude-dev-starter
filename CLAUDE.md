@@ -193,7 +193,31 @@ pnpm check:fix                    # Biome fix entire workspace
 /view-features               # See all features status
 /trim-context                # Reduce context window bloat
 /setup-project               # Interactive project configuration wizard
+
+# Quick Actions (no feature docs needed)
+/quick [task]                # Quick fix (5-15 min, no docs/branch)
+/debug [error]               # Systematic debugging workflow
+/scaffold [type] [name]      # Scaffold: endpoint, page, hook, service, domain-lib
+/review                      # Pre-PR self-review (run before /create-pr)
+
+# Module Workflow
+/new-module [name]           # Create a top-level domain module
+/new-submodule [parent] [name]  # Create a SubModule within a Module
 ```
+
+## Automation (Built-In Hooks)
+
+- **Auto-format:** Biome runs on every `.ts/.tsx/.js/.jsx` file after edits
+- **Prisma generate:** Auto-runs after `schema.prisma` changes
+- **Status reminder:** Reminds to run `/update-status` at session end
+
+## Specialized Subagents
+
+Claude delegates to focused agents for better output quality:
+- **db-expert** — Prisma schema, migrations, repositories
+- **test-writer** — Jest tests, mocks, coverage
+- **api-builder** — NestJS controllers, DTOs, modules
+- **ui-builder** — React pages, forms, TanStack Query hooks
 
 ---
 

@@ -4,6 +4,24 @@ Practical walkthrough of the feature development workflow.
 
 ---
 
+## Choosing Your Workflow
+
+Not every task needs the full feature workflow. Pick the right tool:
+
+| Task size | Command | Creates docs? |
+|-----------|---------|---------------|
+| **Quick fix** (5-15 min, <5 files) | `/quick [task]` | No |
+| **Debug an error** | `/debug [error]` | No |
+| **Generate boilerplate** | `/scaffold [type] [name]` | No |
+| **New capability** (API + UI + DB) | `/new-feature [name]` | Yes (full workflow) |
+| **New domain area** | `/new-module [name]` | Yes (module spec) |
+| **Backend-only process** | `/new-service [name]` | Yes (service spec) |
+| **Production emergency** | `/hotfix` | Yes (hotfix docs) |
+
+**Default:** Start with `/new-feature`. Use `/quick` for small fixes. Use `/scaffold` for boilerplate.
+
+---
+
 ## The Core Principle
 
 **Work on FEATURES, not entities directly.**
@@ -11,8 +29,9 @@ Practical walkthrough of the feature development workflow.
 A feature is a user-facing capability ("Add Google OAuth", "Export to PDF").
 Entities (modules, services, processors) are architectural components created *by* features.
 
-You never start with `/new-module`. You start with `/new-feature`, and during the discussion phase
-Claude identifies which entities to create or modify.
+For most work, start with `/new-feature`, and during the discussion phase
+Claude identifies which entities to create or modify. Use `/new-module` only when setting up
+domain structure before building features.
 
 ---
 
@@ -253,6 +272,99 @@ This updates STATUS.md with:
 
 ---
 
+## Error Recovery — When Things Go Wrong
+
+### Step fails mid-implementation
+
+```bash
+# 1. Don't panic. Check what changed:
+git status
+git diff
+
+# 2. If the code is partially working, commit what works:
+git add [working-files]
+git commit -m "wip(scope): partial step N (F[XXX])"
+
+# 3. If the code is broken, revert uncommitted changes:
+git checkout -- [broken-files]
+
+# 4. Update STATUS.md with what happened:
+/update-status [name]
+# Note the blocker in your status update
+
+# 5. Resume in a fresh session:
+/resume-feature [name]
+# Claude will see the blocker and help resolve it
+```
+
+### Tests fail after implementation
+
+```bash
+# 1. Run the debug workflow:
+/debug [error message from test output]
+
+# 2. If it's a known gotcha, the fix is usually quick
+# 3. If it's a new issue, /debug will document it in stack-gotchas.md
+```
+
+### Merge conflicts on feature branch
+
+```bash
+# 1. Update your branch from main:
+git fetch origin
+git rebase origin/main
+
+# 2. Resolve conflicts file by file
+# 3. Continue the rebase:
+git add [resolved-files]
+git rebase --continue
+
+# 4. Force push your branch (safe — it's YOUR feature branch):
+git push -f origin feature/F[XXX]-[name]
+```
+
+### Context window is full
+
+```bash
+# 1. Commit current work
+git add [files] && git commit -m "wip: save progress"
+
+# 2. Save your status
+/update-status [name]
+
+# 3. Start a fresh Claude session
+# 4. Resume with full context loaded cleanly:
+/resume-feature [name]
+```
+
+### Need to abandon a feature
+
+```bash
+# 1. Update status with the reason:
+/update-status [name]
+# Mark as "abandoned" with explanation
+
+# 2. Switch back to main:
+git switch main
+
+# 3. Optionally delete the feature branch:
+git branch -d feature/F[XXX]-[name]
+```
+
+---
+
+## Pre-PR Review
+
+Before creating a PR, run a self-review:
+
+```bash
+/review
+```
+
+This checks for: import violations, duplicate code, missing tests, hardcoded values, security issues, and unused code. Fix any issues before sharing with teammates.
+
+---
+
 ## Git Workflow Summary
 
 ```bash
@@ -311,7 +423,7 @@ docs/features/
 
 ## Quick Command Reference
 
-### Claude Workflow Commands
+### Feature Workflow Commands
 
 | Command | When |
 |---------|------|
@@ -324,9 +436,20 @@ docs/features/
 | `/update-status [name]` | End of every session (MANDATORY) |
 | `/complete-feature [name]` | When all steps done and validated |
 | `/create-pr` | After /complete-feature (creates GitHub PR) |
+| `/review` | Pre-PR self-review (run before /create-pr) |
 | `/view-features` | See all features at a glance |
 | `/trim-context` | When always-loaded files are getting bloated |
 | `/setup-project` | First time only — configure the template |
+
+### Quick Action Commands
+
+| Command | When |
+|---------|------|
+| `/quick [task]` | Small fix (5-15 min, no feature docs) |
+| `/debug [error]` | Systematic debugging workflow |
+| `/scaffold [type] [name]` | Generate boilerplate (endpoint, page, hook, service, domain-lib) |
+| `/new-module [name]` | Create a top-level domain module |
+| `/new-submodule [parent] [name]` | Add SubModule to a Module |
 
 ### GitHub CLI Commands (After `/create-pr`)
 
