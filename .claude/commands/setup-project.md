@@ -321,6 +321,65 @@ Then update PROJECT.md and relevant config files accordingly.
 
 If they say **no** (default), proceed with the pre-configured stack.
 
+**Q4b: Version freshness check** (automatic — runs after stack is confirmed)
+
+Before continuing, check if any core dependencies have newer stable major versions
+than what the template ships with. This ensures every new project starts on the latest
+stable versions, not whatever was hardcoded when the template was last updated.
+
+**Search the web** for the latest stable version of each confirmed stack tool:
+
+| Dependency | Template version | Search query |
+|-----------|-----------------|--------------|
+| React | 19 | `React latest stable version [current year]` |
+| Vite | 6 | `Vite latest stable version [current year]` |
+| Tailwind CSS | v4 | `Tailwind CSS latest stable version [current year]` |
+| NestJS | 11 | `NestJS latest stable version [current year]` |
+| Prisma | 7.4 | `Prisma ORM latest stable version [current year]` |
+| PostgreSQL | 17 | `PostgreSQL latest stable version [current year]` |
+| Better Auth | 1.5 | `Better Auth latest stable version [current year]` |
+| Biome | 2 | `Biome linter latest stable version [current year]` |
+| pnpm | 10 | `pnpm latest stable version [current year]` |
+
+**Rules:**
+- Only flag **major version** upgrades (e.g., React 19 → 20, not 19.2 → 19.3)
+- Only flag versions that have been **stable for at least 1 month** (no RC/beta)
+- Skip tools the user swapped out in Q4
+
+**If newer versions are found**, show:
+```
+I checked for newer stable versions of your stack. Found updates:
+
+  [tool] [template version] → [latest version] (stable since [date])
+    What's new: [1 sentence — key improvement]
+    Breaking changes: [yes/no]
+    Effort to upgrade: [low/medium/high]
+
+  [tool] [template version] → [latest version] ...
+
+Would you like to upgrade any of these? I'll update all version references
+across the template. [yes/no]
+```
+
+If the user says **yes**, for each accepted upgrade:
+1. Update version references in: README.md, SETUP.md, rules files, docker-compose.yml,
+   CI workflow, package.json.template.md, biome.json, install script, and this setup command
+2. Warn about any breaking changes or migration steps needed
+3. Continue with setup
+
+If the user says **no**, continue with the template's current versions.
+
+**If all versions are current:**
+```
+✓ All stack versions are up to date — no newer stable releases found.
+```
+Continue immediately.
+
+**Also update the weekly check timestamp** so `/check-updates` doesn't nag right after setup:
+```bash
+date +%s > .claude/.last-update-check
+```
+
 **Q5: Active layers** (pre-selected based on project type, just confirm)
 ```
 Active layers for your [type] project:
