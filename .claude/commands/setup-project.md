@@ -245,15 +245,57 @@ React + Vite + NestJS (default) vs Next.js:
   ❌ Vendor lock-in risk with Vercel-specific features (middleware, edge runtime)
   ❌ Harder to split team across frontend/backend boundaries
 
-  Recommendation:
-  • Building a SaaS/platform with complex backend logic, queues, WebSockets?
+  Recommendation by project type:
+  • SaaS/platform with complex backend (queues, WebSockets, multi-tenant)?
     → Stay with React + Vite + NestJS (default)
-  • Building a content site, marketing site, or app with simple CRUD API?
+  • Content site, marketing site, or simple CRUD app?
     → Next.js is a good fit
-  • Need SSR/SEO for public pages but also complex backend?
-    → Use Next.js for the frontend + keep NestJS as a separate API
+  • SSR/SEO for public pages + complex backend?
+    → Next.js frontend + NestJS as separate API
+  • B2B whitelabel / embeddable widget + API?
+    → Stay with default (see below)
 
 Which would you like?
+```
+
+**B2B whitelabel / embeddable storefront guidance:**
+
+If the user describes a B2B whitelabel product (embedded widget, storefront inside customer sites, JS SDK), explain:
+
+```
+For B2B whitelabel + API, the default stack (React + Vite + NestJS) is the right choice.
+Next.js would actually be a worse fit. Here's why:
+
+Your whitelabel UI lives INSIDE the customer's website — via <script> tag, iframe,
+or Web Component. It's not a standalone page that Google crawls.
+SSR (Next.js's main advantage) gives you nothing here.
+
+Next.js assumes it owns the page (routing, <head>, HTML shell).
+An embeddable widget should NOT own the page.
+
+Recommended architecture:
+
+  NestJS API (your core product)
+    ├── Public API — customers integrate their own backends
+    ├── Admin API — your internal dashboard
+    └── Widget config API — per-customer settings (theme, products, branding)
+
+  Two frontend build targets:
+    1. Embeddable widget (React, Vite library mode → single JS bundle)
+       → Loaded via <script src="https://cdn.you.com/widget.js">
+       → Per-customer config (colors, logo, products) via API
+       → CDN-hosted, scales infinitely, no per-customer server cost
+
+    2. Admin dashboard (React + Vite SPA)
+       → Your team manages customers, products, config
+       → Standard internal SPA, no SSR needed
+
+Why this beats Next.js for whitelabel:
+  ✅ Widget is a lightweight client-side bundle — no server per customer
+  ✅ API-first — customers who don't want your widget build their own UI
+  ✅ CDN-hosted widget — infinite scale, zero per-customer server costs
+  ✅ NestJS handles complexity — multi-tenancy, auth, catalog, webhooks
+  ❌ Next.js owns the page — conflicts with embedding in customer sites
 ```
 
 If they choose Next.js:

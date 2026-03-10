@@ -93,77 +93,10 @@ Default to **React + Vite + NestJS** (separated architecture). Recommend alterna
 | Content platform / marketplace (public pages ARE the product) | **Option 2 or 3** — SSR matters for SEO |
 | Landing/docs site only | **Option 2** — Next.js alone, no complex backend needed |
 | Complex backend (queues, WebSockets, multi-tenant) + SEO pages | **Option 3** — but consider if a separate static marketing site is simpler |
-| B2B API + embeddable widget/whitelabel | **Option 1** — see ADR-003 |
+| B2B API + embeddable widget/whitelabel | **Option 1** — separated architecture, widget as embeddable JS bundle |
 
 ### Consequences
 - Template rules, agents, hooks, and gotchas are tuned for Option 1
 - Choosing Option 2 or 3 requires manual updates to rules files, agents, and hooks
-- `/setup-project` wizard explains trade-offs during stack confirmation step
-
----
-
-## ADR-003: B2B Whitelabel + API architecture
-
-**Date:** 2026-03-10
-**Status:** accepted
-
-### Context
-For B2B whitelabel solutions where customers embed a storefront/widget into their own websites, the architecture needs to serve two audiences: (1) an API for customer backend integrations, and (2) an embeddable frontend component that lives inside the customer's site.
-
-### Decision
-Use the **separated architecture (React + Vite + NestJS)** with the frontend built as an embeddable widget rather than a full SPA.
-
-### Rationale
-
-**Why NOT Next.js for whitelabel:**
-- Whitelabel UIs are **embedded into customer sites** (via iframe, Web Component, or JS SDK) — they don't need SSR because they're not crawled by Google
-- Next.js assumes it owns the page — it controls routing, head tags, and the HTML shell. An embeddable widget should NOT own the page
-- Customers integrate via `<script>` tag or iframe, not by deploying a Next.js app
-- SSR adds server-side complexity for something that renders client-side inside someone else's page
-
-**Recommended B2B whitelabel architecture:**
-
-```
-┌─────────────────────────────────────────────┐
-│ NestJS API (your backend)                    │
-│  ├── Public API (REST/GraphQL) — customers   │
-│  │   integrate their own backends            │
-│  ├── Admin API — your internal dashboard     │
-│  └── Widget config API — serves widget       │
-│      settings per customer (theme, products) │
-└──────────────┬──────────────────────────────┘
-               │
-    ┌──────────┴──────────┐
-    │                     │
-┌───┴────┐          ┌─────┴──────┐
-│ Widget │          │ Admin SPA  │
-│ (React)│          │ (React +   │
-│ embed  │          │  Vite)     │
-│ via JS │          │ your team  │
-│ SDK or │          │ manages    │
-│ iframe │          │ customers  │
-└────────┘          └────────────┘
-```
-
-**Three deployment artifacts:**
-1. **NestJS API** — the core product. Public REST/GraphQL API for B2B customers + admin endpoints
-2. **Embeddable widget** — React app built as a JS bundle (not a full SPA). Loaded via `<script src="https://cdn.you.com/widget.js">` or iframe. Configured per customer (theme, products, branding)
-3. **Admin dashboard** — internal React + Vite SPA for managing customers, products, config
-
-**Widget build approach:**
-- Build with Vite in **library mode** → outputs a single JS file
-- Or use Web Components → framework-agnostic, shadow DOM isolates styles
-- Or iframe → simplest isolation, no CSS conflicts, but less integrated feel
-
-**Why this is better than Next.js for whitelabel:**
-- Widget is a lightweight client-side bundle — no server needed per customer
-- CDN-hosted — scales infinitely, no per-customer server costs
-- API-first design — customers who don't want the widget can build their own UI
-- Admin dashboard is a standard SPA — no SSR complexity needed for internal tools
-
-### Consequences
-- Frontend is split into two build targets: widget (library mode) and admin (SPA)
-- Widget needs its own Vite config with library mode output
-- Must handle theming/branding via API config (CSS variables, logo URL, color palette)
-- CORS must allow customer domains (dynamic origin whitelist)
-- Consider a customer onboarding flow that generates embed code snippets
+- `/setup-project` wizard explains trade-offs during stack confirmation step (including B2B whitelabel guidance)
+- B2B whitelabel architectural guidance lives in `setup-project.md` — deleted after setup to save context
