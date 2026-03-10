@@ -631,7 +631,7 @@ This saves ~3k tokens per session (~5% of the always-loaded context budget).
 **Tell the user:**
 ```
 Setup complete! Now I'll trim setup-only content from always-loaded files.
-This saves ~3k tokens per session — content that was only needed during setup.
+This saves ~2k tokens per session — content that was only needed during setup.
 
 Trimming...
 ```
@@ -709,54 +709,12 @@ that are already made.
 
 ---
 
-### Trim 4: brain.md — Move meta-guidance to ai-workflow.md (~600 tokens)
+### Trim 4: deployment.md — Remove deployment target menu (~350 tokens)
 
-Remove the "brain.md Update Protocol" and "MEMORY.md vs brain.md" sections from brain.md.
-These are instructions for Claude about HOW to update brain.md — they belong in the rules file
-(ai-workflow.md), not in brain.md itself where they consume always-loaded context.
-
-**Remove these sections from brain.md:**
-```
-## brain.md Update Protocol
-- **On discovery (reactive):** ...
-- **End of step (proactive):** ...
-- **End of feature:** ...
-
----
-
-## MEMORY.md vs brain.md
-| | `MEMORY.md` | `brain.md` |
-...
-```
-
-**Append to ai-workflow.md** (at the end, under a new section):
-```
-## brain.md Update Protocol
-
-- **On discovery (reactive):** When you find a gotcha mid-session, write to knowledge/ immediately,
-  add one-liner to brain.md
-- **End of step (proactive):** After each `/start-coding`, ask: "Did I learn anything new?"
-  - If yes → write to appropriate knowledge file, one-liner summary in brain.md
-  - If no → move on silently
-- **End of feature:** Add a one-liner summary of key insights to brain.md "Project-Specific Insights"
-
-### MEMORY.md vs brain.md
-
-| | `MEMORY.md` | `brain.md` |
-|---|---|---|
-| Location | `~/.claude/projects/.../memory/` (outside repo) | `.claude/brain.md` (inside repo) |
-| Version controlled | No | Yes |
-| Purpose | Claude's private reminders & user preferences | Team-wide gotchas, patterns, decisions |
-| Write to it when | User expresses a preference / Claude-specific note | Anyone joining would need to know this |
-```
-
-This moves ~600 tokens from always-loaded (brain.md) to always-loaded (ai-workflow.md) — but
-ai-workflow.md is the correct home for Claude behavioral instructions, and brain.md stays lean
-for actual project memory.
-
----
-
-### Trim 5: deployment.md — Remove deployment target menu (~350 tokens)
+**NOTE: brain.md is NOT trimmed.** The update protocol and MEMORY.md comparison table stay in
+brain.md intentionally — co-locating the instructions with the data ensures Claude follows them
+consistently every session. Both brain.md and ai-workflow.md are always-loaded, so moving content
+between them saves zero tokens. Keeping the protocol in brain.md is the safer design.
 
 Remove the "Deployment Target Options" section that lists all 6 possible targets with descriptions
 and the "Run `/setup-project` to wire the correct scripts" instruction. The target is already
@@ -797,8 +755,8 @@ If rag IS enabled, keep this section — it's actively needed.
 
 ```bash
 git add CLAUDE.md .claude/rules/ai-workflow.md .claude/rules/database.md \
-       .claude/rules/deployment.md .claude/brain.md PROJECT.md
-git commit -m "chore: post-setup trim — remove setup-only content from always-loaded files (~3k tokens saved)"
+       .claude/rules/deployment.md PROJECT.md
+git commit -m "chore: post-setup trim — remove setup-only content from always-loaded files (~2k tokens saved)"
 ```
 
 **Print summary:**
@@ -808,11 +766,12 @@ Post-setup trim complete. Removed setup-only content from always-loaded files:
   CLAUDE.md          — removed setup-check section          (~300 tokens)
   ai-workflow.md     — removed unconfigured project check   (~500 tokens)
   PROJECT.md         — removed setup instructions/comments  (~250 tokens)
-  brain.md           — moved meta-guidance to ai-workflow   (~600 tokens)
   deployment.md      — removed deployment target menu       (~350 tokens)
   database.md        — removed pgvector section (if unused) (~500 tokens)
   ──────────────────────────────────────────────────────────
-  Total saved: ~2.5-3k tokens per session
+  Total saved: ~1.9-2.4k tokens per session
+
+  brain.md           — NOT trimmed (update protocol stays co-located with data)
 ```
 
 ---
