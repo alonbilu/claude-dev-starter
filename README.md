@@ -45,6 +45,12 @@ Claude delegates to focused agents with domain-specific context:
 - **`.claude/knowledge/`** — on-demand files: `stack-gotchas.md`, `patterns.md`, `decisions.md`
 - **Feature docs** — `CONTEXT.md` + `STATUS.md` per feature for cross-session continuity
 
+### Smart Setup
+- **Interactive wizard** — `/setup-project` configures stack, ports, integrations, and infra in one session
+- **Stack comparison** — explains trade-offs when swapping tools (e.g., React+Vite vs Next.js)
+- **Post-setup context trim** — automatically removes setup-only content from always-loaded files (~24k tokens saved)
+- **Architecture decisions** — records stack choices in `decisions.md` for future reference
+
 ### CI/CD & DevOps
 - **GitHub Actions CI** — lint, test (with PostgreSQL), build on every PR
 - **PR template** — structured PR descriptions with checklists
@@ -98,7 +104,7 @@ claude .
 
 ## Default Stack
 
-The framework defaults to this production-tested stack. During `/setup-project`, you can swap any tool with a compatibility-checked alternative.
+The framework defaults to this production-tested stack. During `/setup-project`, you can swap any tool with a compatibility-checked alternative — the wizard explains trade-offs and warns about what needs manual adjustment.
 
 | Layer | Default | Alternatives |
 |-------|---------|-------------|
@@ -111,6 +117,8 @@ The framework defaults to this production-tested stack. During `/setup-project`,
 | Validation | Zod 3 (single source of truth) | — |
 | Testing | Jest + ts-jest | (**never Vitest** — breaks NestJS DI) |
 | Linting | Biome 1.9 | (**never ESLint**) |
+
+**Why React + Vite + NestJS over Next.js?** The default uses separated frontend/backend apps. This gives you full NestJS power (DI, guards, interceptors, queues, WebSockets) and independent scaling. Next.js is better for content/SEO-heavy sites with simple APIs. The setup wizard explains the full comparison if you consider swapping. See [`decisions.md`](.claude/knowledge/decisions.md) for the detailed architecture decision record.
 
 The rules, gotchas, and patterns are tuned for this stack. If you swap tools, update the rules files to match.
 
@@ -263,7 +271,9 @@ Always-loaded files cost ~47k tokens per session (~26% of a 180k context window)
 
 Commands, knowledge files, and agents are loaded on-demand only — keeping the baseline lean.
 
-Run `/trim-context` every few weeks to prevent growth.
+**Post-setup trim:** After `/setup-project` completes, the wizard automatically removes setup-only content from always-loaded files (~2k tokens), deletes SETUP.md (~14k tokens), and removes the setup command itself (~8k tokens) — saving ~24k tokens total. This is automatic — no manual work needed.
+
+Run `/trim-context` every few weeks to prevent growth over time.
 
 ---
 
