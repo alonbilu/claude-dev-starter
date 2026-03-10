@@ -11,7 +11,7 @@ You just cloned this template. Here's the exact sequence from zero to first feat
 
 ```
 1. Install prerequisites
-   Node 20+, pnpm 9, Docker, VS Code, Claude Code CLI, gh CLI
+   Node 20+, pnpm 10, Docker, VS Code, Claude Code CLI, gh CLI
    On Ubuntu: bash scripts/install-prerequisites-ubuntu.sh
 
 2. Clone the template — replace "my-project-name" with your actual project name
@@ -172,14 +172,14 @@ It controls which rules apply and what `/setup-project` configures.
 ## Stack Overview
 
 **Core (adapt per project type):**
-- Monorepo: Nx 20 + pnpm 9
-- Frontend: React 18 + Vite + TanStack Query v5 + React Hook Form + Zod + Tailwind + Shadcn/ui
+- Monorepo: Nx 20 + pnpm 10
+- Frontend: React 19 + Vite + TanStack Query v5 + React Hook Form + Zod + Tailwind v4 + Shadcn/ui
 - Backend: NestJS 11 + `@anatine/esbuild-decorators`
-- Auth: Better Auth 1.4 + `@thallesp/nestjs-better-auth`
-- Database: Prisma 7 + PostgreSQL 16 (pgvector when rag is enabled)
+- Auth: Better Auth 1.5 + `@thallesp/nestjs-better-auth`
+- Database: Prisma 7.4 + PostgreSQL 17 (pgvector when rag is enabled)
 - Validation: Zod 3 (single source of truth for all types)
 - Testing: **Jest + ts-jest ONLY** (never Vitest — breaks NestJS DI)
-- Linting: **Biome 1.9 ONLY** (never ESLint — deprecated)
+- Linting: **Biome 2 ONLY** (never ESLint — deprecated)
 
 **Key rule:** Apps are THIN. All business logic lives in `libs/domain/`.
 
@@ -294,7 +294,7 @@ Default ports (changed by `/setup-project`):
 - PostgreSQL test: 5443
 - Redis: 6379
 
-When `rag` integration is enabled, `/setup-project` automatically switches to `pgvector/pgvector:pg16`.
+When `rag` integration is enabled, `/setup-project` automatically switches to `pgvector/pgvector:pg17`.
 
 ---
 

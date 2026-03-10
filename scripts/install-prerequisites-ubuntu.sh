@@ -2,7 +2,7 @@
 # install-prerequisites-ubuntu.sh — Install all dev prerequisites on Ubuntu 22.04+
 # Usage: bash scripts/install-prerequisites-ubuntu.sh
 #
-# Installs: Node.js 20, pnpm 9, Docker Engine, Claude Code CLI, gh CLI
+# Installs: Node.js 20, pnpm 10, Docker Engine, Claude Code CLI, gh CLI
 # Note: VS Code is desktop-only — install manually from https://code.visualstudio.com if needed
 
 set -euo pipefail
@@ -30,11 +30,11 @@ else
   ok "Node.js $(node --version) installed"
 fi
 
-# ── pnpm 9 ──────────────────────────────────────────────────────────────────
-if pnpm --version 2>/dev/null | grep -q "^9"; then
+# ── pnpm 10 ─────────────────────────────────────────────────────────────────
+if pnpm --version 2>/dev/null | grep -q "^10"; then
   ok "pnpm $(pnpm --version) already installed"
 else
-  info "Installing pnpm 9..."
+  info "Installing pnpm 10..."
   npm install -g pnpm@latest
   ok "pnpm $(pnpm --version) installed"
 fi

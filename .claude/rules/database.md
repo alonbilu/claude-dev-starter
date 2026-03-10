@@ -3,7 +3,7 @@
 ## Stack
 
 **ORM:** Prisma (latest)
-**Database:** PostgreSQL 16
+**Database:** PostgreSQL 17
 **Optional:** pgvector (enable when `rag` integration is active)
 **Location:** `libs/domain/database/`
 
@@ -166,7 +166,7 @@ beforeEach(async () => {
 Only needed when `rag` integration is enabled in `PROJECT.md`.
 
 When enabled:
-1. Switch `docker-compose.yml` image: `postgres:16` → `pgvector/pgvector:pg16`
+1. Switch `docker-compose.yml` image: `postgres:17` → `pgvector/pgvector:pg17`
 2. Add `extensions = [vector]` to datasource block
 3. Schema example:
 ```prisma

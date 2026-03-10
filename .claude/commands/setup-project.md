@@ -24,13 +24,13 @@ Before starting setup, validate the environment:
    Then run /setup-project again.
    ```
 
-2. **pnpm 9+**
+2. **pnpm 10+**
    ```bash
    pnpm --version
    ```
    If not found: STOP. Tell user:
    ```
-   pnpm 9+ is required (npm/yarn won't work).
+   pnpm 10+ is required (npm/yarn won't work).
    Install with: npm install -g pnpm
    Then run /setup-project again.
    ```
@@ -189,7 +189,7 @@ Here's your default stack — all pre-configured and ready to go:
   State:      TanStack Query v5 (server) + Zustand (client, if needed)
   Forms:      React Hook Form + Zod resolver
   Backend:    NestJS (with Nx workspace)
-  Database:   Prisma + PostgreSQL 16
+  Database:   Prisma + PostgreSQL 17
   Auth:       Better Auth (cookie-based sessions)
   Validation: Zod (single source of truth for types)
   Testing:    Jest (never Vitest — breaks NestJS DI)
@@ -327,7 +327,7 @@ Active layers for your [type] project:
 
   [x] frontend      — React + Vite + Tailwind + Shadcn/ui
   [x] backend       — NestJS + Zod validation
-  [x] database      — Prisma + PostgreSQL 16
+  [x] database      — Prisma + PostgreSQL 17
   [x] auth          — Better Auth (cookie-based sessions)
   [ ] mobile        — React Native (not included by default)
 
@@ -420,7 +420,7 @@ How do you want to run Redis?
 **Concern: pgvector** (only if rag integration is enabled)
 ```
 The 'rag' integration requires pgvector. I'll switch the PostgreSQL image to
-pgvector/pgvector:pg16 in docker-compose.yml. This is compatible with standard Postgres.
+pgvector/pgvector:pg17 in docker-compose.yml. This is compatible with standard Postgres.
 
 Confirm? [yes]:
 ```

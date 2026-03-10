@@ -40,7 +40,7 @@ Copy the relevant sections when initializing a new workspace.
   "name": "your-app-name",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@9.x.x",
+  "packageManager": "pnpm@10.x.x",
   "scripts": {
     "check": "biome check .",
     "check:fix": "biome check --write .",
@@ -49,7 +49,7 @@ Copy the relevant sections when initializing a new workspace.
     "prepare": "husky"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.x.x",
     "@nx/esbuild": "20.x.x",
     "@nx/js": "20.x.x",
     "@nx/nest": "20.x.x",

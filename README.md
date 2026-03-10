@@ -66,7 +66,7 @@ Claude delegates to focused agents with domain-specific context:
 | Tool | Version |
 |------|---------|
 | Node.js | 20+ |
-| pnpm | 9+ |
+| pnpm | 10+ |
 | Docker | Latest |
 | Claude Code CLI | Latest |
 | gh CLI | Latest (optional, for `/create-pr`) |
@@ -108,15 +108,15 @@ The framework defaults to this production-tested stack. During `/setup-project`,
 
 | Layer | Default | Alternatives |
 |-------|---------|-------------|
-| Monorepo | Nx 20 + pnpm 9 | — |
-| Frontend | React 18 + Vite 6 + Tailwind v3 + Shadcn/ui | Vue, Svelte, Next.js |
+| Monorepo | Nx 20 + pnpm 10 | — |
+| Frontend | React 19 + Vite 6 + Tailwind v4 + Shadcn/ui | Vue, Svelte, Next.js |
 | State | TanStack Query v5 + React Hook Form + Zod | SWR, Redux |
 | Backend | NestJS 11 + esbuild | Express, Fastify, Hono |
-| Auth | Better Auth 1.4 | NextAuth, Clerk, Supabase Auth |
-| Database | Prisma 7 + PostgreSQL 16 | Drizzle, TypeORM, Knex |
+| Auth | Better Auth 1.5 | NextAuth, Clerk, Supabase Auth |
+| Database | Prisma 7.4 + PostgreSQL 17 | Drizzle, TypeORM, Knex |
 | Validation | Zod 3 (single source of truth) | — |
 | Testing | Jest + ts-jest | (**never Vitest** — breaks NestJS DI) |
-| Linting | Biome 1.9 | (**never ESLint**) |
+| Linting | Biome 2 | (**never ESLint**) |
 
 **Why React + Vite + NestJS over Next.js?** The default uses separated frontend/backend apps. This gives you full NestJS power (DI, guards, interceptors, queues, WebSockets) and independent scaling. Next.js is better for content/SEO-heavy sites with simple APIs. The setup wizard explains the full comparison if you consider swapping. See [`decisions.md`](.claude/knowledge/decisions.md) for the detailed architecture decision record.
 

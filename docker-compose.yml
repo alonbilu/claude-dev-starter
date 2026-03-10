@@ -1,7 +1,7 @@
 services:
   postgres:
-    # Use pgvector/pgvector:pg16 instead if the 'rag' integration is enabled
-    image: postgres:16
+    # Use pgvector/pgvector:pg17 instead if the 'rag' integration is enabled
+    image: postgres:17
     container_name: YOUR_APP_NAME-postgres
     ports:
       - "5442:5432"
@@ -18,8 +18,8 @@ services:
       retries: 5
 
   postgres-test:
-    # Use pgvector/pgvector:pg16 instead if the 'rag' integration is enabled
-    image: postgres:16
+    # Use pgvector/pgvector:pg17 instead if the 'rag' integration is enabled
+    image: postgres:17
     container_name: YOUR_APP_NAME-postgres-test
     ports:
       - "5443:5432"

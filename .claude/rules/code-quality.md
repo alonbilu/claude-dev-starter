@@ -2,7 +2,7 @@
 
 ## Biome — The Only Linter (Never ESLint)
 
-**Framework:** Biome 1.9+ (NOT ESLint — deprecated)
+**Framework:** Biome 2+ (NOT ESLint — deprecated)
 **Config:** `biome.json` at workspace root
 **Pre-commit:** Automatically runs on staged files via Husky + lint-staged
 
