@@ -214,7 +214,67 @@ Note: Some swaps require manual configuration changes.
 Type the tool category to change, or "done" when finished:
 ```
 
-For each swap, warn about what breaks and what needs manual adjustment.
+For each swap, explain the trade-offs clearly. Here are the key swap explanations:
+
+**Frontend framework: React + Vite vs Next.js**
+
+If the user considers Next.js, explain:
+
+```
+React + Vite + NestJS (default) vs Next.js:
+
+  Default setup (React + Vite frontend, NestJS backend):
+  ✅ Clear separation — frontend and backend are independent apps
+  ✅ Backend flexibility — NestJS gives you decorators, guards, interceptors,
+     dependency injection, module system, BullMQ queues, WebSockets
+  ✅ Independent scaling — deploy frontend (CDN/static) and API separately
+  ✅ Team splitting — frontend and backend devs work independently
+  ✅ Full control over API — versioning, middleware, background jobs
+  ❌ Two servers to run locally (pnpm nx serve api + client)
+  ❌ More initial boilerplate (separate apps, CORS config)
+
+  Next.js (replaces both React + Vite AND NestJS):
+  ✅ One framework — frontend + API routes in one project
+  ✅ SSR/SSG — server-side rendering, static generation, ISR out of the box
+  ✅ SEO — better for content-heavy / public-facing sites
+  ✅ Simpler deploy — single Vercel deploy handles everything
+  ✅ Less boilerplate for simple APIs (API routes vs full NestJS setup)
+  ❌ API routes are thin — no DI, no guards, no interceptors, no module system
+  ❌ Background jobs need a separate service anyway (no BullMQ equivalent)
+  ❌ Coupled deploy — frontend and API scale together
+  ❌ Vendor lock-in risk with Vercel-specific features (middleware, edge runtime)
+  ❌ Harder to split team across frontend/backend boundaries
+
+  Recommendation:
+  • Building a SaaS/platform with complex backend logic, queues, WebSockets?
+    → Stay with React + Vite + NestJS (default)
+  • Building a content site, marketing site, or app with simple CRUD API?
+    → Next.js is a good fit
+  • Need SSR/SEO for public pages but also complex backend?
+    → Use Next.js for the frontend + keep NestJS as a separate API
+
+Which would you like?
+```
+
+If they choose Next.js:
+- Warn: "This replaces both the React+Vite frontend AND the NestJS backend. The template's API rules (api.md), NestJS-specific gotchas, and backend subagents (api-builder) won't apply. You'll need to update .claude/rules/api.md for Next.js API routes and .claude/rules/frontend.md for App Router patterns."
+- Update PROJECT.md frontend to "Next.js" and backend to "Next.js API Routes"
+- Note which rule files need manual updating
+
+**Other swap warnings:**
+
+For NestJS → Express/Fastify:
+- Warn: "Template rules (api.md), gotchas (DI, decorators), and the api-builder agent are NestJS-specific. You'll need to rewrite .claude/rules/api.md and .claude/agents/api-builder.md for your framework."
+
+For Prisma → Drizzle/TypeORM:
+- Warn: "Template rules (database.md), migration workflow, the db-expert agent, and the Prisma auto-generate hook are Prisma-specific. You'll need to update .claude/rules/database.md, .claude/agents/db-expert.md, and .claude/hooks/prisma-generate.sh."
+
+For PostgreSQL → MySQL/SQLite/MongoDB:
+- Warn: "docker-compose.yml, migration scripts, and raw SQL examples assume PostgreSQL. You'll need to update infrastructure config."
+
+For Better Auth → NextAuth/Clerk:
+- Warn: "Auth rules in api.md (AllowAnonymous decorator, cookie sessions, AuthGuard) are Better Auth-specific. Update .claude/rules/api.md for your auth provider."
+
 Then update PROJECT.md and relevant config files accordingly.
 
 If they say **no** (default), proceed with the pre-configured stack.
