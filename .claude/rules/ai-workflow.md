@@ -277,7 +277,53 @@ See ADR-003 in `.claude/knowledge/decisions.md` for the rationale.
 
 ---
 
-## Manual-Only Commands (Review Gate)
+## Planning Checkpoints (Pre-Implementation Review Gates)
+
+The pre-implementation phase has several review checkpoints. After each planning command, Claude STOPS and asks the user to review before they invoke the next command. This is what makes the split planning flow worth its extra commands — each generated artifact gets its own review window.
+
+### Two planning flows
+
+**Combined (shortcut, faster):**
+```
+/new-feature → /discuss-feature → /plan-feature → /start-coding
+                                        ↑ generates spec + dev plan together
+```
+Two review checkpoints (after discussion, after combined plan). Good for XS/S features.
+
+**Split (safer, default for M/L):**
+```
+/new-feature → /discuss-feature → /generate-spec → /plan-execution → /start-coding
+                                        ↑                  ↑
+                                    review spec       review dev plan
+```
+Four review checkpoints. Worth it for anything non-trivial: new DB model, cross-repo work, risky migrations, payment/auth flows.
+
+### The rule: STOP after each planning command — do NOT auto-chain
+
+| Command | After running it | Next command? |
+|---------|------------------|---------------|
+| `/new-feature` | user fills in `1-idea.md` | `/discuss-feature` when ready |
+| `/discuss-feature` | user answers questions, picks approach | `/plan-feature` OR `/generate-spec` when happy |
+| `/generate-spec` | user reviews `3-spec.md` | `/plan-execution` when happy (or `/revise-spec` if off) |
+| `/plan-execution` | user reviews `4-dev-plan.md` | `/start-coding` 1 when happy |
+| `/plan-feature` (combined) | user reviews both `3-spec.md` + `4-dev-plan.md` | `/start-coding` 1 when happy |
+
+The user's manual invocation of the next command IS the approval. Claude never silently advances through planning — each artifact gets its own review window.
+
+### When to use which flow
+
+| Feature size | Flow |
+|--------------|------|
+| XS (2-3 steps, 1 file) | Combined `/plan-feature` |
+| S (3-5 steps, 1-2 new files, minor API) | Combined `/plan-feature` |
+| M (5-8 steps, new endpoint + UI) | Split recommended |
+| L (8-12 steps, new DB model, cross-cutting) | Split strongly recommended |
+
+Not a hard rule — if discussion was thorough and the approach is obvious, combined is fine for M too. When in doubt, split.
+
+---
+
+## Manual-Only Commands (Review Gate — Completion & PR)
 
 These commands control irreversible-ish actions. The rule is: **the user must invoke `/complete-feature` manually** — that's the review gate. After that gate is passed, Claude MAY offer to chain into `/create-pr` since the user's `/complete-feature` invocation already confirms review.
 

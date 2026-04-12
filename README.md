@@ -4,7 +4,7 @@
 
 Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
-**Current version: 1.1.2** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands (Opus 1M vs Sonnet 200k), multi-repo hub variant, `/setup-project` asks about your Claude Max plan, a deferred-features roadmap at [docs/FUTURE-ROADMAP.md](docs/FUTURE-ROADMAP.md), and an explicit safety guardrail keeping `/complete-feature` user-invoked only (it may then offer to auto-run `/create-pr`).
+**Current version: 1.1.3** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands (Opus 1M vs Sonnet 200k), multi-repo hub variant, `/setup-project` asks about your Claude Max plan, a deferred-features roadmap at [docs/FUTURE-ROADMAP.md](docs/FUTURE-ROADMAP.md), `/complete-feature` user-invoked-only review gate (may offer `/create-pr`), and explicit STOP-for-review checkpoints after each planning command (`/discuss-feature`, `/generate-spec`, `/plan-execution`).
 
 ---
 

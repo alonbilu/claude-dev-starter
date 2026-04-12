@@ -46,8 +46,26 @@ Be specific:
 - ✅ "Add `oauthProvider: String?` and `oauthId: String?` fields to User, index on `oauthId`"
 - ❌ "Update user model for OAuth"
 
-When complete:
-- Tell user: "Run `/plan-execution {{FEATURE_NAME}}` to generate the development plan"
+**STOP here for user review.** Do NOT auto-chain into `/plan-execution`. The whole reason for splitting the spec and the dev plan is to give you a review checkpoint between design and execution — don't skip it.
+
+Tell the user:
+
+```
+📋 Spec written to 3-spec.md.
+
+Please review it yourself:
+  - Are the requirements correct and complete?
+  - Is the DB/API/FE breakdown aligned with your intent?
+  - Are any sections marked [TBD] or too vague?
+  - Are the acceptance criteria measurable?
+
+Update anything in 3-spec.md directly, or tell me what to revise.
+
+When the spec is solid, run:
+  /plan-execution {{FEATURE_NAME}}
+```
+
+If the user notices major scope issues, they can run `/revise-spec {{FEATURE_NAME}}` instead of proceeding.
 
 Usage:
 /generate-spec google-oauth

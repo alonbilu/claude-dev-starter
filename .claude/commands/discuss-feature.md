@@ -41,7 +41,23 @@ When discussion is complete:
 - User has answered all questions
 - User has chosen an approach
 - Update `2-discussion.md` status to "Discussion Complete"
-- Tell user: "Run `/generate-spec {{FEATURE_NAME}}` to create the formal specification"
+
+**STOP here for user review.** Do NOT auto-chain into the next command. Tell the user:
+
+```
+📝 Discussion captured in 2-discussion.md.
+
+Please review it yourself:
+  - Does my paraphrased understanding match your intent?
+  - Is the entity analysis complete?
+  - Is the chosen approach correct?
+
+Update anything in 2-discussion.md directly, or tell me what to revise.
+
+When you're happy with it, run ONE of:
+  /plan-feature {{FEATURE_NAME}}    — combined spec + dev plan (faster, best for XS/S)
+  /generate-spec {{FEATURE_NAME}}   — spec only, then you'll review before /plan-execution
+```
 
 Usage:
 /discuss-feature google-oauth

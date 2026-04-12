@@ -61,8 +61,30 @@ Skip steps that don't apply (e.g. no frontend → skip 7–9).
 
 - Identify natural session break points (where to stop between sessions)
 - Create `STATUS.md` with step checklist
-- Tell user: "Run `/start-coding {{FEATURE_NAME}} 1` to begin implementation"
-- Remind user to create a feature branch: `git checkout -b feature/F[XXX]-{{FEATURE_NAME}}`
+
+**STOP here for user review.** Do NOT auto-chain into `/start-coding`. The dev plan is where implementation choices live — step ordering, token budgets per step, per-step commit messages, validation criteria. Worth reading before committing to it.
+
+Tell the user:
+
+```
+🗺️ Dev plan written to 4-dev-plan.md (N steps, complexity M).
+    STATUS.md created for session tracking.
+
+Please review it yourself:
+  - Is the step count reasonable for the complexity?
+  - Does the step ORDER make sense (bottom-up: DB → schemas → services → API → UI → tests)?
+  - Are natural session break points in the right places?
+  - Are "Done when" criteria measurable per step?
+  - Any step too ambitious? Too trivial?
+
+Update anything in 4-dev-plan.md directly, or tell me what to revise.
+
+Before coding, create the feature branch:
+  git switch -c feature/F[XXX]-{{FEATURE_NAME}}
+
+When plan + branch are ready, run:
+  /start-coding {{FEATURE_NAME}} 1
+```
 
 Usage:
 /plan-execution google-oauth

@@ -6,6 +6,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.1.3] — 2026-04-12
+
+Adds explicit STOP-for-review checkpoints after each planning command. No auto-chaining through the planning phase — every artifact gets its own review window.
+
+### Changed
+
+- **`/discuss-feature`** — ends with an explicit "review 2-discussion.md" prompt, then lists both next-step options (combined `/plan-feature` for XS/S, split `/generate-spec` for M/L). No auto-advance.
+- **`/generate-spec`** — ends with an explicit "review 3-spec.md" prompt. Do NOT auto-chain into `/plan-execution`. Mentions `/revise-spec` as the escape hatch if scope issues surface.
+- **`/plan-execution`** — ends with an explicit "review 4-dev-plan.md" prompt. Do NOT auto-chain into `/start-coding`. Reminds user to create the feature branch before coding.
+- **`.claude/rules/ai-workflow.md`** — adds a "Planning Checkpoints (Pre-Implementation Review Gates)" section with a transition table and "when to split vs combine" guidance (XS/S → combined, M/L → split).
+
+### Why
+
+The split planning flow (`/generate-spec` → `/plan-execution`) exists precisely to create a human review checkpoint between "design" (spec) and "execution" (dev plan). Without explicit STOPs, there was ambiguity about whether Claude should prompt-and-continue vs fully hand back control. This patch makes the STOP explicit everywhere in the planning phase — consistent with the existing rules for `/start-coding all → /complete-feature` and `/complete-feature → /create-pr`.
+
+### Flow recap
+
+```
+Combined: /new-feature → /discuss-feature → /plan-feature → /start-coding
+                              ↑                   ↑
+                          2 checkpoints       good for XS/S
+
+Split:    /new-feature → /discuss-feature → /generate-spec → /plan-execution → /start-coding
+                              ↑                   ↑                ↑
+                          4 checkpoints                         good for M/L
+```
+
+---
+
 ## [1.1.2] — 2026-04-12
 
 Refinement of 1.1.1. `/complete-feature` remains user-invoked only (autopilot does NOT chain into it), but AFTER the user invokes `/complete-feature`, Claude may proactively OFFER `/create-pr` via `[y/N]` — the user's deliberate `/complete-feature` invocation is the review gate.
@@ -92,6 +121,7 @@ First public release, baselined retroactively as version 1.0.0. Content included
 ---
 
 [1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
+[1.1.3]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.3
 [1.1.2]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.2
 [1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.0
