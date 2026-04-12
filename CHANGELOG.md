@@ -6,6 +6,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.1.4] — 2026-04-12
+
+Elevates the "update STATUS.md after every step" rule from a bullet in a list to a firm, prominent requirement. Behavior unchanged — docs clarified.
+
+### Changed
+
+- **`.claude/commands/start-coding.md`** — the post-step checklist (lint → test → **update STATUS.md** → commit) is now marked MANDATORY with an explicit enumeration of the STATUS.md fields to update (progress counter, current step, session-log entry with commit hash + time, last-updated date). Autopilot (`all`) repeats the same mandatory order after each step — never skips STATUS.md even in batch mode.
+- Added framing: "STATUS.md is the session-resumption anchor. Skipping its update means the next session's `/resume-feature` loads a stale state. Treat the update as part of the step, not cleanup after."
+- The Rules section now says: "a step that completes without a STATUS.md update is an incomplete step."
+- README + CHANGELOG + VERSION → 1.1.4.
+
+### Why
+
+With auto-compaction, tier-aware resumption, and `/resume-feature` all depending on STATUS.md as the single source of session state, a skipped update was the cheapest-to-prevent failure mode in the system. Making it non-optional closes that gap.
+
+---
+
 ## [1.1.3] — 2026-04-12
 
 Adds explicit STOP-for-review checkpoints after each planning command. No auto-chaining through the planning phase — every artifact gets its own review window.
@@ -121,6 +138,7 @@ First public release, baselined retroactively as version 1.0.0. Content included
 ---
 
 [1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
+[1.1.4]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.4
 [1.1.3]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.3
 [1.1.2]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.2
 [1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1

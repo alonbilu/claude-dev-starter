@@ -62,25 +62,32 @@ This ensures all step commits go to the feature branch, not main.
 4. Show user what you're about to do — confirm before starting
 5. Implement exactly as specified in the dev plan
 6. Run validation checklist as you go
-7. After completing:
+7. **After completing the step (MANDATORY, in this order):**
    - Run `pnpm nx affected -t lint`
    - Run `pnpm nx affected -t test` (if tests were added/modified)
-   - Update `STATUS.md`: check off step, update progress %, add session log entry
+   - **Update `STATUS.md` — ALWAYS, every step, no exceptions:**
+     - Check off the step in the progress table
+     - Update the "Completed" counter (`N / Total`) and progress %
+     - Update `Current step` to the next step
+     - Append a session-log entry: what was done, files changed, commit hash, time
+     - Update `Last Updated` date
+   - Commit: `git add . && git commit -m "feat(F[XXX]): step N — [description]"`
    - Show summary of changes made
 8. Ask: "Step {{STEP_NUMBER}} complete. Continue to Step {{STEP_NUMBER + 1}}?"
 
+**STATUS.md is the session-resumption anchor.** Failing to update it after a step means the next session's `/resume-feature` will load a stale state and Claude won't know what was done. Treat the update as part of the step — not as cleanup after.
+
 **If `{{STEP_NUMBER}}` is `all`:**
 - Execute all remaining uncompleted steps in sequence
-- **After the last step completes, STOP.** Do NOT auto-chain into `/complete-feature` or `/create-pr`. Report "all N steps complete, ready for your review → run `/complete-feature` when you've reviewed the work." The user must invoke `/complete-feature` and `/create-pr` manually after reviewing the actual code output.
-- After each step: run lint + test, update STATUS.md
-- Commit after each step: `git add . && git commit -m "feat(F[XXX]): step N — [description]"`
+- **After EACH step (same mandatory order as above):** lint → test → update `STATUS.md` → commit. Never skip the STATUS.md update even in autopilot — it's what makes resumption possible.
 - Stop and ask if any step fails
+- **After the last step completes, STOP.** Do NOT auto-chain into `/complete-feature` or `/create-pr`. Report "all N steps complete, ready for your review → run `/complete-feature` when you've reviewed the work." The user must invoke `/complete-feature` and `/create-pr` manually after reviewing the actual code output.
 
 ## Rules
 
 - Follow the dev plan exactly — no improvised "improvements"
 - Ask before deciding if the plan is ambiguous
-- Never skip the STATUS.md update
+- **Never skip the STATUS.md update.** It's part of the step, not cleanup — a step that completes without a STATUS.md update is an incomplete step.
 - Write tests in the same step as the code (not after)
 
 Usage:
