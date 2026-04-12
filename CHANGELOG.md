@@ -6,6 +6,33 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.1.6] — 2026-04-12
+
+Phase-based model + thinking switching for x5 Max users. x20 and legacy users are unaffected.
+
+### Added
+
+- **`claude.thinking_mode` field** in `PROJECT.md`. Values: `per-phase` (default for x5) / `always` (default for x20) / `never` (default for legacy) / `ask`.
+- **`/setup-project` Step 3d** — asks for thinking mode preference, with defaults keyed to the chosen plan.
+- **Extended `/setup-project` Step 3c** — when the user picks x5, shows a phase-based switching explainer (planning = Opus, implementation = Sonnet, transitions via `/clear` + restart).
+- **New ai-workflow.md section: "Model & Thinking Switching by Phase (x5 only)"** — rule of thumb, the `/clear`-and-restart pattern, when Claude reminds the user, and when NOT to toggle mid-session (cache invalidation).
+- **Phase-transition reminders** in `/new-feature`, `/discuss-feature`, `/generate-spec`, `/plan-feature`, `/plan-execution`. Each reads `claude.max_plan` from `PROJECT.md` and suggests a model switch (via `/clear` + `/resume-feature`) only if `x5` AND on the "wrong" model for the next phase.
+- **README** — new "Phase-based Model + Thinking Switching" sub-section under Tier-Aware Commands; updated version-at-top line.
+
+### Rationale
+
+Mid-session model toggles **invalidate the prompt cache** (5-min TTL) and waste budget — the opposite of the goal. The `/clear` + restart pattern aligns with the natural phase boundary: discussion is done, save STATUS.md, clear, switch model (and thinking), reload. Phase transitions already feel like natural sessions breaks; this makes them the model-switch points too.
+
+Thinking mode is treated as a separate question from max_plan because on x20 the user may still prefer thinking always-on or always-off independent of model. On x5, `per-phase` is the natural default (correlates with model).
+
+### Not changing
+
+- x20 and legacy users see no new behavior — reminders only fire for `max_plan: x5`.
+- No command API changes. Every phase-transition reminder is additive output, not a behavior block.
+- The Stop-for-review rules from v1.1.3 are unchanged; reminders are appended to those messages.
+
+---
+
 ## [1.1.5] — 2026-04-12
 
 Documentation release — overhauls README.md to describe the full usage flow and include commands that were missing from the reference table.
@@ -156,6 +183,7 @@ First public release, baselined retroactively as version 1.0.0. Content included
 ---
 
 [1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
+[1.1.6]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.6
 [1.1.5]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.5
 [1.1.4]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.4
 [1.1.3]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.3
