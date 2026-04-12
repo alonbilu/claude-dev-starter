@@ -6,6 +6,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.1.7] — 2026-04-12
+
+Makes the `/clear` + switch pattern concrete and proactive for x5 users.
+
+### Added
+
+- **`/start-coding` pre-flight check (x5 only)** — when invoked on Opus with `max_plan: x5`, prompts BEFORE running: "You're on Opus about to run `/start-coding ... {{STEP}}`. Implementation is pattern-following, Sonnet is ~5x cheaper. Continue on Opus anyway? [y/N]". Emphasized for `all` autopilot where savings compound per step. Skipped if already on Sonnet or if `max_plan: x20 | legacy`.
+- **README "When to `/clear` + switch (x5 specifically)" sub-section** under Tier-Aware Commands with:
+  - Short answer: yes, `/clear` + Sonnet + thinking off before `/start-coding all`
+  - Why not mid-session (cache invalidation, thinking-block inconsistency, attention)
+  - Cost math table: ~$10-20 on Opus vs ~$1-2 on Sonnet for 8-step feature
+  - Exact command sequence for the transition
+  - When to STAY on Opus (single step, ambiguous plan, cross-repo reasoning, debugging)
+- **Enriched phase-transition reminder in `/plan-feature`** — explicit mention that `/start-coding all` is where the switch pays off most, pointing to README for cost reasoning.
+
+### Why
+
+v1.1.6 established the pattern but docs were mostly in the rules file. The decision about switching happens at README-discovery time and at `/start-coding`-invocation time. This patch puts the reasoning where the decision happens — in the README (discovery) and in the command itself (proactive suggestion at the exact moment of decision).
+
+---
+
 ## [1.1.6] — 2026-04-12
 
 Phase-based model + thinking switching for x5 Max users. x20 and legacy users are unaffected.
@@ -183,6 +204,7 @@ First public release, baselined retroactively as version 1.0.0. Content included
 ---
 
 [1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
+[1.1.7]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.7
 [1.1.6]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.6
 [1.1.5]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.5
 [1.1.4]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.4
