@@ -93,13 +93,17 @@ Next: /create-pr {{FEATURE_NAME}}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**STOP HERE.** Do NOT auto-run `/create-pr`. Tell the user:
+After archiving + version bump, ask the user:
 ```
-Feature archived and version bumped. Review the diff once more before opening a PR.
-When ready, run:  /create-pr {{FEATURE_NAME}}
+Feature complete and tagged. Ready to open a pull request now?
+I can run /create-pr {{FEATURE_NAME}} for you, or you can run it yourself later.
+
+Open PR now? [y/N]
 ```
 
-The `/create-pr` invocation is user-initiated only. Do not prompt "[y/N]" — even a Yes answer shouldn't trigger auto-chaining. The user should issue `/create-pr` as a separate command after their own review.
+- **If the user says yes** → proceed to `/create-pr {{FEATURE_NAME}}` in the same turn. The user's invocation of `/complete-feature` already signals "I've reviewed the work," so offering and running `/create-pr` on confirmation is fine.
+- **If the user says no or declines** → stop cleanly. They'll invoke `/create-pr` manually when they're ready.
+- **Do NOT skip the question.** The user should have the option to pause here, not just be auto-forwarded.
 
 Usage:
 /complete-feature google-oauth

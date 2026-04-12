@@ -277,26 +277,29 @@ See ADR-003 in `.claude/knowledge/decisions.md` for the rationale.
 
 ---
 
-## Manual-Only Commands (Never Auto-Run)
+## Manual-Only Commands (Review Gate)
 
-These commands **must always be invoked by the user manually**, never auto-chained from another command:
+These commands control irreversible-ish actions. The rule is: **the user must invoke `/complete-feature` manually** — that's the review gate. After that gate is passed, Claude MAY offer to chain into `/create-pr` since the user's `/complete-feature` invocation already confirms review.
 
-- **`/complete-feature`** — archives the feature dir, bumps version, updates CHANGELOG. The user reviews the actual code output before running it.
-- **`/create-pr`** — opens a GitHub PR (public-facing, notifies reviewers, burns CI). User reviews the diff + commits first.
+### The two commands
+
+- **`/complete-feature`** — archives the feature dir, bumps versions, updates CHANGELOG(s). **User-invoked only**, never auto-chained from anywhere.
+- **`/create-pr`** — opens GitHub PR(s) (public-facing, notifies reviewers, burns CI). May be offered by `/complete-feature` with a `[y/N]` prompt; may also be invoked directly by the user at any time.
 
 ### How this affects related commands
 
-- `/start-coding <name> all` — autopilot runs through all remaining steps and then **STOPS**. Report completion, suggest `/complete-feature` as the next user-initiated step.
-- `/complete-feature` — archives and bumps version, then **STOPS**. Report readiness, suggest `/create-pr` as the next user-initiated step.
-- No `[y/N]` prompts that could auto-chain — even a "yes" shouldn't trigger the next command.
+| Transition | Auto-chain? |
+|------------|-------------|
+| `/start-coding ... all` → `/complete-feature` | ❌ No. Autopilot STOPS. Report "all steps complete, ready for your review → run `/complete-feature` when done reviewing." |
+| `/complete-feature` → `/create-pr` | ✅ Yes — but only via an explicit `[y/N]` offer. Don't skip the prompt. |
+| `/start-coding ... N` (specific step) → anything | ❌ No. Report step completion, stop. |
 
-### Why
+### Why the asymmetry
 
-Both commands produce output that's hard to reverse:
-- `/complete-feature` moves docs to archive, bumps `package.json`, appends CHANGELOG — reverting means multiple git operations.
-- `/create-pr` posts to GitHub, sending notifications and triggering CI.
+- The gate between **implementation and completion** is where human review matters most. Autopilot might produce output that looks right in green checkmarks but misses an intent-level bug. `/complete-feature` = "I've read the diff, I'm happy."
+- The gate between **completion and PR** is ceremonial once review has happened. Requiring a second manual command doesn't add safety; it adds friction.
 
-Auto-chaining removes the human review gate. The autopilot is for the implementation steps, where each step is committed and reversible; completion and PR opening are deliberately human-gated.
+Autopilot stays safe for implementation steps because each step is committed and reversible on its own. Completion + PR are protected by a single human gate.
 
 ---
 

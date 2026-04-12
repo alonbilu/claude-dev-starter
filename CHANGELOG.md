@@ -6,19 +6,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
-## [1.1.1] — 2026-04-12
+## [1.1.2] — 2026-04-12
 
-Patch release — safety guardrail around completion and PR commands.
+Refinement of 1.1.1. `/complete-feature` remains user-invoked only (autopilot does NOT chain into it), but AFTER the user invokes `/complete-feature`, Claude may proactively OFFER `/create-pr` via `[y/N]` — the user's deliberate `/complete-feature` invocation is the review gate.
 
 ### Changed
 
-- **`/complete-feature` and `/create-pr` are now explicitly user-invoked only.** Earlier versions said "Ask: Ready to create a PR? [y/N] → if yes, run `/create-pr`", which could be misread as auto-chaining. Clarified that both commands must always be invoked manually by the user after reviewing the actual work. Removed the `[y/N]` auto-chain prompt.
-- `/start-coding <name> all` autopilot now **stops** after the last step instead of suggesting "next" in a way that could auto-continue. Reports completion, suggests `/complete-feature` as the next user-initiated step, and halts.
-- `.claude/rules/ai-workflow.md` — adds a "Manual-Only Commands (Never Auto-Run)" section spelling out the rule and its rationale (irreversible-ish output needs a human review gate).
+- **`/complete-feature` can offer `/create-pr` with `[y/N]`.** On "yes", proceeds to `/create-pr` in the same turn. Restores the approved chain pattern. Explicit `[y/N]` prompt is required — no silent auto-forward.
+- `/start-coding <name> all` autopilot **still stops** after the last step — never auto-chains to `/complete-feature`.
+- `.claude/rules/ai-workflow.md` — "Manual-Only Commands" section refined: completion is the review gate, PR can be offered post-completion.
 
-### Why
+### Why the refinement
 
-Both `/complete-feature` (archives docs, bumps versions, updates CHANGELOG) and `/create-pr` (opens GitHub PRs, notifies reviewers, starts CI) produce hard-to-reverse output. Auto-chaining removes the human review gate that protects against shipping whatever Claude produced without a sanity check. Autopilot stays safe for implementation steps (each step committed + reversible); completion and PR opening are deliberately human-gated.
+1.1.1 was over-strict. The review-gate concern is satisfied by the user's deliberate `/complete-feature` invocation; requiring them to also type `/create-pr` adds friction without added safety. The firm gate stays where it matters: between implementation (autopilot) and completion (human review).
+
+---
+
+## [1.1.1] — 2026-04-12
+
+Patch release — safety guardrail around completion and PR commands. Superseded by 1.1.2's refinement.
+
+### Changed
+
+- `/complete-feature` and `/create-pr` marked user-invoked only. (Later relaxed in 1.1.2 to allow `/complete-feature` → `/create-pr` offer-chaining.)
+- `/start-coding <name> all` autopilot stops after the last step and does not suggest in a way that could auto-continue.
+- `.claude/rules/ai-workflow.md` — adds "Manual-Only Commands (Never Auto-Run)" section.
 
 ---
 
@@ -79,5 +91,7 @@ First public release, baselined retroactively as version 1.0.0. Content included
 
 ---
 
+[1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
+[1.1.2]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.2
 [1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.0
