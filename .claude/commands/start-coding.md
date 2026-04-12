@@ -14,6 +14,34 @@ Start Coding Step {{STEP_NUMBER}} for feature: {{FEATURE_NAME}}
    - If Step {{STEP_NUMBER}} > 1 AND previous step not complete → WARN, ask to confirm
    - If more than 1 step behind → STOP, tell user to complete in order
 
+## Pre-Flight Model Check (x5 only)
+
+Before implementation, read `PROJECT.md` → `claude.max_plan`. If `x5` AND currently on Opus (model ID contains `opus`), **suggest switching to Sonnet BEFORE running the step** — not after:
+
+**Especially important if `{{STEP_NUMBER}}` is `all`** — autopilot multiplies the savings per step.
+
+```
+⚠️  You're on Opus with max_plan: x5 about to run `/start-coding {{FEATURE_NAME}} {{STEP_NUMBER}}`.
+
+   Implementation is pattern-following — Sonnet handles it fine at ~5x lower cost.
+   On autopilot (`all`) the savings compound across every step.
+
+   Recommended BEFORE coding:
+     /update-status {{FEATURE_NAME}}
+     /clear
+     /model sonnet
+     (turn thinking OFF if per-phase mode)
+     /resume-feature {{FEATURE_NAME}}
+     /start-coding {{FEATURE_NAME}} {{STEP_NUMBER}}
+
+   Continue on Opus anyway? [y/N]
+```
+
+- **Yes** → proceed on Opus (user acknowledged the cost)
+- **No or no answer** → stop; user will switch and re-invoke
+
+Skip this check if `max_plan: x20` (Opus is the point) or `legacy` (no Opus access), or if user is already on Sonnet.
+
 ---
 
 ## Branch Setup (Auto-Create if Needed)

@@ -4,7 +4,7 @@
 
 Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
-**Current version: 1.1.6** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands, multi-repo hub variant, `/setup-project` asks about Claude Max plan + thinking mode, `/complete-feature` user-invoked-only review gate, explicit STOP-for-review checkpoints after each planning command, firm "STATUS.md updates every completed step" rule, a full usage-flow walkthrough, and phase-transition reminders for x5 users (planning = Opus, implementation = Sonnet, switch via `/clear` + restart).
+**Current version: 1.1.7** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands, multi-repo hub variant, `/setup-project` asks about Claude Max plan + thinking mode, `/complete-feature` user-invoked-only review gate, explicit STOP-for-review checkpoints after each planning command, firm "STATUS.md updates every completed step" rule, a full usage-flow walkthrough, phase-transition reminders for x5 users (planning = Opus, implementation = Sonnet), and a `/start-coding` pre-flight check + README cost-math for the `/clear` + switch pattern before autopilot.
 
 ---
 
@@ -478,6 +478,44 @@ Claude reminds you at the end of each phase's last command (e.g. at the end of `
 **Legacy / no Max** users: Sonnet-safe throughout.
 
 `/setup-project` also asks for your **thinking mode** preference (`per-phase` / `always` / `never` / `ask`) — stored alongside `max_plan` in `PROJECT.md`. See `.claude/rules/ai-workflow.md` "Model & Thinking Switching by Phase" for the full rule.
+
+### When to `/clear` + switch (x5 specifically)
+
+**Short answer:** yes, `/clear` + switch to Sonnet + thinking off before `/start-coding all`. Don't toggle model mid-session.
+
+**Why not mid-session:**
+- Prompt cache (5-min TTL, ~47k always-loaded tokens) is **model-specific**. Switching models invalidates the cache; next turn reads uncached.
+- Extended thinking blocks from prior turns remain in context after you turn thinking off — behavior gets inconsistent.
+- At long context on Opus 1M, attention quality softens; mid-session toggles add oddness without reducing context.
+
+**Cost math for `/start-coding all` on an 8-step feature:**
+
+| Mode | Per step | Rough total | Context at end |
+|------|---------|-------------|----------------|
+| Stay on Opus 1M + thinking on | ~$1-2 (input+thinking+output) | **~$10-20** | 200-400k, risk of auto-compact |
+| `/clear` + Sonnet + thinking off | ~$0.10-0.20 | **~$1-2** | Comfortably lean |
+
+One transition (`/update-status` + `/clear` + `/resume-feature`) costs ~15k tokens at Sonnet rates. That's recouped after the first 1-2 steps of savings; on `all` autopilot it's paid off many times over.
+
+**The recommended sequence before `/start-coding all`:**
+
+```
+/update-status <feature>     # save STATUS.md — this is your reversible point
+/clear                        # drop cached Opus context
+/model sonnet                 # switch
+# thinking OFF (via UI or settings) — per-phase mode
+/resume-feature <feature>    # reload state on Sonnet
+/start-coding <feature> all
+```
+
+**When to STAY on Opus (not switch):**
+- Single step only (`/start-coding 1`) — one step isn't worth the transition overhead
+- Plan has known ambiguities or judgment calls — keep the reasoning power
+- First feature on the kit — pay for Opus to confirm autopilot behaves before trusting Sonnet
+- You're on x20 — the cost arithmetic doesn't apply
+- Currently debugging a tricky step
+
+`/start-coding` itself will **pre-flight check** on x5: if you invoke it while on Opus (especially with `all`), it suggests the switch BEFORE running and asks "continue on Opus anyway? [y/N]".
 
 ---
 
