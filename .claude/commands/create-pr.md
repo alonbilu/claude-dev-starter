@@ -4,6 +4,8 @@ description: Create a GitHub pull request for a completed feature
 
 Create PR for: {{FEATURE_NAME}}
 
+> **User-invoked only.** Never run this command automatically — e.g., don't chain into it from `/complete-feature`. The user reviews the diff + commits on the feature branch first, then invokes `/create-pr` manually. Opening a PR is a public-facing action that affects reviewers' notifications and CI budgets; it needs explicit user intent.
+
 ## Steps
 
 ### 1. Validate

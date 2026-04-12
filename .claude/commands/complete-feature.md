@@ -4,6 +4,8 @@ description: Complete a feature — archive, version bump, changelog, git tag
 
 Complete feature: {{FEATURE_NAME}}
 
+> **User-invoked only.** Never run this command automatically — e.g., don't chain into it from `/start-coding all`. The user reviews the actual work first, then invokes `/complete-feature` manually. This is an irreversible-ish action (archives docs, bumps version, updates CHANGELOG) and needs a human check on the output.
+
 ## Prerequisites
 
 1. Find `docs/features/active/F[XXX]-{{FEATURE_NAME}}/`
@@ -91,7 +93,13 @@ Next: /create-pr {{FEATURE_NAME}}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Ask: "Ready to create a pull request? [y/N]" → if yes, run `/create-pr {{FEATURE_NAME}}`
+**STOP HERE.** Do NOT auto-run `/create-pr`. Tell the user:
+```
+Feature archived and version bumped. Review the diff once more before opening a PR.
+When ready, run:  /create-pr {{FEATURE_NAME}}
+```
+
+The `/create-pr` invocation is user-initiated only. Do not prompt "[y/N]" — even a Yes answer shouldn't trigger auto-chaining. The user should issue `/create-pr` as a separate command after their own review.
 
 Usage:
 /complete-feature google-oauth

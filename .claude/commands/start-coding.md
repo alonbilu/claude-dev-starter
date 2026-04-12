@@ -71,6 +71,7 @@ This ensures all step commits go to the feature branch, not main.
 
 **If `{{STEP_NUMBER}}` is `all`:**
 - Execute all remaining uncompleted steps in sequence
+- **After the last step completes, STOP.** Do NOT auto-chain into `/complete-feature` or `/create-pr`. Report "all N steps complete, ready for your review → run `/complete-feature` when you've reviewed the work." The user must invoke `/complete-feature` and `/create-pr` manually after reviewing the actual code output.
 - After each step: run lint + test, update STATUS.md
 - Commit after each step: `git add . && git commit -m "feat(F[XXX]): step N — [description]"`
 - Stop and ask if any step fails

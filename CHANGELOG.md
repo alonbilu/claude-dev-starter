@@ -6,6 +6,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.1.1] — 2026-04-12
+
+Patch release — safety guardrail around completion and PR commands.
+
+### Changed
+
+- **`/complete-feature` and `/create-pr` are now explicitly user-invoked only.** Earlier versions said "Ask: Ready to create a PR? [y/N] → if yes, run `/create-pr`", which could be misread as auto-chaining. Clarified that both commands must always be invoked manually by the user after reviewing the actual work. Removed the `[y/N]` auto-chain prompt.
+- `/start-coding <name> all` autopilot now **stops** after the last step instead of suggesting "next" in a way that could auto-continue. Reports completion, suggests `/complete-feature` as the next user-initiated step, and halts.
+- `.claude/rules/ai-workflow.md` — adds a "Manual-Only Commands (Never Auto-Run)" section spelling out the rule and its rationale (irreversible-ish output needs a human review gate).
+
+### Why
+
+Both `/complete-feature` (archives docs, bumps versions, updates CHANGELOG) and `/create-pr` (opens GitHub PRs, notifies reviewers, starts CI) produce hard-to-reverse output. Auto-chaining removes the human review gate that protects against shipping whatever Claude produced without a sanity check. Autopilot stays safe for implementation steps (each step committed + reversible); completion and PR opening are deliberately human-gated.
+
+---
+
 ## [1.1.0] — 2026-04-12
 
 First versioned release with additions from production use. Backward-compatible — no breaking changes.
@@ -63,4 +79,5 @@ First public release, baselined retroactively as version 1.0.0. Content included
 
 ---
 
+[1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
 [1.1.0]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.0

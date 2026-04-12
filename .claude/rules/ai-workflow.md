@@ -277,6 +277,29 @@ See ADR-003 in `.claude/knowledge/decisions.md` for the rationale.
 
 ---
 
+## Manual-Only Commands (Never Auto-Run)
+
+These commands **must always be invoked by the user manually**, never auto-chained from another command:
+
+- **`/complete-feature`** — archives the feature dir, bumps version, updates CHANGELOG. The user reviews the actual code output before running it.
+- **`/create-pr`** — opens a GitHub PR (public-facing, notifies reviewers, burns CI). User reviews the diff + commits first.
+
+### How this affects related commands
+
+- `/start-coding <name> all` — autopilot runs through all remaining steps and then **STOPS**. Report completion, suggest `/complete-feature` as the next user-initiated step.
+- `/complete-feature` — archives and bumps version, then **STOPS**. Report readiness, suggest `/create-pr` as the next user-initiated step.
+- No `[y/N]` prompts that could auto-chain — even a "yes" shouldn't trigger the next command.
+
+### Why
+
+Both commands produce output that's hard to reverse:
+- `/complete-feature` moves docs to archive, bumps `package.json`, appends CHANGELOG — reverting means multiple git operations.
+- `/create-pr` posts to GitHub, sending notifications and triggering CI.
+
+Auto-chaining removes the human review gate. The autopilot is for the implementation steps, where each step is committed and reversible; completion and PR opening are deliberately human-gated.
+
+---
+
 ## One Mission Per Session
 
 Complete ONE feature step (or one focused task) before switching to anything else.
