@@ -13,7 +13,8 @@ configured: false
 ---
 
 ## Project Type
-<!-- Choose one: saas-web-app | api-only | fullstack-web | mobile-app | cli | library | static-site -->
+<!-- Choose one: saas-web-app | api-only | fullstack-web | mobile-app | cli | library | static-site | worker -->
+<!-- `worker` = long-running Node process (BullMQ consumer, queue runner, cron loop, etc.) — no HTTP surface. -->
 type: saas-web-app
 
 ## Active Layers

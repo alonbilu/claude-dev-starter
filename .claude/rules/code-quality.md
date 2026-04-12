@@ -2,8 +2,8 @@
 
 ## Biome — The Only Linter (Never ESLint)
 
-**Framework:** Biome 2+ (NOT ESLint — deprecated)
-**Config:** `biome.json` at workspace root
+**Framework:** Biome 2.4+ (NOT ESLint — deprecated)
+**Config:** `biome.json` at workspace root — uses 2.4-era schema syntax (`files.includes` with negation, `assist.actions.source.organizeImports`, `suspicious.noConsole`). Older installs MUST upgrade or run `npx @biomejs/biome migrate` to avoid parse errors.
 **Pre-commit:** Automatically runs on staged files via Husky + lint-staged
 
 ---

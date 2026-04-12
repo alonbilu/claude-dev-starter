@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.11/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -7,17 +7,21 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": [
-      "node_modules",
-      "dist",
-      ".nx",
-      ".next",
-      "coverage",
-      "*.generated.*",
-      "prisma/migrations",
-      "**/generated/**",
-      "**/*.generated.ts",
-      "**/*.generated.js"
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/.nx",
+      "!**/.next",
+      "!**/coverage",
+      "!**/*.generated.*",
+      "!**/prisma/migrations",
+      "!**/generated",
+      "!**/*.generated.ts",
+      "!**/*.generated.js",
+      "!**/*.tsbuildinfo",
+      "!**/_archive",
+      "!**/module_old"
     ]
   },
   "formatter": {
@@ -27,8 +31,12 @@
     "lineWidth": 100,
     "lineEnding": "lf"
   },
-  "organizeImports": {
-    "enabled": true
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
@@ -51,7 +59,7 @@
       },
       "suspicious": {
         "noExplicitAny": "warn",
-        "noConsoleLog": "off"
+        "noConsole": "off"
       },
       "a11y": {
         "useKeyWithClickEvents": "off",
@@ -78,7 +86,7 @@
   },
   "overrides": [
     {
-      "include": ["*.spec.ts", "*.test.ts", "*.spec.tsx", "*.test.tsx"],
+      "includes": ["**/*.spec.ts", "**/*.test.ts", "**/*.spec.tsx", "**/*.test.tsx"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -88,7 +96,7 @@
       }
     },
     {
-      "include": ["*.dto.ts"],
+      "includes": ["**/*.dto.ts"],
       "linter": {
         "rules": {
           "style": {

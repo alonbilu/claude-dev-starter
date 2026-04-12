@@ -4,6 +4,15 @@ The default starter-kit workflow assumes a single repo (typically an Nx monorepo
 
 This is an OPTION, not a default. Use it only if you already have split repos and a monorepo migration isn't on the table.
 
+> **Before you read on:** there are two multi-repo patterns. Pick the one that fits.
+>
+> | Pattern | When | Doc |
+> |---|---|---|
+> | **Hub** — one repo owns feature docs + workflow commands for all | Repos cooperate on user-facing features (classic FE + BE split for ONE product) | This doc |
+> | **Independent** — each repo fully standalone, its own `.claude/` + feature backlog | Repos share infrastructure (DB, queues) but NOT features — e.g. admin panel + background worker + webhook handler | [INDEPENDENT-MULTI-REPO.md](INDEPENDENT-MULTI-REPO.md) |
+>
+> If unsure: start with Independent. It's simpler and you can always promote one repo to a hub later.
+
 ---
 
 ## The Model

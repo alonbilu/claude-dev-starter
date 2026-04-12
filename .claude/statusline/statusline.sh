@@ -1,6 +1,6 @@
 #!/bin/bash
 # Claude Code custom status line (Max plan optimized)
-# Shows: Context usage with warning | Cache efficiency | Session duration | Branch
+# Shows: Project | Context usage with warning | Cache efficiency | Branch | Session duration
 #
 # Requires: jq, git
 
@@ -13,6 +13,7 @@ GREEN='\033[92m'
 BLUE='\033[94m'
 GRAY='\033[90m'
 CYAN='\033[96m'
+MAGENTA='\033[95m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
@@ -68,6 +69,10 @@ elif (( cache_hit < 80 )); then
   cache_color=$YELLOW
 fi
 
+# --- Project name (basename of the session's root dir; prefer git toplevel if available) ---
+project_root=$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null || pwd)
+project_name=$(basename "$project_root")
+
 # --- Git branch ---
 branch=$(git -C "$(pwd)" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
 
@@ -82,9 +87,9 @@ else
 fi
 
 # --- Output (two lines) ---
-# Line 1: Context | Cache | Branch | Session Duration
-printf "${ctx_color}${BOLD}Ctx: %sk${RESET}${ctx_color} (%s%%)${ctx_indicator}${RESET} | ${cache_color}Cache: %s%%${RESET} | ${GRAY}Branch: %s${RESET} | ${CYAN}Session: %s (%sk tokens)${RESET}\n" \
-  "$ctx_fmt" "${ctx_percent%.*}" "$cache_hit" "$branch" "$duration_display" "$session_fmt"
+# Line 1: Project | Context | Cache | Branch | Session Duration
+printf "${MAGENTA}${BOLD}Project: %s${RESET} | ${ctx_color}${BOLD}Ctx: %sk${RESET}${ctx_color} (%s%%)${ctx_indicator}${RESET} | ${cache_color}Cache: %s%%${RESET} | ${GRAY}Branch: %s${RESET} | ${CYAN}Session: %s (%sk tokens)${RESET}\n" \
+  "$project_name" "$ctx_fmt" "${ctx_percent%.*}" "$cache_hit" "$branch" "$duration_display" "$session_fmt"
 
 # Line 2: Model indicator
 printf "${GRAY}Model: %s${RESET}\n" "$model"

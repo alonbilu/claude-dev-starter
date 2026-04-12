@@ -49,7 +49,7 @@ Copy the relevant sections when initializing a new workspace.
     "prepare": "husky"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.x.x",
+    "@biomejs/biome": "^2.4.0",
     "@nx/esbuild": "20.x.x",
     "@nx/js": "20.x.x",
     "@nx/nest": "20.x.x",

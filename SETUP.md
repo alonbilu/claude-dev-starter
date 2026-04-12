@@ -151,9 +151,10 @@ It controls which rules apply and what `/setup-project` configures.
 | `saas-web-app` | frontend + backend + database + auth | Full-stack web app |
 | `api-only` | backend + database + auth | Backend API only |
 | `fullstack-web` | frontend + backend + database | Web app without billing |
-| `cli` | backend logic only | Command-line tool |
+| `cli` | backend logic only | Command-line tool (one-shot invocations) |
 | `library` | types + utils | Reusable package or SDK |
 | `static-site` | frontend only | Static site / landing page |
+| `worker` | backend + queue (optional DB) | Long-running Node process — BullMQ consumer, queue runner, cron loop. No HTTP. |
 
 ### Optional Integrations
 

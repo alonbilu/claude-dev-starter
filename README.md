@@ -4,7 +4,7 @@
 
 Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
-**Current version: 1.1.8** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands, multi-repo hub variant, `/setup-project` asks about Claude Max plan + thinking mode, `/complete-feature` user-invoked-only review gate, explicit STOP-for-review checkpoints after each planning command, firm "STATUS.md updates every completed step" rule, a full usage-flow walkthrough, phase-transition reminders for x5 users, `/start-coding` pre-flight check + README cost-math for the `/clear` + switch pattern, and corrected Prisma 7 migration + NestJS env-loading gotchas (from a production downstream project).
+**Current version: 1.2.0** — see [CHANGELOG.md](CHANGELOG.md). New in 1.2.0: Biome 2.4 config migration (fixes broken `biome.json` on Biome ≥ 2.1), new `worker` project type for long-running Node processes (BullMQ consumers / queue runners), new `docs/INDEPENDENT-MULTI-REPO.md` describing the "each repo fully independent" pattern as a sibling to the hub variant, statusline now shows `Project: <dirname>` so multi-repo CLI sessions can tell which repo they're rooted at, `*.tsbuildinfo` pre-ignored. See the full entry in CHANGELOG. The 1.1.x line shipped: tier-aware commands, multi-repo hub variant, `/setup-project` asks about Claude Max plan + thinking mode, `/complete-feature` user-invoked-only review gate, explicit STOP-for-review checkpoints after each planning command, Prisma 7 migration + NestJS env-loading gotchas.
 
 ---
 
@@ -519,9 +519,14 @@ One transition (`/update-status` + `/clear` + `/resume-feature`) costs ~15k toke
 
 ---
 
-## Multi-Repo Hub Variant
+## Multi-Repo Variants
 
-Default: one repo (typically Nx monorepo). If your project is split across multiple repos (e.g. separate FE + BE), see [`docs/MULTI-REPO-HUB.md`](docs/MULTI-REPO-HUB.md) for the hub-model variant: one repo owns feature docs, same branch names across repos, per-step repo targeting, cross-linked PRs.
+Default: one repo (typically Nx monorepo). For projects split across multiple repos, the kit supports two patterns:
+
+- **Hub** — see [`docs/MULTI-REPO-HUB.md`](docs/MULTI-REPO-HUB.md). One repo owns feature docs + workflow commands for the whole product. Best for tightly-coupled FE + BE repos.
+- **Independent** — see [`docs/INDEPENDENT-MULTI-REPO.md`](docs/INDEPENDENT-MULTI-REPO.md). Each repo gets its own full `.claude/` + feature backlog; repos coordinate only on shared infrastructure (DB, queues). Best for loosely-coupled services sharing runtime state.
+
+If unsure: start with Independent. It's simpler and you can always promote one repo to a hub later.
 
 ---
 

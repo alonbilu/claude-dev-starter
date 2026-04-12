@@ -6,6 +6,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.2.0] — 2026-04-12
+
+Lessons learned from installing the kit into two downstream projects (admin panel + background worker sharing a database). Bundles one hard bug fix (Biome config broken on current Biome versions), one enum gap (no `worker` project type), and three smaller upgrades (project name in statusline, independent multi-repo doc, `.tsbuildinfo` pre-ignored).
+
+### Fixed
+
+- **`biome.json` migrated to Biome 2.4 schema.** The previous config used 2.0-era keys (`files.ignore`, top-level `organizeImports`, `suspicious.noConsoleLog`, `overrides[].include`) that Biome ≥ 2.1 refuses to parse. Every new clone hit this on first `npm run lint` / `pnpm check`. The config now uses the 2.4 schema: `files.includes` with negation syntax, `assist.actions.source.organizeImports`, `suspicious.noConsole`, `overrides[].includes`. `@biomejs/biome` pin in `package.json.template.md` bumped from `2.x.x` → `^2.4.0`. Downstream users stuck on 2.0-era configs can run `npx @biomejs/biome migrate` to auto-upgrade.
+
+### Added
+
+- **New project type: `worker`.** For long-running Node processes (BullMQ consumers, queue runners, cron loops) with no HTTP surface. `api-only` and `cli` were both wrong fits — `api-only` implies HTTP, `cli` implies one-shot invocation. `worker` captures the actual shape: backend + queue (+ optional DB), no frontend, no `app.listen()`. Added to the enum in `PROJECT.md`, `SETUP.md`, `.claude/commands/setup-project.md` (Q3 list), and `docs/MIGRATION-FROM-EXISTING.md`.
+
+- **New doc `docs/INDEPENDENT-MULTI-REPO.md`.** Sibling to `docs/MULTI-REPO-HUB.md`. Describes the "each repo fully independent" multi-repo pattern: per-repo `.claude/`, per-repo feature backlog (independent F-number counters), coordination only on shared runtime infra (DB schema, queue names, env vars). Sweet spot: 2–4 loosely-coupled services sharing a database or queue — admin panel + background worker + webhook handler. `MULTI-REPO-HUB.md` now has a signpost comparing the two patterns; README points at both from the renamed "Multi-Repo Variants" section.
+
+- **Statusline shows `Project: <dirname>`.** Line 1 of `.claude/statusline/statusline.sh` now starts with a magenta-bold `Project:` indicator (basename of the git toplevel) so CLI sessions in multi-repo workspaces can tell which repo they're rooted at. Doesn't affect the VS Code extension (which doesn't render the custom statusline), but for anyone using Claude Code from a terminal it removes "wait, which repo am I in?" ambiguity.
+
+- **`*.tsbuildinfo` pre-ignored.** Added to both the starter's own `.gitignore` and the `.gitignore` snippet in `docs/MIGRATION-FROM-EXISTING.md` Phase 1. TypeScript incremental build caches are machine-local artifacts that have no business in version control; pre-ignoring prevents the "why is my diff full of tsbuildinfo?" confusion on first `tsc` run.
+
+### Why
+
+All five items came from a real downstream install. The Biome breakage and the missing `worker` type were immediate papercuts that would hit anyone cloning the kit today — fixing them is a strict dependency on the kit being usable. The statusline addition and the independent multi-repo doc were lessons worth codifying: once you run two repos side-by-side you find that (a) telling them apart visually matters, and (b) the existing hub-variant doc doesn't cover the simpler pattern most real multi-repo installs actually want.
+
+No API changes to workflow commands (`new-feature`, `start-coding`, etc.). Fully backwards-compatible for projects that cloned an older version — they keep working unchanged; pulling this version only requires the Biome migrate step if they pinned to 2.x and are on a recent install.
+
+---
+
 ## [1.1.8] — 2026-04-12
 
 Critical Prisma 7 migration gotcha corrected + NestJS env-loading gotcha added. Based on battle-tested knowledge from a production downstream project.

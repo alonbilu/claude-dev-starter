@@ -34,11 +34,16 @@ cp -r /tmp/starter-kit/scripts/ your-project/scripts/
 cat >> your-project/.gitignore << 'EOF'
 # Claude Dev Starter Kit
 .claude/archived-docs/
-.claude/statusline/
 .claude/memory/
+.claude/.last-update-check
+.claude/settings.local.json
+.claude/plans/
 docs/features/archive/
 docs/services/archive/
 docs/modules/archive/
+
+# TypeScript incremental build cache (machine-local)
+*.tsbuildinfo
 EOF
 
 # Commit Phase 1
@@ -55,7 +60,7 @@ Edit `PROJECT.md` to describe your project:
 ```markdown
 configured: true
 
-type: [saas-web-app / api-only / library / etc]
+type: [saas-web-app / api-only / fullstack-web / cli / library / static-site / worker]
 
 Active Layers:
 - [x] frontend

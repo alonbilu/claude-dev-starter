@@ -171,9 +171,12 @@ Based on your description, I'd recommend:
 
   2. api-only        — NestJS + Prisma + PostgreSQL (no frontend)
   3. fullstack-web   — Same as saas-web-app but no billing/auth layer
-  4. cli             — Node.js CLI (no frontend, no database)
+  4. cli             — Node.js CLI (one-shot invocations; no daemon)
   5. library         — Reusable package (types, utils, SDK)
   6. static-site     — React + Vite (no backend)
+  7. worker          — Long-running Node process (BullMQ consumer, queue runner,
+                       cron loop). No HTTP surface, no frontend.
+                       Stack: Node + TS + Prisma + Redis (BullMQ). Testing: Jest.
 
 Enter a number [1]:
 ```
