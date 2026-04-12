@@ -59,6 +59,18 @@ When you're happy with it, run ONE of:
   /generate-spec {{FEATURE_NAME}}   — spec only, then you'll review before /plan-execution
 ```
 
+## Phase-Transition Reminder (x5 only)
+
+Read `PROJECT.md` → `claude.max_plan`. If `x5` AND currently on Sonnet, append to the review prompt:
+
+```
+💡 x5 Max tip: planning (spec + dev plan) benefits from Opus 1M's reasoning.
+   If you're on Sonnet, recommended flow: /clear → /model opus → /resume-feature {{FEATURE_NAME}}
+   → then /plan-feature or /generate-spec.
+```
+
+If `max_plan: x20` or `legacy`, or user is already on Opus, skip the reminder.
+
 Usage:
 /discuss-feature google-oauth
 /discuss-feature invoice-generation

@@ -50,6 +50,18 @@ Next steps:
 - User fills out and saves `1-idea.md`
 - Run `/discuss-feature {{FEATURE_NAME}}` to start discussion phase
 
+## Phase-Transition Reminder (x5 only)
+
+Read `PROJECT.md` → `claude.max_plan`. If `x5` AND currently on Sonnet, append to the next-steps message:
+
+```
+💡 x5 Max tip: discussion + planning work best on Opus 1M. Before /discuss-feature,
+   consider: /update-status if any feature is active → /clear → /model opus
+   See .claude/rules/ai-workflow.md "Model & Thinking Switching by Phase" for the pattern.
+```
+
+If `max_plan: x20` or `legacy`, or user is already on Opus, skip the reminder.
+
 Usage:
 /new-feature google-oauth
 /new-feature invoice-generation

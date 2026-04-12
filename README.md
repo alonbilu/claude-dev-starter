@@ -4,7 +4,7 @@
 
 Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
-**Current version: 1.1.5** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands (Opus 1M vs Sonnet 200k), multi-repo hub variant, `/setup-project` asks about your Claude Max plan, a deferred-features roadmap at [docs/FUTURE-ROADMAP.md](docs/FUTURE-ROADMAP.md), `/complete-feature` user-invoked-only review gate (may offer `/create-pr`), explicit STOP-for-review checkpoints after each planning command, firm "STATUS.md updates every completed step" rule, and a full usage-flow walkthrough in this README.
+**Current version: 1.1.6** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands, multi-repo hub variant, `/setup-project` asks about Claude Max plan + thinking mode, `/complete-feature` user-invoked-only review gate, explicit STOP-for-review checkpoints after each planning command, firm "STATUS.md updates every completed step" rule, a full usage-flow walkthrough, and phase-transition reminders for x5 users (planning = Opus, implementation = Sonnet, switch via `/clear` + restart).
 
 ---
 
@@ -454,6 +454,30 @@ Some commands detect the running model tier (Opus 1M vs Sonnet 200k) and adjust 
 - `legacy` / unset → Sonnet-safe
 
 `/setup-project` asks for `max_plan` once during configuration. See ADR-003 in `.claude/knowledge/decisions.md`.
+
+### Phase-based Model + Thinking Switching (x5 only)
+
+For users on **x5 Max**, planning and implementation have different cost profiles:
+
+| Phase | Model | Thinking | Why |
+|-------|-------|----------|-----|
+| `/discuss-feature`, `/generate-spec`, `/plan-feature`, `/plan-execution` | **Opus 1M** | on | Reasoning-heavy work |
+| `/start-coding` (step or `all`) | **Sonnet 200k** | off | Pattern-following |
+| `/complete-feature`, `/create-pr` | Either | Either | Mechanical |
+
+Claude reminds you at the end of each phase's last command (e.g. at the end of `/plan-execution` before `/start-coding`). The recommended switch pattern is **`/clear` + restart**, not mid-session toggle — mid-session toggles invalidate the prompt cache:
+
+```
+/update-status <feature>      # save progress
+/clear                         # fresh context (phase change = new session)
+/model sonnet                  # or opus
+/resume-feature <feature>      # reload state on new model
+```
+
+**x20 Max** users: stay on Opus 1M throughout. No switching needed.
+**Legacy / no Max** users: Sonnet-safe throughout.
+
+`/setup-project` also asks for your **thinking mode** preference (`per-phase` / `always` / `never` / `ask`) — stored alongside `max_plan` in `PROJECT.md`. See `.claude/rules/ai-workflow.md` "Model & Thinking Switching by Phase" for the full rule.
 
 ---
 

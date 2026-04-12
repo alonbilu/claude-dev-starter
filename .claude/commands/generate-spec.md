@@ -67,6 +67,12 @@ When the spec is solid, run:
 
 If the user notices major scope issues, they can run `/revise-spec {{FEATURE_NAME}}` instead of proceeding.
 
+## Phase-Transition Reminder (x5 only)
+
+Dev plan generation is still planning — stay on Opus. No switch needed between `/generate-spec` and `/plan-execution`. The switch to Sonnet happens at the `/plan-execution` → `/start-coding` boundary, not here.
+
+If the user is currently on Sonnet and `max_plan: x5`, remind them to be on Opus for `/plan-execution` too.
+
 Usage:
 /generate-spec google-oauth
 /generate-spec invoice-generation

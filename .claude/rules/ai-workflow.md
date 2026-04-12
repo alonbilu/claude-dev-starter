@@ -277,6 +277,57 @@ See ADR-003 in `.claude/knowledge/decisions.md` for the rationale.
 
 ---
 
+## Model & Thinking Switching by Phase (x5 only)
+
+For users on the **x5 Max plan** (declared as `claude.max_plan: x5` in `PROJECT.md`), phase transitions are natural points to switch model and/or thinking mode to preserve Opus budget.
+
+**Rule of thumb:**
+
+| Phase | Model | Thinking | Why |
+|-------|-------|----------|-----|
+| `/discuss-feature`, `/generate-spec`, `/plan-feature`, `/plan-execution`, `/revise-spec` | **Opus 1M** | on | Reasoning-heavy work. Opus's quality pays for itself. |
+| `/start-coding` (step-by-step or `all`) | **Sonnet 200k** | off | Pattern-following work. Sonnet is 80% as good for 20% the cost. |
+| `/complete-feature`, `/create-pr`, `/update-status` | Either | Either | Mechanical; don't bother switching. |
+
+**On x20 Max** (`max_plan: x20`) — stay on Opus 1M throughout. No switching needed; budget tolerates it.
+
+**On legacy / no Max** (`max_plan: legacy`) — Sonnet-safe throughout. Opus may not be accessible.
+
+### The `/clear`-and-restart pattern (recommended for x5)
+
+Mid-session model/thinking toggles **invalidate the prompt cache** and can cost more than they save. The recommended pattern is:
+
+```bash
+/update-status <feature>    # save progress
+/clear                       # reset context (phase change = fresh session anyway)
+/model opus                  # or /model sonnet
+# toggle thinking via UI or /thinking if applicable
+/resume-feature <feature>   # reload state on new model
+```
+
+### When Claude reminds you
+
+Tier-aware commands emit phase-transition reminders at the STOP-for-review message at the END of the previous phase:
+
+| End of this command | Reminder fires if | Suggests |
+|---------------------|-------------------|----------|
+| `/new-feature` | `max_plan: x5` AND currently on Sonnet | switch to Opus before `/discuss-feature` |
+| `/discuss-feature` | `max_plan: x5` AND currently on Sonnet | confirm Opus for planning |
+| `/plan-feature`, `/plan-execution` | `max_plan: x5` AND currently on Opus | switch to Sonnet before `/start-coding` (via `/clear` + restart) |
+| `/start-coding all` (last step) | `max_plan: x5` AND currently on Sonnet | optional switch back to Opus for review + `/complete-feature` if desired |
+
+**Reminders follow `claude.thinking_mode`:**
+- `per-phase` → reminders mention both model AND thinking mode
+- `always` → reminders mention only model (keep thinking on)
+- `never` → reminders mention only model (keep thinking off)
+- `ask` → ask the user their thinking preference for the next phase
+
+### When NOT to switch mid-session
+
+Don't toggle model or thinking in the middle of a step or mid-command. Finish what you're doing, run `/update-status`, then `/clear` → switch → `/resume-feature`. Mid-session toggles waste cache.
+
+---
+
 ## Planning Checkpoints (Pre-Implementation Review Gates)
 
 The pre-implementation phase has several review checkpoints. After each planning command, Claude STOPS and asks the user to review before they invoke the next command. This is what makes the split planning flow worth its extra commands — each generated artifact gets its own review window.

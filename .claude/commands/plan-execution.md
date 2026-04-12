@@ -86,6 +86,22 @@ When plan + branch are ready, run:
   /start-coding {{FEATURE_NAME}} 1
 ```
 
+## Phase-Transition Reminder (x5 only)
+
+Read `PROJECT.md` → `claude.max_plan`. If `x5` AND currently on Opus, append:
+
+```
+💡 x5 Max tip: implementation is pattern-following — Sonnet 200k is plenty and cheaper.
+   Recommended flow before /start-coding:
+     /update-status {{FEATURE_NAME}}
+     /clear
+     /model sonnet
+     /resume-feature {{FEATURE_NAME}}
+   See .claude/rules/ai-workflow.md "Model & Thinking Switching by Phase".
+```
+
+If `max_plan: x20`, user stays on Opus throughout — skip. If `legacy`, user is on Sonnet already — skip.
+
 Usage:
 /plan-execution google-oauth
 /plan-execution invoice-generation

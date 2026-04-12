@@ -53,13 +53,21 @@ first_save: 60
 second_save: 85
 
 ## Claude
-<!-- Declared by /setup-project (v1.1.0+). Read by tier-aware commands as a fallback when the running model ID alone doesn't determine tier. -->
-<!-- max_plan values:                                                                                                                         -->
-<!--   x20     — user is always on Opus 1M → commands default to eager context loading                                                         -->
-<!--   x5      — user mixes Opus and Sonnet → lean loading by default, Opus mode when detected                                                 -->
-<!--   legacy  — no Max plan → lean loading (Sonnet-safe)                                                                                       -->
+<!-- Declared by /setup-project. Read by tier-aware commands and phase-transition reminders. -->
+<!--                                                                                          -->
+<!-- max_plan values (v1.1.0+):                                                               -->
+<!--   x20     — always on Opus 1M; no phase-based model switching needed                     -->
+<!--   x5      — mix Opus and Sonnet; phase-based switching via /clear is recommended         -->
+<!--   legacy  — no Max plan; Sonnet-safe throughout                                           -->
+<!--                                                                                          -->
+<!-- thinking_mode values (v1.1.6+):                                                          -->
+<!--   per-phase — on during planning, off during implementation (recommended for x5)         -->
+<!--   always    — extended thinking always on (typical for x20 with budget to spare)         -->
+<!--   never     — extended thinking always off (fastest, tightest budget)                    -->
+<!--   ask       — Claude asks at phase boundaries rather than having a default               -->
 claude:
   max_plan: x5
+  thinking_mode: per-phase
 
 ## Notes
 <!-- Any project-specific notes Claude should always keep in mind -->

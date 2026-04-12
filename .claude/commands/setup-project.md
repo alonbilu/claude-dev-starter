@@ -529,23 +529,66 @@ Only show this if the user changed ports (i.e., they're the type to customize). 
 
 ## Step 3c — Claude Max Plan
 
-Ask once which Claude Max plan the user is on. This becomes the **default tier** for tier-aware commands when model-ID detection alone is ambiguous.
+Ask once which Claude Max plan the user is on. This becomes the **default tier** for tier-aware commands when model-ID detection alone is ambiguous, AND it governs whether phase-based model switching (planning=Opus, implementation=Sonnet) applies.
 
 ```
 Which Claude Max plan are you on?
 
-  1) x20 Max — always using Opus 1M (eager context loading by default)
-  2) x5 Max  — mix of Opus and Sonnet (lean loading by default, Opus unlocks when detected)
-  3) Legacy / not on Max — lean loading (Sonnet-safe)
+  1) x20 Max — always using Opus 1M (eager loading; no phase-based switching)
+  2) x5 Max  — mix of Opus and Sonnet (Opus for planning, Sonnet for implementation)
+  3) Legacy / not on Max — lean loading (Sonnet-safe; no phase switching)
 
 Enter 1/2/3 [default: 2]:
 ```
 
 Record the answer as one of `x20` | `x5` | `legacy` — stored later in `PROJECT.md` under a `claude:` block by Step 4.
 
-**Why:** tier-aware commands (e.g. `/resume-feature`, `/trim-context`) check the running model ID first. If the ID contains `1m`, they load eagerly. If not, they consult this declared default. On x20, the user is almost always on Opus 1M; on x5, they switch between tiers, so "lean by default, eager when Opus is detected" is safer. `legacy` means the user doesn't have Max — unusual but possible for users bringing their own API key; the answer just sets the default bucket.
+**If the user picks x5**, immediately show this explainer:
+
+```
+Got it — x5 Max. A few notes so you get maximum value from your budget:
+
+  • Planning phases (/discuss, /plan-*, /generate-spec, /plan-execution) benefit most
+    from Opus 1M's reasoning. Switch to Opus before running them.
+  • Implementation (/start-coding) is mostly pattern-following; Sonnet is cheaper
+    and plenty capable. Switch back to Sonnet before coding.
+  • Transitions between phases are natural /clear points. The recommended pattern:
+      /update-status <feature>   # save progress
+      /clear                     # reset context (avoids cache invalidation on mid-session switch)
+      /model opus  OR  /model sonnet
+      /resume-feature <feature>  # reload state, now on the right model
+
+  Claude will remind you at phase transitions — you don't have to track this manually.
+```
+
+**Why:** tier-aware commands (e.g. `/resume-feature`, `/trim-context`) check the running model ID first. If the ID contains `1m`, they load eagerly. If not, they consult this declared default. On x20, the user is almost always on Opus 1M; on x5, they switch between tiers deliberately, so "lean by default, eager when Opus is detected" is safer. `legacy` means the user doesn't have Max — unusual but possible for users bringing their own API key; the answer just sets the default bucket.
 
 This question replaces the need to manually re-declare tier preferences per session. It's asked exactly once during setup.
+
+---
+
+## Step 3d — Thinking Mode Preference
+
+Ask how the user wants extended thinking applied. Thinking is a session-level setting (toggling mid-session invalidates prompt cache and wastes budget), so it's best configured once per session based on the phase.
+
+```
+How do you want to use extended thinking (deep reasoning mode)?
+
+  1) Per-phase (recommended for x5) — on during planning, off during implementation.
+     You toggle it via /clear + fresh session at phase boundaries.
+  2) Always on — reasoning quality over budget. Best if you're on x20 and don't mind
+     the latency/cost.
+  3) Always off — you prefer speed and a tighter token budget throughout.
+  4) I'll decide each session — no default, Claude will ask when phase changes.
+
+Enter 1/2/3/4 [default: 1 for x5, 2 for x20, 3 for legacy]:
+```
+
+Record the answer as one of `per-phase` | `always` | `never` | `ask` — stored in `PROJECT.md` under `claude.thinking_mode` by Step 4.
+
+**Why it's separate from the plan question:** the plan controls *which* model you use; thinking mode controls *how deeply the chosen model reasons*. They're correlated but independent. On x20 you might prefer `always` since the budget tolerates it; on x5, `per-phase` matches the model-switching rhythm.
+
+**Note to Claude:** this setting affects phase-transition reminders. If `thinking_mode: per-phase`, reminders at end of discussion/plan will mention switching thinking mode alongside the model. If `always` or `never`, thinking is kept at that setting — only the model is mentioned.
 
 ---
 
@@ -559,10 +602,11 @@ Write the fully populated `PROJECT.md` with:
 - target: (chosen deployment)
 - Ports section with the configured values
 - Context auto-save checkpoints (first_save, second_save)
-- **Claude block** (new in v1.1.0):
+- **Claude block** (expanded in v1.1.6):
   ```yaml
   claude:
-    max_plan: <x20 | x5 | legacy>   # from Step 3c
+    max_plan: <x20 | x5 | legacy>           # from Step 3c
+    thinking_mode: <per-phase | always | never | ask>   # from Step 3d
   ```
 
 This `configured: true` flag is what tells Claude in future sessions that setup is complete.

@@ -79,6 +79,18 @@ Tell user:
 /start-coding {{FEATURE_NAME}} all  ← or auto-pilot all steps
 ```
 
+### Phase-Transition Reminder (x5 only)
+
+Read `PROJECT.md` → `claude.max_plan`. If `x5` AND currently on Opus, append:
+
+```
+💡 x5 Max tip: implementation is pattern-following — Sonnet is plenty.
+   Recommended: /update-status → /clear → /model sonnet → /resume-feature → /start-coding.
+   See .claude/rules/ai-workflow.md "Model & Thinking Switching by Phase".
+```
+
+If `max_plan: x20` or `legacy`, skip.
+
 ---
 
 ## Example
