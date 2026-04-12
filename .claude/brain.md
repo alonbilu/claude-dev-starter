@@ -19,13 +19,14 @@
 
 ---
 
-## Top 5 Gotchas (Always Remember)
+## Top 6 Gotchas (Always Remember)
 
 1. **NEVER `import type` for NestJS injectables** — erased at runtime, DI breaks silently
 2. **Always `@Inject(Service)` explicitly** — esbuild strips decorator metadata inconsistently
-3. **Never Vitest** — breaks NestJS DI (`emitDecoratorMetadata` not preserved)
+3. **Never Vitest for API** — breaks NestJS DI (`emitDecoratorMetadata` not preserved)
 4. **Never `git stash drop` after failed lint-staged** — you lose all working changes
-5. **Prisma 7.x: NO `url = env(...)` in datasource block** — reads DATABASE_URL automatically
+5. **Prisma 7.x migrations run from workspace ROOT with `--schema` flag, NEVER via Nx targets** — no `url = env(...)` in datasource; Nx changes CWD which breaks `.env` lookup. Kill idle DB connections first.
+6. **`@nestjs/config` does NOT populate `process.env`** — add `import 'dotenv/config'` as FIRST import in `main.ts`. Use bracket notation `process.env['VAR']` (esbuild-safe).
 
 → Full details: `.claude/knowledge/stack-gotchas.md`
 

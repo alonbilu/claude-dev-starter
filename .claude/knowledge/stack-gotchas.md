@@ -56,6 +56,40 @@ import 'reflect-metadata';
 import 'reflect-metadata';
 ```
 
+### `@nestjs/config` does NOT populate `process.env` — `dotenv/config` is required
+
+Battle-tested gotcha. `ConfigModule.forRoot()` parses your `.env` file but **only makes values available via `ConfigService.get()`** — it does NOT write to `process.env`. Any code reading `process.env.FOO` directly will get `undefined` in production, even though the key is in `.env`. PM2 also doesn't source `.env` automatically.
+
+**Fix:** add `import 'dotenv/config'` as the **first import** in `apps/api/src/main.ts`:
+
+```typescript
+// apps/api/src/main.ts — FIRST import, before anything else
+import 'dotenv/config';
+import 'reflect-metadata';
+// ... rest of imports
+```
+
+This loads `.env` into `process.env` globally, making both `ConfigService` AND direct `process.env` access work.
+
+**Also:** use bracket notation `process.env['VAR_NAME']` — not dot notation. esbuild replaces `process.env.VAR_NAME` patterns at build time (dead-code elimination of unused envs), but leaves `process.env['VAR_NAME']` alone:
+
+```ts
+// ❌ Dot notation — esbuild may replace/strip at build time
+const key = process.env.MY_API_KEY;
+
+// ✅ Bracket notation — always works at runtime
+const key = process.env['MY_API_KEY'];
+// biome-ignore lint/complexity/useLiteralKeys: esbuild env access
+```
+
+Add the Biome ignore comment on bracket-notation lines; Biome's `useLiteralKeys` rule wants dot notation but that's what we're avoiding.
+
+**Symptom:** env var is defined in `.env`, works locally via `npm run start:dev`, but is `undefined` in the service method at runtime on staging. Almost always this bug.
+
+**Deploy note:** `pm2 restart --update-env` propagates new env vars on re-deploy — `pm2 restart` alone does NOT pick up `.env` changes.
+
+---
+
 ### Body parser MUST be disabled for Better Auth
 ```typescript
 const app = await NestFactory.create(AppModule, { bodyParser: false });
@@ -90,18 +124,49 @@ datasource db {
 }
 ```
 
-### Run Prisma commands from the database lib directory, not workspace root
-Prisma CLI looks for `schema.prisma` relative to CWD. Use Nx to ensure correct CWD:
+### Prisma 7.x migrations: run from project root, NEVER via Nx targets
+
+Battle-tested on a real project. Prisma 7.2+ removes `url = env(...)` from the datasource block and reads `DATABASE_URL` from `.env` in CWD. This looks clean but **breaks Nx-wrapped migration commands** — Nx changes the working directory before invoking Prisma, so `.env` lookup fails and you get:
+
+```
+Error: datasource.url property is required
+```
+
+The correct workflow is raw Prisma CLI **from the workspace root**, with an explicit `--schema` flag pointing at your schema:
 
 ```bash
-# ✅ Correct — Nx applies the right cwd automatically
-pnpm nx run database:migrate:dev --name my_migration
-pnpm nx run database:generate
-pnpm nx run database:seed
+# 1. Kill idle DB connections first (avoids advisory-lock timeouts from stale
+#    Prisma Studio windows, crashed dev servers, etc.)
+docker exec <pg-container> psql -U postgres -d <db_name> -c \
+  "SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
+   WHERE datname = '<db_name>' AND pid <> pg_backend_pid() AND state = 'idle';"
 
-# ❌ Wrong — wrong CWD, schema not found
-prisma migrate dev --name my_migration
+# 2. Run migration from WORKSPACE ROOT with explicit --schema
+npx prisma migrate dev --name add_users --schema=libs/domain/database/prisma/schema.prisma
+
+# 3. Regenerate Prisma Client
+npx prisma generate --schema=libs/domain/database/prisma/schema.prisma
+
+# 4. Sync test DB schema (separate DB on port 5443, no migration history needed)
+npx prisma db push --url="postgresql://postgres:postgres@localhost:5443/<db>_test" \
+  --accept-data-loss --schema=libs/domain/database/prisma/schema.prisma
 ```
+
+**Commands that FAIL (do not use):**
+
+```bash
+pnpm nx run database:migrate:dev --name ...          # ❌ Nx cwd change → .env lookup fails
+cd libs/domain/database && npx prisma migrate dev    # ❌ no .env in subdirectory
+DATABASE_URL=... pnpm nx run database:migrate:dev    # ❌ still fails — Prisma 7.2 config issue
+```
+
+Nx targets for `generate` and `seed` may still work (they don't need `DATABASE_URL` from env), but **migrations require it and must run from root**.
+
+**`db push` vs `migrate deploy`:** test DBs use `db push --url=...` because Prisma 7.2's `migrate deploy` requires `url` in the datasource block (which we deliberately don't have). `db push` accepts `--url` explicitly, bypassing the `.env` requirement.
+
+**Why idle connections matter:** Prisma Studio, crashed dev servers, and forgotten `psql` sessions hold advisory locks. Migrations hang forever waiting for the lock. Always terminate idle connections before migrating.
+
+A PostToolUse hook (`.claude/hooks/prisma-generate.sh`) auto-regenerates the client after `schema.prisma` edits during a Claude session. Edits made outside a hooked session still need manual regeneration.
 
 ### Prisma custom output path — regenerate after EVERY schema change
 If your schema uses a custom `output` in the `generator` block:
