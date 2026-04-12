@@ -6,6 +6,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.1.5] — 2026-04-12
+
+Documentation release — overhauls README.md to describe the full usage flow and include commands that were missing from the reference table.
+
+### Changed
+
+- **README Commands Reference table** — adds `/generate-spec` and `/plan-execution` (the split-flow planning commands). Adds a "Planning flow choice" diagram showing when to use combined vs split. Clarifies `/complete-feature` as user-invoked-only.
+- **New "Usage Flow — First Feature End-to-End" section** in README — 9-phase walkthrough with command examples, STOP markers at review gates, and explicit mentions of both planning flows (combined `/plan-feature` and split `/generate-spec` → `/plan-execution`).
+- **New "Gate Map" section** — transition table showing every advance point (🛑 hard stop / ⚙️ auto / ✅ offered), plus a mental-shortcut summary.
+- **Replaces the old short "How the Feature Workflow Works" section** which only showed the combined flow and omitted review gates.
+- VERSION → 1.1.5.
+
+### Why
+
+Previous README only listed `/plan-feature` in the commands table even after 1.1.3 elevated `/generate-spec` and `/plan-execution` with their own review checkpoints. New developers reading the README couldn't discover the split flow. This fixes that and makes the full lifecycle legible without having to read multiple docs.
+
+---
+
 ## [1.1.4] — 2026-04-12
 
 Elevates the "update STATUS.md after every step" rule from a bullet in a list to a firm, prominent requirement. Behavior unchanged — docs clarified.
@@ -138,6 +156,7 @@ First public release, baselined retroactively as version 1.0.0. Content included
 ---
 
 [1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
+[1.1.5]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.5
 [1.1.4]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.4
 [1.1.3]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.3
 [1.1.2]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.2

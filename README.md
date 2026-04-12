@@ -4,7 +4,7 @@
 
 Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
-**Current version: 1.1.4** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands (Opus 1M vs Sonnet 200k), multi-repo hub variant, `/setup-project` asks about your Claude Max plan, a deferred-features roadmap at [docs/FUTURE-ROADMAP.md](docs/FUTURE-ROADMAP.md), `/complete-feature` user-invoked-only review gate (may offer `/create-pr`), explicit STOP-for-review checkpoints after each planning command, and a firm "STATUS.md updates every completed step" rule.
+**Current version: 1.1.5** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands (Opus 1M vs Sonnet 200k), multi-repo hub variant, `/setup-project` asks about your Claude Max plan, a deferred-features roadmap at [docs/FUTURE-ROADMAP.md](docs/FUTURE-ROADMAP.md), `/complete-feature` user-invoked-only review gate (may offer `/create-pr`), explicit STOP-for-review checkpoints after each planning command, firm "STATUS.md updates every completed step" rule, and a full usage-flow walkthrough in this README.
 
 ---
 
@@ -134,13 +134,27 @@ The rules, gotchas, and patterns are tuned for this stack. If you swap tools, up
 |---------|---------|
 | `/new-feature [name]` | Start a new feature — capture the idea |
 | `/discuss-feature [name]` | Explore approach — Claude asks questions |
-| `/plan-feature [name]` | Generate spec + dev plan |
-| `/start-coding [name] N` | Implement step N |
-| `/start-coding [name] all` | Autopilot — implement all remaining steps |
-| `/update-status [name]` | **MANDATORY** — update progress at end of every session |
-| `/resume-feature [name]` | Resume from a previous session |
-| `/complete-feature [name]` | Archive + version bump |
-| `/create-pr` | Create GitHub PR |
+| `/plan-feature [name]` | **Combined** — generate spec + dev plan in one go (best for XS/S features) |
+| `/generate-spec [name]` | **Split flow** — generate spec only, STOP for review |
+| `/plan-execution [name]` | **Split flow** — generate dev plan from approved spec, STOP for review |
+| `/start-coding [name] N` | Implement step N — auto-updates STATUS.md after completion |
+| `/start-coding [name] all` | Autopilot — runs remaining steps (hard STOPS before `/complete-feature`) |
+| `/update-status [name]` | Mid-session or end-of-session status save (hook nags if skipped) |
+| `/resume-feature [name]` | Resume from a previous session (tier-aware: Opus loads full dir, Sonnet loads cursor) |
+| `/revise-spec [name]` | Mid-feature spec revision when requirements change |
+| `/complete-feature [name]` | **User-invoked only** — archive + version bump; may offer `/create-pr` via `[y/N]` |
+| `/create-pr [name]` | Create GitHub PR (or run via `/complete-feature`'s offer) |
+
+**Planning flow choice:**
+
+```
+XS/S features:  /new-feature → /discuss-feature → /plan-feature → /start-coding
+M/L features:   /new-feature → /discuss-feature → /generate-spec → /plan-execution → /start-coding
+                                                       ↑                 ↑
+                                                 STOP for review    STOP for review
+```
+
+See `.claude/rules/ai-workflow.md` "Planning Checkpoints" for the full table and when to use each.
 
 ### Quick Actions (No Feature Docs)
 
@@ -186,34 +200,171 @@ gh pr merge 42 --delete-branch   # Merge + cleanup
 
 ---
 
-## How the Feature Workflow Works
+## Usage Flow — First Feature End-to-End
+
+Once `/setup-project` has configured the kit (see [Quick Start](#quick-start) above), here's what using it actually looks like from a developer's perspective.
+
+### Phase 1 — Capture the idea
 
 ```
-/new-feature user-auth
-  → Creates docs/features/active/F001-user-auth/1-idea.md
-
-/discuss-feature user-auth
-  → Claude asks questions, proposes approaches
-  → Creates 2-discussion.md
-
-/plan-feature user-auth
-  → Assesses complexity (XS/S/M/L), generates spec + dev plan
-  → Creates 3-spec.md, 4-dev-plan.md, STATUS.md, CONTEXT.md
-  → Creates feature branch
-
-/start-coding user-auth 1        # step-by-step
-/start-coding user-auth all      # or autopilot
-
-/complete-feature user-auth      # archive + version bump
-/create-pr                       # open GitHub PR
-gh pr merge 42 --delete-branch   # merge when approved
+/new-feature google-oauth
 ```
 
-**Step sizing:** XS (2-3 steps), S (3-5), M (5-8), L (8-12) — Claude sizes automatically.
+Claude creates `docs/features/active/F001-google-oauth/1-idea.md` with a template. **STOP — your turn.** You edit the file (problem, user stories, success criteria, complexity estimate), save, tell Claude you're done.
 
-**Session resumption:** `/resume-feature [name]` loads CONTEXT.md + STATUS.md + branch health check (~15-20k tokens).
+### Phase 2 — Discuss
 
-**Multi-session continuity:** `/update-status` at end of every session is what makes 10+ session features work.
+```
+/discuss-feature google-oauth
+```
+
+Claude reads your idea and creates `2-discussion.md` with its paraphrased understanding, clarifying questions, and 2-3 proposed approaches with tradeoffs. **STOP — your turn.** Answer questions, pick an approach, update the doc.
+
+When discussion is complete, Claude prompts:
+
+> 📝 Discussion captured. Review 2-discussion.md yourself. When happy, run ONE of:
+> - `/plan-feature google-oauth` — combined spec + dev plan (faster, best for XS/S)
+> - `/generate-spec google-oauth` — spec only, then review before `/plan-execution` (safer for M/L)
+
+### Phase 3 — Plan (choose: combined or split)
+
+**Combined (XS/S features):**
+
+```
+/plan-feature google-oauth
+```
+
+Claude generates `3-spec.md` + `4-dev-plan.md` + `STATUS.md` + `CONTEXT.md` back-to-back. You review both artifacts before `/start-coding`.
+
+**Split (M/L features — recommended for non-trivial work):**
+
+```
+/generate-spec google-oauth
+```
+Claude creates `3-spec.md` (requirements, schema, API, UI, validation, tests, acceptance criteria). **🛑 HARD STOP** — Claude asks you to review before continuing.
+
+You read the spec, fix anything off. Then:
+
+```
+/plan-execution google-oauth
+```
+
+Claude creates `4-dev-plan.md` (atomic steps) + `STATUS.md` + `CONTEXT.md`. **🛑 HARD STOP** — review the plan, verify step ordering and "done when" criteria. Create the feature branch:
+
+```bash
+git switch -c feature/F001-google-oauth
+```
+
+### Phase 4 — Implement
+
+**Step-by-step (cautious, default):**
+
+```
+/start-coding google-oauth 1
+# Claude implements → lint/test → updates STATUS.md → commits → STOPS
+# You review the diff
+/start-coding google-oauth 2
+```
+
+**Autopilot (faster, once you trust the plan):**
+
+```
+/start-coding google-oauth all
+```
+
+Claude runs every remaining step; after each it runs lint → test → **updates STATUS.md** → commits. **🛑 After the last step, HARD STOP** — Claude reports:
+
+> All N steps complete, ready for your review. Run `/complete-feature google-oauth` when you've reviewed the work.
+
+> **STATUS.md is updated automatically after every completed step** — never skipped, even in autopilot. This is what makes `/resume-feature` work in the next session.
+
+### Phase 5 — Save progress (if pausing)
+
+```
+/update-status google-oauth
+```
+
+Always before ending a session with active feature work. The Stop hook will nag if you forget.
+
+### Phase 6 — Resume later (new session)
+
+```
+/resume-feature google-oauth
+```
+
+**Tier-aware:** on Opus 1M, Claude reads the full feature directory; on Sonnet 200k, it reads `CONTEXT.md` + `STATUS.md` + the current step's section. Continue with `/start-coding google-oauth N`.
+
+### Phase 7 — The review gate (user-invoked)
+
+After personally reviewing the diffs, running the feature, testing in a browser:
+
+```
+/complete-feature google-oauth
+```
+
+Claude verifies all steps ✅, bumps version, updates CHANGELOG, archives the feature dir, commits. **Then offers:**
+
+> Feature complete and archived. Ready to open a PR now?
+> Open PR? **[y/N]**
+
+### Phase 8 — PR
+
+**From the offer:** answer `y` → Claude runs `/create-pr` in the same turn.
+
+**Later, manually:**
+
+```
+/create-pr google-oauth
+```
+
+### Phase 9 — GitHub (your terminal)
+
+```bash
+gh pr view 42
+gh pr checks 42
+gh pr review 42 --approve
+gh pr merge 42 --delete-branch
+```
+
+---
+
+## The Gate Map
+
+Where Claude hands control back to you (HARD STOP) vs auto-advances:
+
+| Transition | Advance? |
+|------------|----------|
+| `/new-feature` → `/discuss-feature` | 🛑 you invoke after editing `1-idea.md` |
+| `/discuss-feature` → `/plan-feature` OR `/generate-spec` | 🛑 you invoke after reviewing `2-discussion.md` |
+| `/generate-spec` → `/plan-execution` | 🛑 you invoke after reviewing `3-spec.md` |
+| `/plan-execution` → `/start-coding 1` | 🛑 you invoke after reviewing `4-dev-plan.md` |
+| `/plan-feature` → `/start-coding 1` | 🛑 you invoke after reviewing both artifacts |
+| `/start-coding N` → `/start-coding N+1` | ⚙️ auto (between step commits) OR step-by-step stops between each |
+| `/start-coding all` → `/complete-feature` | 🛑 **hard stop**, Claude reports; you invoke after reviewing implementation |
+| `/complete-feature` → `/create-pr` | ✅ **offered `[y/N]`** — explicit prompt, you choose |
+| `/create-pr` → merged | 🛑 you run `gh pr merge` |
+
+**Two firm gates**: planning artifacts (each one), and autopilot-finished → completion. **One soft gate**: completion → PR (explicit offer).
+
+### Mental shortcut
+
+> **Planning phase** = every command is a pause-for-review. You invoke the next one.
+>
+> **Implementation phase** = autopilot through reversible committed steps. STATUS.md auto-updates after each step.
+>
+> **Completion phase** = one firm user gate (`/complete-feature`), then an offered `[y/N]` for the PR.
+
+---
+
+## Sizing & Timings
+
+**Step sizing:** XS (2-3 steps), S (3-5), M (5-8), L (8-12) — Claude sizes automatically based on the spec's complexity.
+
+**Session resumption cost:**
+- Opus 1M: ~40-60k tokens (full feature dir)
+- Sonnet 200k: ~15-20k tokens (CONTEXT + STATUS + current step)
+
+**Multi-session continuity:** `/update-status` at end of every session + automatic STATUS.md updates after each step = 10+ session features work without losing context.
 
 ---
 
