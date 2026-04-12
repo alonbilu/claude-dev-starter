@@ -6,6 +6,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.1.8] — 2026-04-12
+
+Critical Prisma 7 migration gotcha corrected + NestJS env-loading gotcha added. Based on battle-tested knowledge from a production downstream project.
+
+### Changed
+
+- **Prisma migrations gotcha REPLACED.** Previous advice ("use Nx targets") was wrong for Prisma 7.x. The correct workflow is **raw `npx prisma migrate dev` from the workspace root with explicit `--schema=...` flag** — Nx targets fail because Nx changes CWD and `.env` (containing `DATABASE_URL`) is only at root. Also documents: killing idle DB connections before migrating (avoids advisory-lock timeouts), `db push` vs `migrate deploy` for test DBs.
+- **Top Gotchas updated** — brain.md "Top 5" → "Top 6". Prisma entry now mentions the root + `--schema` rule, not just the "no url in datasource" change. New entry: `@nestjs/config` + `process.env`.
+
+### Added
+
+- **New gotcha: `@nestjs/config` does NOT populate `process.env`.** `ConfigModule.forRoot()` only makes values available via `ConfigService.get()` — code reading `process.env.FOO` directly gets `undefined`. Fix: `import 'dotenv/config'` as the FIRST import in `main.ts`. Also use bracket notation `process.env['VAR']` (esbuild-safe, dot notation can be stripped at build time). Symptom: works locally, breaks on staging.
+
+### Why
+
+These are both real failure modes that cost real debugging hours on a production project. The Prisma one actively contradicts what the kit previously recommended — keeping the incorrect advice would route users into the same 2-hour debugging session the downstream project went through. The env-loading gotcha is the canonical "works locally, breaks on staging" fail — worth a first-class entry.
+
+Both gotchas are entirely project-agnostic: they apply to any Prisma 7.x + Nx monorepo and any NestJS project respectively.
+
+---
+
 ## [1.1.7] — 2026-04-12
 
 Makes the `/clear` + switch pattern concrete and proactive for x5 users.
@@ -204,6 +225,7 @@ First public release, baselined retroactively as version 1.0.0. Content included
 ---
 
 [1.1.1]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.1
+[1.1.8]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.8
 [1.1.7]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.7
 [1.1.6]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.6
 [1.1.5]: https://github.com/alonbilu/claude-dev-starter/releases/tag/v1.1.5

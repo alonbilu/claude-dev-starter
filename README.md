@@ -4,7 +4,7 @@
 
 Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
-**Current version: 1.1.7** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands, multi-repo hub variant, `/setup-project` asks about Claude Max plan + thinking mode, `/complete-feature` user-invoked-only review gate, explicit STOP-for-review checkpoints after each planning command, firm "STATUS.md updates every completed step" rule, a full usage-flow walkthrough, phase-transition reminders for x5 users (planning = Opus, implementation = Sonnet), and a `/start-coding` pre-flight check + README cost-math for the `/clear` + switch pattern before autopilot.
+**Current version: 1.1.8** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.x: tier-aware commands, multi-repo hub variant, `/setup-project` asks about Claude Max plan + thinking mode, `/complete-feature` user-invoked-only review gate, explicit STOP-for-review checkpoints after each planning command, firm "STATUS.md updates every completed step" rule, a full usage-flow walkthrough, phase-transition reminders for x5 users, `/start-coding` pre-flight check + README cost-math for the `/clear` + switch pattern, and corrected Prisma 7 migration + NestJS env-loading gotchas (from a production downstream project).
 
 ---
 
