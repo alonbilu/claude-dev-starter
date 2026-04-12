@@ -527,6 +527,28 @@ Only show this if the user changed ports (i.e., they're the type to customize). 
 
 ---
 
+## Step 3c — Claude Max Plan
+
+Ask once which Claude Max plan the user is on. This becomes the **default tier** for tier-aware commands when model-ID detection alone is ambiguous.
+
+```
+Which Claude Max plan are you on?
+
+  1) x20 Max — always using Opus 1M (eager context loading by default)
+  2) x5 Max  — mix of Opus and Sonnet (lean loading by default, Opus unlocks when detected)
+  3) Legacy / not on Max — lean loading (Sonnet-safe)
+
+Enter 1/2/3 [default: 2]:
+```
+
+Record the answer as one of `x20` | `x5` | `legacy` — stored later in `PROJECT.md` under a `claude:` block by Step 4.
+
+**Why:** tier-aware commands (e.g. `/resume-feature`, `/trim-context`) check the running model ID first. If the ID contains `1m`, they load eagerly. If not, they consult this declared default. On x20, the user is almost always on Opus 1M; on x5, they switch between tiers, so "lean by default, eager when Opus is detected" is safer. `legacy` means the user doesn't have Max — unusual but possible for users bringing their own API key; the answer just sets the default bucket.
+
+This question replaces the need to manually re-declare tier preferences per session. It's asked exactly once during setup.
+
+---
+
 ## Step 4 — Write PROJECT.md
 
 Write the fully populated `PROJECT.md` with:
@@ -537,6 +559,11 @@ Write the fully populated `PROJECT.md` with:
 - target: (chosen deployment)
 - Ports section with the configured values
 - Context auto-save checkpoints (first_save, second_save)
+- **Claude block** (new in v1.1.0):
+  ```yaml
+  claude:
+    max_plan: <x20 | x5 | legacy>   # from Step 3c
+  ```
 
 This `configured: true` flag is what tells Claude in future sessions that setup is complete.
 Without it, Claude will keep showing the first-time setup prompt every session.

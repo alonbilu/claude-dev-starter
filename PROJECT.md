@@ -52,5 +52,14 @@ redis: 6379
 first_save: 60
 second_save: 85
 
+## Claude
+<!-- Declared by /setup-project (v1.1.0+). Read by tier-aware commands as a fallback when the running model ID alone doesn't determine tier. -->
+<!-- max_plan values:                                                                                                                         -->
+<!--   x20     — user is always on Opus 1M → commands default to eager context loading                                                         -->
+<!--   x5      — user mixes Opus and Sonnet → lean loading by default, Opus mode when detected                                                 -->
+<!--   legacy  — no Max plan → lean loading (Sonnet-safe)                                                                                       -->
+claude:
+  max_plan: x5
+
 ## Notes
 <!-- Any project-specific notes Claude should always keep in mind -->

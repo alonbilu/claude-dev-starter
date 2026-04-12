@@ -20,7 +20,17 @@ Read `.claude/brain.md` before doing anything else. Note:
 - Known gotchas relevant to today's task
 - Recent architectural decisions
 
-**Step 3: Check active features**
+**Step 3: Know your tier**
+Check the running model ID. If it contains `1m` (e.g. `claude-opus-4-6[1m]`), you're on **Opus 1M** — wider context budget; tier-aware commands load eagerly. Otherwise assume **Sonnet 200k** — stay lean.
+
+If model-ID detection is ambiguous, consult `PROJECT.md` → `claude.max_plan`:
+- `x20` → user's default is Opus 1M; lean toward eager loading
+- `x5` → user often switches to Sonnet; lean toward conservative loading
+- `legacy` or unset → Sonnet-safe default
+
+See "Tier Awareness" below for the full behavior table.
+
+**Step 4: Check active features**
 ```bash
 /view-features   # or check docs/FEATURE-STATUS.md
 ```
@@ -228,6 +238,42 @@ Active feature detected: [name]. Running /update-status first to save progress.
 ```
 
 **Rule of thumb:** `/compact` to squeeze more out of a session. `/clear` when switching tasks. The two-checkpoint system ensures status is always saved before auto-compaction can hit.
+
+---
+
+## Tier Awareness
+
+Some commands detect the running model tier (Opus 1M vs Sonnet 200k) and branch their behavior. The design principle: **default to 200k-safe** so Sonnet sessions aren't punished; **unlock deeper loading on Opus 1M** for free when it's available.
+
+### Detection
+
+Primary signal: the running model ID. If it contains `1m` — treat as Opus 1M tier. Otherwise Sonnet 200k.
+
+Secondary signal (fallback when model ID is ambiguous): `PROJECT.md` → `claude.max_plan`:
+- `x20` — user's default is Opus 1M
+- `x5` — user mixes Opus and Sonnet; default to the leaner path
+- `legacy` or unset — Sonnet-safe
+
+### Tier-aware commands
+
+| Command | Sonnet 200k behavior | Opus 1M behavior |
+|---------|---------------------|------------------|
+| `/resume-feature` | Loads `CONTEXT.md` + `STATUS.md` + current-step section of dev plan only | Loads the full feature directory (all of `1-idea`, `2-discussion`, `3-spec`, `4-dev-plan`, `STATUS`, `CONTEXT`) |
+| `/trim-context` | Budget 200k; warning at >60k baseline | Budget 1M; warning at >250k baseline |
+
+Context auto-save thresholds (`first_save` / `second_save` in PROJECT.md) are NOT tier-aware by default — they measure percentage of current budget either way. You can set looser thresholds on Opus 1M manually if you want fewer interrupts.
+
+### Non-tier-aware (intentional)
+
+Core commands (`/new-feature`, `/plan-feature`, `/start-coding`, `/update-status`, etc.) don't branch on tier — their I/O patterns are the same regardless.
+
+### When tier matters for YOU (the dev)
+
+- If you're on `x20` Max, everything's eager loaded automatically. No action needed.
+- If you're on `x5` Max, `/trim-context` reports tighter thresholds. Run it more often (monthly).
+- Switching a live session Sonnet → Opus: no command state change needed; the next tier-aware command reads the new model ID and behaves accordingly.
+
+See ADR-003 in `.claude/knowledge/decisions.md` for the rationale.
 
 ---
 

@@ -218,3 +218,9 @@ If you need Services or SubModules:
 - You'll know it (clear backend-only process, or explicit module structure)
 - Document which pattern you're using in your project README
 - Reference this guide in `brain.md`
+
+---
+
+## Multi-Repo Projects
+
+The patterns above assume a single repo. If your project lives across multiple repos (e.g. separate frontend + backend), see [`MULTI-REPO-HUB.md`](MULTI-REPO-HUB.md) for the hub-model variant. Short version: one repo owns the feature docs, every repo uses matching branch names, each dev-plan step declares a target repo, and `/create-pr` opens one PR per repo touched.

@@ -4,6 +4,8 @@
 
 Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
+**Current version: 1.1.0** — see [CHANGELOG.md](CHANGELOG.md). New in 1.1.0: tier-aware commands (Opus 1M vs Sonnet 200k), multi-repo hub variant, `/setup-project` asks about your Claude Max plan, and a deferred-features roadmap at [docs/FUTURE-ROADMAP.md](docs/FUTURE-ROADMAP.md).
+
 ---
 
 ## What Problem This Solves
@@ -262,7 +264,12 @@ Encoded in `CLAUDE.md` and enforced by rules files:
 
 ## Context Budget
 
-Always-loaded files cost ~47k tokens per session (~26% of a 180k context window):
+Always-loaded files cost ~47k tokens per session. Tier-aware commands (v1.1.0+) decide on **load depth per-tier**:
+
+| Tier | Budget | Baseline | Usage |
+|------|--------|----------|-------|
+| Opus 1M | 1,000,000 | ~47k | ~4.7% |
+| Sonnet 200k | 200,000 | ~47k | ~23% |
 
 | Files | Tokens |
 |-------|--------|
@@ -275,7 +282,44 @@ Commands, knowledge files, and agents are loaded on-demand only — keeping the 
 
 **Post-setup trim:** After `/setup-project` completes, the wizard automatically removes setup-only content from always-loaded files (~2k tokens), deletes SETUP.md (~14k tokens), and removes the setup command itself (~8k tokens) — saving ~24k tokens total. This is automatic — no manual work needed.
 
-Run `/trim-context` every few weeks to prevent growth over time.
+Run `/trim-context` every few weeks (monthly on Sonnet, quarterly on Opus 1M) to prevent growth over time. `/trim-context` reports against your current tier's budget automatically.
+
+---
+
+## Tier-Aware Commands
+
+Some commands detect the running model tier (Opus 1M vs Sonnet 200k) and adjust their behavior:
+
+| Command | Sonnet 200k | Opus 1M |
+|---------|-------------|---------|
+| `/resume-feature` | Loads `CONTEXT.md` + `STATUS.md` + current-step section | Loads the full feature directory |
+| `/trim-context` | Budget 200k, warn at >60k baseline | Budget 1M, warn at >250k baseline |
+
+**Detection:** commands check if the running model ID contains `1m` (e.g. `claude-opus-4-6[1m]`). If yes → Opus 1M. Otherwise Sonnet-safe.
+
+**Fallback:** if the model ID is ambiguous, commands read `PROJECT.md` → `claude.max_plan`:
+- `x20` → default Opus 1M behavior
+- `x5` → default Sonnet-safe (lean), upgrade when Opus is detected
+- `legacy` / unset → Sonnet-safe
+
+`/setup-project` asks for `max_plan` once during configuration. See ADR-003 in `.claude/knowledge/decisions.md`.
+
+---
+
+## Multi-Repo Hub Variant
+
+Default: one repo (typically Nx monorepo). If your project is split across multiple repos (e.g. separate FE + BE), see [`docs/MULTI-REPO-HUB.md`](docs/MULTI-REPO-HUB.md) for the hub-model variant: one repo owns feature docs, same branch names across repos, per-step repo targeting, cross-linked PRs.
+
+---
+
+## Deferred Features (Roadmap)
+
+See [`docs/FUTURE-ROADMAP.md`](docs/FUTURE-ROADMAP.md). Currently deferred:
+
+- **`/briefing <scope>`** — on-demand deep-load of all code for a subsystem, tier-aware
+- **Multi-feature mode** — load 2–3 active features simultaneously on Opus 1M
+
+Each includes a DIY guide if you need to implement early for your own project.
 
 ---
 

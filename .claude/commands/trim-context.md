@@ -1,7 +1,21 @@
 # /trim-context
 
-You are performing an intelligent context window audit and trim. Your goal is to reduce the
-token cost of always-loaded files without losing any knowledge that is genuinely useful.
+You are performing an intelligent, **tier-aware** context window audit and trim. Your goal is to reduce the token cost of always-loaded files without losing any knowledge that is genuinely useful.
+
+## Tier Detection
+
+Detect the running model tier and set the target budget:
+
+- **Opus 1M** — model ID contains `1m` (e.g. `claude-opus-4-6[1m]`). Budget: 1,000,000 tokens. Warning threshold: baseline > ~250,000 tokens (25%).
+- **Sonnet 200k / Opus non-1M** — Budget: 200,000 tokens. Warning threshold: baseline > ~60,000 tokens (30%).
+
+If model-ID detection is ambiguous, fall back to the declared default in `PROJECT.md` → `claude.max_plan`:
+- `x20` → treat as Opus 1M
+- `x5` or unset → treat as Sonnet 200k (lean)
+
+**Cadence recommendation by tier:**
+- Sonnet 200k: run monthly — context pressure is real.
+- Opus 1M: run quarterly — the budget is wide but attention quality still benefits from curation.
 
 ---
 
@@ -12,6 +26,8 @@ Read all always-loaded files and report total estimated token count:
 ```
 Context Window Audit
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tier: <Opus 1M (budget 1,000,000)  |  Sonnet 200k (budget 200,000)>
+
 Always-loaded files (counted against every session):
   CLAUDE.md                      [N] lines   ~[N]k tokens
   .claude/brain.md               [N] lines   ~[N]k tokens  ← warn if >200 lines

@@ -1,0 +1,104 @@
+# Codebase Map
+
+> **Template — delete this paragraph after filling in.**
+>
+> Rename this file to `codebase-map.md` (drop `.template`) and reference it from
+> `CLAUDE.md` so it's always loaded. Keep it ≤8k tokens — short, factual, tree-like.
+> For deeper exploration of a subsystem, use `/briefing <scope>` (see FUTURE-ROADMAP.md)
+> or open the files directly.
+>
+> Fill this in once your project crosses ~20 files; before then it's overkill.
+> Update it when the layout shifts significantly (new apps, new libs, major refactor).
+
+---
+
+## File tree — top 2 levels of apps/ and libs/
+
+```
+apps/
+├── api/src/app/
+│   ├── <module>/  — <one-line purpose>
+│   └── ...
+└── client/src/
+    ├── pages/     — <if using react-router, list top-level page components>
+    ├── components/
+    ├── hooks/
+    └── ...
+
+libs/
+├── domain/
+│   ├── <feature>/  — <one-line purpose>
+│   └── ...
+├── backend/
+│   └── core/       — <one-line purpose>
+└── shared/
+    ├── types/      — Zod schemas (single source of truth)
+    ├── ui/         — shared React components
+    └── utils/      — cross-cutting utilities
+```
+
+---
+
+## Key services / libs
+
+| Path | Purpose |
+|------|---------|
+| `libs/domain/<feature>/src/lib/<feature>.service.ts` | (one line) |
+| `libs/backend/core/src/lib/guards/` | auth guards |
+| `libs/shared/types/src/lib/<feature>.schema.ts` | Zod schemas for <feature> |
+
+---
+
+## API endpoints
+
+| Method | Path | Controller | Purpose |
+|--------|------|------------|---------|
+| GET | `/api/v1/<resource>` | `<resource>.controller.ts` | List |
+| POST | `/api/v1/<resource>` | `<resource>.controller.ts` | Create |
+
+---
+
+## Database models (Prisma)
+
+| Model | Purpose |
+|-------|---------|
+| `User` | core user record |
+| `<FeatureModel>` | (one line) |
+
+---
+
+## Frontend routes (if applicable)
+
+| Path | Page | Notes |
+|------|------|-------|
+| `/` | `pages/home.tsx` | landing |
+| `/<feature>` | `pages/<feature>.tsx` | (one line) |
+
+---
+
+## i18n (if applicable)
+
+Languages: `<list>`. Top-level namespaces: `<list>`.
+
+---
+
+## Quick commands
+
+```bash
+pnpm nx serve api              # backend dev server
+pnpm nx serve client           # frontend dev server
+pnpm nx test <project>
+pnpm nx build <project>
+pnpm nx lint <project>
+pnpm nx run database:migrate:dev --name <desc>
+pnpm nx graph                  # visualize dependencies
+```
+
+---
+
+## What this file IS and ISN'T
+
+✅ IS: a map — where things live, at a glance.
+❌ IS NOT: docs for how each thing works. That goes in feature specs, code comments, or `decisions.md`.
+
+Keep it concise. Update it when reality drifts. Run `/trim-context` if it grows past ~8k tokens.

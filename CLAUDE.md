@@ -30,8 +30,9 @@ Then **wait** for the user to run `/setup-project` before doing anything else.
 ## Read at Start of EVERY Session
 
 1. **This file** (you're reading it)
-2. **`PROJECT.md`** — project type, active layers, integrations, ports
+2. **`PROJECT.md`** — project type, active layers, integrations, ports, and `claude.max_plan` (tier default)
 3. **`.claude/brain.md`** — institutional memory, active feature, recent gotchas
+4. **Detect tier** — if the running model ID contains `1m` you're on Opus 1M; otherwise Sonnet 200k. If ambiguous, use `PROJECT.md` → `claude.max_plan` (`x20` → Opus 1M, `x5` / `legacy` → Sonnet-safe). Tier-aware commands branch behavior on this. See `.claude/rules/ai-workflow.md` "Tier Awareness" for the full table.
 
 ---
 
