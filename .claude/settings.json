@@ -1,7 +1,7 @@
 {
   "statusLine": {
     "type": "command",
-    "command": "bash .claude/statusline/statusline.sh"
+    "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/statusline/statusline.sh\""
   },
   "hooks": {
     "PostToolUse": [
@@ -10,11 +10,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/biome-format.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/biome-format.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/prisma-generate.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/prisma-generate.sh\""
           }
         ]
       }
@@ -24,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/status-reminder.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/status-reminder.sh\""
           }
         ]
       }

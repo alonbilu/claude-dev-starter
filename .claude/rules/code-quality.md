@@ -1,10 +1,35 @@
 # Code Quality & Linting
 
+## The point: Biome enforced via husky pre-commit hook
+
+**Biome alone is just a developer-side checker.** Without a git pre-commit hook, nothing prevents code that fails `biome check` from being committed. The husky + lint-staged combo IS the enforcement layer — it turns Biome from "occasionally noticed advice" into "you literally cannot commit until it's clean."
+
+If husky is not active in your project, your Biome rules are decorative.
+
+**Setup (one-shot, idempotent):**
+
+```bash
+bash scripts/install-pre-commit.sh
+```
+
+That script:
+- Verifies Biome is installed
+- Installs `husky` + `lint-staged` as dev deps
+- Runs `npx husky init` (creates `.husky/` + the git hook stub)
+- Writes `.husky/pre-commit` to invoke `npx lint-staged`
+- Adds the `lint-staged` config + `"prepare": "husky"` to your `package.json`
+
+After the script finishes, every `git commit` runs Biome on staged `.ts/.tsx/.js/.jsx` files. Auto-fixes are re-staged and proceed. Unfixable errors block the commit.
+
+> Run this AS PART of project setup (`/setup-project` triggers it). Don't defer it to "later" — every commit before the hook is installed is a potential regression nobody will notice.
+
+---
+
 ## Biome — The Only Linter (Never ESLint)
 
 **Framework:** Biome 2.4+ (NOT ESLint — deprecated)
 **Config:** `biome.json` at workspace root — uses 2.4-era schema syntax (`files.includes` with negation, `assist.actions.source.organizeImports`, `suspicious.noConsole`). Older installs MUST upgrade or run `npx @biomejs/biome migrate` to avoid parse errors.
-**Pre-commit:** Automatically runs on staged files via Husky + lint-staged
+**Pre-commit:** Automatically runs on staged files via Husky + lint-staged (see "The point" above).
 
 ---
 
@@ -73,6 +98,28 @@ const name = user && user.profile && user.profile.name;
 // ✅
 const name = user?.profile?.name;
 ```
+
+---
+
+## ⚠️ Biome formatter writes during Edit — beware massive commit diffs
+
+The `biome-format.sh` PostToolUse hook runs `biome check --write` on every file you Edit/Write. If a file hasn't been formatted in a while AND you make a small semantic change to it, the resulting commit will include the entire file's reformat (often hundreds or thousands of lines) plus your few lines of intent. Reviewers can't spot your actual change in that noise.
+
+**Mitigations:**
+
+- **(a) Format-first-commit pattern:** before making your semantic change, do `npx biome check --write <file>` and commit it as `chore(format): biome auto-format <file>`. THEN make your semantic change in a second commit — that commit's diff is now just your intent.
+- **(b) Document the noise:** if (a) is too much ceremony, write the commit message body with explicit line numbers of the semantic changes so reviewers know where to look. Example:
+  ```
+  feat(api): add retry logic to ImportLegs
+
+  Semantic changes only:
+  - src/index.ts:81  — wrap supplierTools.ImportLegs in retry helper
+  - src/index.ts:147 — extract retry config to constant
+  Everything else in this commit is biome auto-format.
+  ```
+- **(c) Skip the hook for one Edit:** rarely warranted. If you must, temporarily comment out the hook entry in `.claude/settings.json`, do your edit, restore the hook, manually run `biome check --write` so the file is normalized at the end.
+
+The format-first pattern is the right default for any project that has lived without consistent formatting.
 
 ---
 

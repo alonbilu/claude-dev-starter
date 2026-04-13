@@ -30,6 +30,34 @@ datasource db {
 
 ---
 
+## ⚠️ CRITICAL: Stale Prisma Client = misleading TS errors
+
+Whenever `prisma/schema.prisma` changes (or you `npm install` against a repo where the schema is newer than the cached client), the generated `node_modules/@prisma/client` types go stale. Symptoms — your TS code starts erroring with messages like:
+
+- `Property 'foo' does not exist on type 'PrismaClient<...>'`
+- `Namespace 'Prisma' has no exported member 'Decimal'`
+- `Module '"@prisma/client"' has no exported member 'flights'`
+
+These look like real bugs in your code. They're not — the client just hasn't been regenerated against the current schema.
+
+**Fix (always safe):**
+
+```bash
+npx prisma generate
+# OR via Nx if your project structure uses it:
+pnpm nx run database:generate
+```
+
+The starter's `prisma-generate.sh` PostToolUse hook regenerates automatically after edits to `prisma/schema.prisma`. **But** the hook does NOT fire after `npm install` or `git pull` — those are the moments you must run it manually. Do it as your first action when:
+
+- Pulling a branch that touched the schema
+- After `npm install` / `pnpm install` in a repo with Prisma
+- Confused by "this code clearly works but TS errors" feelings
+
+When in doubt: `npx prisma generate`. Idempotent and fast.
+
+---
+
 ## ⚠️ CRITICAL: Run Prisma Commands via Nx (not directly)
 
 Prisma CLI needs the correct CWD (`libs/domain/database/`). Nx handles this automatically.

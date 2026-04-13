@@ -677,6 +677,12 @@ Ready to finish setup? I can run these steps for you:
   Step E: Verify build
   → pnpm nx build api
   Run this now? [yes/no/skip]
+
+  Step F: Install pre-commit hook (Biome via husky)
+  → bash scripts/install-pre-commit.sh
+  Without this, Biome is decorative — nothing prevents lint regressions
+  from being committed. The script is idempotent (safe to re-run).
+  Run this now? [yes/no/skip]
 ```
 
 For each approved step: run it, show output summary, confirm success, move to next.
@@ -731,6 +737,18 @@ Common issues:
   • "Biome check failed" → lint error, suggest: pnpm check:fix
 
 If fails: show error snippet, offer specific fix based on error message
+```
+
+**Step F — install pre-commit hook**
+```
+Common issues:
+  • "@biomejs/biome is not installed yet" → Step A (pnpm install) was skipped or failed; rerun A first
+  • "no package.json at <dir>" → script run from wrong directory; cd to project root
+  • Permissions on .husky/pre-commit → script chmod +x's it; if filesystem lacks exec bit, run: chmod +x .husky/pre-commit
+
+If fails: diagnose, then have user verify by running `bash scripts/install-pre-commit.sh` manually.
+
+After success: a test commit will demonstrate the hook is live. The first commit after install will trigger it.
 ```
 
 If a step fails: diagnose the error, show specific recovery command, offer to retry.

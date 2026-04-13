@@ -248,6 +248,7 @@ Claude delegates to focused agents for better output quality:
 - **Testing:** `.claude/rules/testing.md` — Jest setup, patterns, coverage requirements
 - **Code Quality:** `.claude/rules/code-quality.md` — Biome, lint-staged, conventions
 - **Deployment:** `.claude/rules/deployment.md` — Docker, environments, deploy scripts
+- **Publishing:** `.claude/rules/publishing.md` — opt-in, for projects that publish npm packages (`.d.ts` emission, `.npmignore` traps, cross-consumer audits)
 - **AI Workflow:** `.claude/rules/ai-workflow.md` — Feature workflow, brain.md protocol
 
 ## Knowledge Base (Load On Demand)
