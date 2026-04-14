@@ -476,11 +476,14 @@ Not everything needs the full feature workflow. Use these for small tasks:
 
 | Command | When to use | Creates docs? |
 |---------|-------------|---------------|
-| `/quick [task]` | Small fix, 5-15 min, <5 files | No |
+| `/quick [task]` | Small fix, 5-15 min, <5 files, current branch | No |
+| `/quickbranch [task]` | Small but PR-ready, 5-30 min, own branch | `docs/quickbranches/{date}-{slug}.md` |
 | `/debug [error]` | Debugging an error systematically | No (but may update stack-gotchas.md) |
 | `/scaffold [type] [name]` | Generate boilerplate (endpoint, page, hook, service, domain-lib) | No |
 
-**Scope guard:** If a `/quick` task grows beyond 15 minutes or needs a new DB table, stop and suggest `/new-feature` instead.
+**Scope guard:** If a `/quick` task grows beyond 15 minutes, suggest `/quickbranch`. If it needs a new DB table, touches multiple modules, or needs registry tracking, suggest `/new-feature` instead.
+
+**`/quick` vs `/quickbranch` vs `/hotfix`:** All three are "not a full feature." Pick by urgency + reviewability: `/quick` for throwaway same-branch tweaks, `/quickbranch` for small fixes you want in a PR, `/hotfix` for critical production bugs (adds `HF###` registry + formal template).
 
 ---
 

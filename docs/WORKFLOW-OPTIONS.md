@@ -119,16 +119,20 @@ For tasks that don't need the full feature workflow:
 
 | Command | When | Time |
 |---------|------|------|
-| **`/quick [task]`** | Small fix, <5 files, no schema changes | 5-15 min |
+| **`/quick [task]`** | Small fix, <5 files, no schema changes, current branch | 5-15 min |
+| **`/quickbranch [task]`** | Small but PR-ready fix, own branch + single doc entry | 5-30 min |
 | **`/debug [error]`** | Systematic error debugging | 10-30 min |
 | **`/scaffold [type] [name]`** | Generate boilerplate (endpoint, page, hook, service, domain-lib) | 5 min |
 
 **Examples:**
 ```bash
 /quick fix typo in 404 page
+/quickbranch fix password-reset rate limit off by one
 /debug pnpm nx test api fails with "service is undefined"
 /scaffold endpoint users
 ```
+
+**`/quick` vs `/quickbranch`:** `/quick` stays on the current branch and creates no docs — fastest possible lane. `/quickbranch` creates a dedicated `fix/…` or `chore/…` branch and logs the request + work done under `docs/quickbranches/{date}-{slug}.md`, ending with a `[y/N]` prompt to push or open a PR. Reach for `/quickbranch` when the fix is small but you want a reviewable PR history.
 
 ---
 
@@ -137,8 +141,11 @@ For tasks that don't need the full feature workflow:
 ```
 How big is this task?
 
-├─ SMALL fix (5-15 min, <5 files)
+├─ TINY throwaway fix, stay on current branch
 │  └─ Use: /quick ✅
+│
+├─ SMALL fix, want own branch + lightweight doc + PR
+│  └─ Use: /quickbranch ✅
 │
 ├─ DEBUGGING an error
 │  └─ Use: /debug ✅

@@ -196,7 +196,8 @@ pnpm check:fix                    # Biome fix entire workspace
 /setup-project               # Interactive project configuration wizard
 
 # Quick Actions (no feature docs needed)
-/quick [task]                # Quick fix (5-15 min, no docs/branch)
+/quick [task]                # Fastest lane — no branch, no docs (5-15 min)
+/quickbranch [task]          # PR-ready small fix — new branch + docs/quickbranches entry (5-30 min)
 /debug [error]               # Systematic debugging workflow
 /scaffold [type] [name]      # Scaffold: endpoint, page, hook, service, domain-lib
 /review                      # Pre-PR self-review (run before /create-pr)

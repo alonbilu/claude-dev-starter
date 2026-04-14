@@ -10,7 +10,8 @@ Not every task needs the full feature workflow. Pick the right tool:
 
 | Task size | Command | Creates docs? |
 |-----------|---------|---------------|
-| **Quick fix** (5-15 min, <5 files) | `/quick [task]` | No |
+| **Quick fix** (5-15 min, <5 files, current branch) | `/quick [task]` | No |
+| **Small PR-ready fix** (5-30 min, own branch) | `/quickbranch [task]` | Yes (`docs/quickbranches/`) |
 | **Debug an error** | `/debug [error]` | No |
 | **Generate boilerplate** | `/scaffold [type] [name]` | No |
 | **New capability** (API + UI + DB) | `/new-feature [name]` | Yes (full workflow) |
@@ -445,7 +446,8 @@ docs/features/
 
 | Command | When |
 |---------|------|
-| `/quick [task]` | Small fix (5-15 min, no feature docs) |
+| `/quick [task]` | Small fix (5-15 min, no feature docs, current branch) |
+| `/quickbranch [task]` | Small PR-ready fix (5-30 min, own branch + `docs/quickbranches/`) |
 | `/debug [error]` | Systematic debugging workflow |
 | `/scaffold [type] [name]` | Generate boilerplate (endpoint, page, hook, service, domain-lib) |
 | `/new-module [name]` | Create a top-level domain module |

@@ -69,7 +69,8 @@ For small tasks that don't need the full feature workflow:
 
 | Command | Purpose |
 |---------|---------|
-| **`/quick [task]`** | Quick fix or small change (5-15 min, no docs/branch) |
+| **`/quick [task]`** | Fastest lane — no branch, no docs, commit on current branch (5-15 min) |
+| **`/quickbranch [task]`** | PR-ready small fix — new branch + `docs/quickbranches/` entry (5-30 min) |
 | **`/debug [error]`** | Systematic debugging: reproduce → check gotchas → isolate → fix → document |
 | **`/scaffold [type] [name]`** | Scaffold: `endpoint`, `page`, `hook`, `service`, or `domain-lib` |
 | **`/review`** | Pre-PR self-review: lint, tests, code quality checklist |
@@ -171,6 +172,12 @@ gh release view v1.2.0
 ```
 /quick add lastName to user form
 /quick fix typo in 404 page
+```
+
+### "I need a small fix on its own branch with a docs entry"
+```
+/quickbranch fix password-reset rate limit off by one
+/quickbranch chore remove unused imports from billing module
 ```
 
 ### "I'm debugging an error"

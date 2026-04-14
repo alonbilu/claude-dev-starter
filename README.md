@@ -25,7 +25,7 @@ This framework eliminates all of that. It encodes everything needed for Claude t
 
 ### Structured Workflows
 - **Feature workflow** — 6-phase lifecycle: idea → discuss → spec → plan → implement → complete → PR → merge
-- **Quick actions** — `/quick`, `/debug`, `/scaffold`, `/review` for tasks that don't need the full workflow
+- **Quick actions** — `/quick`, `/quickbranch`, `/debug`, `/scaffold`, `/review` for tasks that don't need the full workflow
 - **Entity hierarchy** — Features, Modules, SubModules, Services for organizing work at different scales
 - **Hotfix workflow** — Emergency production bug fixes with patch version bump
 
@@ -160,7 +160,8 @@ See `.claude/rules/ai-workflow.md` "Planning Checkpoints" for the full table and
 
 | Command | Purpose |
 |---------|---------|
-| `/quick [task]` | Quick fix or small change (5-15 min) |
+| `/quick [task]` | Fastest lane — no branch, no docs (5-15 min) |
+| `/quickbranch [task]` | PR-ready small fix — new branch + `docs/quickbranches/` entry (5-30 min) |
 | `/debug [error]` | Systematic debugging: reproduce → check gotchas → isolate → fix → document |
 | `/scaffold [type] [name]` | Scaffold: `endpoint`, `page`, `hook`, `service`, or `domain-lib` |
 | `/review` | Pre-PR self-review: lint, tests, code quality checklist |
@@ -556,7 +557,8 @@ claude-dev-starter/
 │   │   ├── discuss-feature.md       ← /discuss-feature
 │   │   ├── plan-feature.md          ← /plan-feature
 │   │   ├── start-coding.md          ← /start-coding
-│   │   ├── quick.md                 ← /quick (lightweight tasks)
+│   │   ├── quick.md                 ← /quick (lightweight tasks, current branch)
+│   │   ├── quickbranch.md           ← /quickbranch (small PR-ready fix on own branch)
 │   │   ├── debug.md                 ← /debug (systematic debugging)
 │   │   ├── scaffold.md              ← /scaffold (boilerplate generation)
 │   │   ├── review.md                ← /review (pre-PR self-review)

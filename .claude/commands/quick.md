@@ -1,5 +1,5 @@
 ---
-description: Quick fix or small change (5-15 min, no feature docs)
+description: Fastest lane — no branch, no docs, commit on current branch (5-15 min). For PR-ready fix on its own branch + doc entry, use /quickbranch instead.
 ---
 
 Quick task: $ARGUMENTS
@@ -7,9 +7,9 @@ Quick task: $ARGUMENTS
 ## Rules
 
 - **NO** feature docs, branch, or registry entry — this is a fast lane
-- Stay on current branch (or main if clean)
+- Stay on current branch (or main if clean). Use `/quickbranch` if you want a dedicated branch + doc entry.
 - Search before creating (this ALWAYS applies)
-- If the task grows beyond ~15 minutes, stop and suggest `/new-feature` instead
+- If the task grows beyond ~15 minutes, stop and suggest `/quickbranch` (small-but-PR-worthy) or `/new-feature` (larger)
 
 ---
 

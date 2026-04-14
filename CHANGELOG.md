@@ -6,6 +6,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.3.0] — 2026-04-14
+
+New command filling the gap between `/quick` (throwaway same-branch fix, no docs) and `/new-feature` (full spec + dev plan + registry entry). Distilled from a downstream install where the user repeatedly wanted "a `/quick` but on a branch with a tiny paper trail so it can go through PR review."
+
+### Added
+
+- **`/quickbranch [task]` command.** Creates a short-lived `fix/…`, `chore/…`, or `feat/…` branch, writes a dated entry under `docs/quickbranches/{YYYY-MM-DD}-{slug}.md` capturing the user's original request verbatim + a plan + work-done log + commit SHAs, runs validation, commits code + docs separately, then prompts `[y/N]` to push or invoke `/create-pr`. Never auto-pushes. Time-box is 5-30 min; past that, it hands off to `/new-feature` (or `/hotfix` for critical prod bugs). Full comparison table lives inside `.claude/commands/quickbranch.md`.
+
+- **`docs/quickbranches/` folder with `README.md`.** Explains the frontmatter schema (`date`, `branch`, `status`), lifecycle, and where `/quickbranch` sits relative to `/quick`, `/hotfix`, and `/new-feature`. The folder starts empty; the first `/quickbranch` invocation is what populates it.
+
+### Changed
+
+- **`/quick` description reworded** from "Quick fix or small change (5-15 min, no feature docs)" to "Fastest lane — no branch, no docs, commit on current branch (5-15 min). For PR-ready fix on its own branch + doc entry, use /quickbranch instead." Same behaviour, but the one-liner now makes the tradeoff with `/quickbranch` explicit at the point users pick a command. Scope-guard text inside `quick.md` also now suggests `/quickbranch` for 15-30 min fixes before escalating to `/new-feature`.
+
+- **Command index updated** across `help.md`, `?.md`, `CLAUDE.md`, `README.md`, `docs/WORKFLOW-GUIDE.md`, `docs/WORKFLOW-OPTIONS.md`, and `.claude/rules/ai-workflow.md`. Each now lists `/quickbranch` alongside `/quick` with the branch/docs tradeoff called out in the same row. `WORKFLOW-OPTIONS.md` decision tree has a dedicated "SMALL fix, want own branch + lightweight doc + PR" branch.
+
+### Why
+
+The downstream signal was consistent: there are lots of fixes that don't merit `F###` registration + spec + dev plan, but do merit a PR for code review + an audit trail of what was asked for vs what was done. Before this, users had to either (a) use `/quick` and manually create the branch + docs themselves, losing the command-level guardrails, or (b) invoke `/new-feature` for a 20-minute fix and tolerate the ceremony. `/quickbranch` captures the actual shape of "small but reviewable."
+
+The doc entry design deliberately leads with the user's verbatim request — future-you or a reviewer can always reconstruct context from the original phrasing even if the implementation ended up somewhere different. `status: in-progress` → `done` transition mirrors the existing feature-STATUS pattern without dragging in the rest of the feature workflow.
+
+No API changes to existing commands — `/quick`, `/hotfix`, `/new-feature` all behave identically. Fully backwards-compatible for projects on older versions; pulling this version just adds the new command + doc folder.
+
+---
+
 ## [1.2.0] — 2026-04-12
 
 Lessons learned from installing the kit into two downstream projects (admin panel + background worker sharing a database). Bundles one hard bug fix (Biome config broken on current Biome versions), one enum gap (no `worker` project type), and three smaller upgrades (project name in statusline, independent multi-repo doc, `.tsbuildinfo` pre-ignored).
