@@ -161,6 +161,32 @@ Add to `package.json`:
 
 ---
 
+## Commit Messages — `commitlint` enforcement
+
+The kit's commit-message convention (`feat(scope): description (F[XXX] step N/Total)`) is
+documented in `ai-workflow.md`. Enforce it with `commitlint` + a husky `commit-msg` hook so
+bad messages can't land:
+
+```bash
+pnpm add -D -w @commitlint/cli @commitlint/config-conventional
+npx husky add .husky/commit-msg 'npx --no-install commitlint --edit "$1"'
+```
+
+```js
+// commitlint.config.js
+module.exports = {
+  extends: ['@commitlint/config-conventional'],
+  rules: {
+    'type-enum': [2, 'always', ['feat', 'fix', 'chore', 'refactor', 'docs', 'test', 'perf', 'ci']],
+    'subject-case': [0],   // allow free-form subjects (room for F[XXX] step N/Total tags)
+  },
+};
+```
+
+Now `git commit -m "WIP stuff"` is rejected; `git commit -m "feat(users): add email verification (F003 step 4/6)"` passes.
+
+---
+
 ## Pre-Commit Hook Recovery
 
 If lint-staged fails, it stashes your working changes. **NEVER run `git stash drop`** — you'll lose everything.

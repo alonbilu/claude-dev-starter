@@ -40,10 +40,10 @@ echo ""
 if command -v node &> /dev/null; then
   NODE_VERSION=$(node -v)
   MAJOR_VERSION=$(echo $NODE_VERSION | cut -d'v' -f2 | cut -d'.' -f1)
-  if [[ $MAJOR_VERSION -ge 20 ]]; then
-    check_pass "Node.js $NODE_VERSION (required: 20+)"
+  if [[ $MAJOR_VERSION -ge 22 ]]; then
+    check_pass "Node.js $NODE_VERSION (required: 22+)"
   else
-    check_fail "Node.js $NODE_VERSION (required: 20+)"
+    check_fail "Node.js $NODE_VERSION (required: 22+)"
   fi
 else
   check_fail "Node.js not installed"

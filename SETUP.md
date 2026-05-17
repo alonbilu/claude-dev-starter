@@ -11,7 +11,7 @@ You just cloned this template. Here's the exact sequence from zero to first feat
 
 ```
 1. Install prerequisites
-   Node 20+, pnpm 10, Docker, VS Code, Claude Code CLI, gh CLI
+   Node 22+, pnpm 11, Docker, VS Code, Claude Code CLI, gh CLI
    On Ubuntu: bash scripts/install-prerequisites-ubuntu.sh
 
 2. Clone the template — replace "my-project-name" with your actual project name
@@ -67,8 +67,8 @@ Everything below explains WHY and HOW when you want to understand the system or 
 
 | Tool | Version | Install |
 |------|---------|---------|
-| Node.js | 20+ | https://nodejs.org |
-| pnpm | 9+ | `npm install -g pnpm` |
+| Node.js | 22+ | https://nodejs.org |
+| pnpm | 11+ | `npm install -g pnpm` |
 | Docker Desktop | Latest | https://docker.com |
 | VS Code | Latest | https://code.visualstudio.com |
 | Claude Code CLI | Latest | https://claude.ai/claude-code |
@@ -164,23 +164,26 @@ It controls which rules apply and what `/setup-project` configures.
 | `email` | Resend + React Email templates |
 | `storage` | S3-compatible object storage |
 | `llm` | OpenAI / Anthropic provider integrations |
-| `rag` | pgvector embeddings + similarity search (also switches postgres image) |
-| `queue` | BullMQ background jobs + Redis |
+| `rag` | pgvector embeddings + similarity search (switches postgres image to pgvector) |
+| `queue` | BullMQ background jobs + Redis or Valkey |
 | `realtime` | WebSockets / SSE support |
+| `hydra` | ORY Hydra — OAuth2 server for machine-to-machine / API tokens |
+| `logging` | Structured logging — Axiom / Grafana Cloud / Better Stack (pick at setup) |
 
 ---
 
 ## Stack Overview
 
 **Core (adapt per project type):**
-- Monorepo: Nx 20 + pnpm 10
-- Frontend: React 19 + Vite + TanStack Query v5 + React Hook Form + Zod + Tailwind v4 + Shadcn/ui
-- Backend: NestJS 11 + `@anatine/esbuild-decorators`
-- Auth: Better Auth 1.5 + `@thallesp/nestjs-better-auth`
-- Database: Prisma 7.4 + PostgreSQL 17 (pgvector when rag is enabled)
-- Validation: Zod 3 (single source of truth for all types)
-- Testing: **Jest + ts-jest ONLY** (never Vitest — breaks NestJS DI)
-- Linting: **Biome 2 ONLY** (never ESLint — deprecated)
+- Monorepo: Nx 22 + pnpm 11
+- Frontend: React 19.2 + Vite 8 + TanStack Router + TanStack Query v5 + React Hook Form + Zod 4 + Tailwind v4 + Shadcn/ui
+- Backend: NestJS 11 + `@anatine/esbuild-decorators` + OpenAPI via `@nestjs/swagger`
+- Auth: Better Auth 1.5 (default) or Zitadel (OIDC) — see `PROJECT.md` → `auth_provider`. ORY Hydra (opt-in) for machine-to-machine tokens.
+- Database: Prisma 7.8 + PostgreSQL 18 (pgvector when rag is enabled; PgBouncer for connection pooling)
+- Validation: Zod 4 (single source of truth for all types)
+- Testing: **Vitest** for the React frontend, **Jest + ts-jest** for the NestJS backend (never Vitest for NestJS — breaks DI)
+- Logging: Axiom / Grafana Cloud / Better Stack (opt-in `logging` integration)
+- Linting: **Biome 2.4 ONLY** (never ESLint — deprecated)
 
 **Key rule:** Apps are THIN. All business logic lives in `libs/domain/`.
 
@@ -295,21 +298,22 @@ Default ports (changed by `/setup-project`):
 - PostgreSQL test: 5443
 - Redis: 6379
 
-When `rag` integration is enabled, `/setup-project` automatically switches to `pgvector/pgvector:pg17`.
+When `rag` integration is enabled, `/setup-project` automatically switches to `pgvector/pgvector:pg18`.
 
 ---
 
 ## Database Setup
 
 ```bash
-pnpm nx run database:migrate:dev --name add_user_email   # create + apply migration
-pnpm nx run database:generate                            # regenerate Prisma client
-pnpm nx run database:studio                              # browser GUI
-pnpm nx run database:seed                                # seed dev data
-pnpm nx run database:migrate:deploy                      # CI/CD (non-interactive)
+npx prisma migrate dev --name add_user_email \
+  --schema=libs/domain/database/prisma/schema.prisma                    # create + apply migration
+pnpm nx run database:generate                                            # regenerate Prisma client
+pnpm nx run database:studio                                              # browser GUI
+pnpm nx run database:seed                                                # seed dev data
+npx prisma migrate deploy --schema=libs/domain/database/prisma/schema.prisma   # CI/CD (non-interactive)
 ```
 
-**Critical:** Use `pnpm nx run database:...` — NOT `prisma` directly. Nx sets the correct CWD.
+**Critical:** Run **migrations** as raw Prisma from the workspace root — Nx changes CWD, breaking Prisma 7's `.env` lookup. `generate` / `seed` / `studio` via Nx are fine.
 
 ---
 
@@ -385,7 +389,8 @@ Full details: `.claude/knowledge/stack-gotchas.md`
 | esbuild strips metadata | `@Inject(Service)` on ALL constructor params |
 | Tests break NestJS | Use Jest only — Vitest does not preserve decorator metadata |
 | Prisma 7 datasource error | Remove `url = env(...)` from datasource block |
-| Prisma commands fail | Use `pnpm nx run database:...` not `prisma` directly |
+| Migrations fail with `datasource.url required` | Run as raw `npx prisma migrate dev --schema=...` from workspace root (NOT via Nx) |
+| `PrismaPg` crashes with `ERR_INVALID_ARG_TYPE` | Pass a config object to `PrismaPg({ connectionString })` — not a `pg.Pool` |
 | Raw SQL wrong column | Columns are camelCase: `"userId"`, not `user_id` |
 | lint-staged stash lost | NEVER `git stash drop` after hook failure |
 | SPA navigation shows stale data | Use `setQueryData()` alongside `invalidateQueries()` |

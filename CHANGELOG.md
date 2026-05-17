@@ -6,6 +6,306 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.4.0] — 2026-05-17
+
+Distilled from real downstream upgrades: Prisma 6 → 7.8, the testing-runner split between
+frontend and backend, and new opt-in integrations for auth, M2M tokens, and logging. Also
+sweeps the stack to current stable versions and adds three pieces of long-missing guidance
+(API contract, connection pooling, documentation discipline).
+
+### Added
+
+- **TanStack Router as the default frontend router.** New "Routing — TanStack Router"
+  section in `.claude/rules/frontend.md` covering file-based routing, **typed/validated search
+  params** (Zod-validated, type-safe from route definition through `useSearch()`), loaders +
+  TanStack Query interplay, and typed navigation. The frontend stack lock-in is now Vite +
+  React + TanStack Router + TanStack Query + Tailwind + shadcn/ui + Zod + Vitest. Search-param
+  refactors now break at compile time instead of silently rotting.
+
+- **Opt-in `auth_provider: better-auth | zitadel` in `PROJECT.md`.** Better Auth stays the
+  default; **Zitadel** is the alternative for projects wanting an external OIDC identity
+  provider plus Management API queries (users, orgs, roles, grants from the backend via a
+  service-account). New section in `.claude/rules/api.md` and full setup/gotchas in the new
+  `.claude/knowledge/integrations.md`.
+
+- **`hydra` integration — ORY Hydra for machine-to-machine / API token auth.** Complementary
+  to Better Auth / Zitadel (which handle humans); Hydra handles service-to-service tokens via
+  the `client_credentials` grant. Knowledge file documents the public/admin URL split, the
+  introspection guard pattern, and the seed-driven client-registration approach.
+
+- **`logging` integration with provider choice — Axiom / Grafana Cloud / Better Stack.**
+  `/setup-project` asks which provider with pros/cons (Axiom = simple logs; Grafana Cloud =
+  full observability suite; Better Stack = logs + uptime + on-call in one), records
+  `logging_provider` in PROJECT.md, and uncomments the matching env var block. Knowledge file
+  has the provider-agnostic NestJS Pino-transport pattern, the React error-boundary +
+  `visibilitychange` flush pattern, and the "frontend token must be ingest-only" gotcha.
+
+- **`.claude/knowledge/integrations.md`** — single on-demand reference for opt-in integrations
+  (Zitadel, Hydra, logging providers, Valkey). Loaded only when relevant to keep the
+  always-loaded baseline lean.
+
+- **OpenAPI/`@nestjs/swagger` as the API contract.** New section in `.claude/rules/api.md`:
+  Swagger UI at `/api/docs`, raw spec at `/api/docs-json`, DTOs from `createZodDto` carry
+  their shapes automatically (no hand-written `@ApiProperty()`), and re-exporting
+  `docs/openapi.json` on contract changes so consumers can diff.
+
+- **PgBouncer guidance.** New section in `.claude/rules/database.md`: transaction-mode pooling
+  for runtime queries (`DATABASE_URL?pgbouncer=true`) with a separate `DIRECT_URL` for
+  migrations. Sample `DIRECT_URL` env added to `.env.example`. Necessary for serverless and
+  many-instance deployments.
+
+- **Cloudflare Tunnel option in `/setup-project`.** Step 2 has a new "Cloudflare Tunnel"
+  concern with walkthrough for `cloudflared tunnel create` / `route dns`, plus a
+  `CLOUDFLARE_TUNNEL_TOKEN` placeholder in `.env.example`. Useful for exposing local dev to
+  OAuth providers, webhook sources, or a home-server-based dev env.
+
+- **Valkey documented as a drop-in Redis replacement.** Same protocol, BSD-licensed.
+  `docker-compose.yml` comments call it out, `/setup-project` Q "Redis or Valkey" offers it,
+  and the integrations knowledge file has a "no code changes needed" pointer.
+
+- **Documentation discipline section in `ai-workflow.md`.** Adds "API docs (OpenAPI),
+  code doc-comments on exported symbols (WHY not WHAT), feature CONTEXT/STATUS, README/module
+  docs" to every step's definition of done. New checklist line: "Docs updated — API/OpenAPI
+  doc, code doc-comments, README/module docs".
+
+- **Cross-project Jest `moduleNameMapper` gotcha** in `stack-gotchas.md` — the Nx Jest preset
+  does NOT resolve every `@app/*` alias automatically; consumer-side `jest.config.ts` needs
+  explicit entries. Pulled from real "Cannot find module '@app/foo'" debugging.
+
+- **`useMutation` in `useEffect` deps causes infinite loops** gotcha in `stack-gotchas.md`,
+  with the `useRef` guard pattern. Saved real time once already.
+
+- **Debugging meta-lesson** in `stack-gotchas.md`: when a low-level library throws a cryptic
+  error after a higher-level upgrade, read the upgrade guide BEFORE auditing peer-dep
+  versions. Direct lesson from the Prisma 7 upgrade (`pg-protocol` `ERR_INVALID_ARG_TYPE` was
+  the `PrismaPg` constructor change, not a version mismatch).
+
+### Added — security / observability / DX hardening
+
+- **Security middleware section** in `api.md`: `helmet` for headers, `@nestjs/throttler` for
+  rate limiting (with sample tight-rate-limit on `/login`). CI smoke-test guidance to fail
+  the build if either is missing.
+
+- **Health probes split** — `/api/v1/health/live` (liveness, cheap) vs `/api/v1/health/ready`
+  (readiness, DB ping). The old `/health` stays as a readiness alias. Necessary for any
+  container orchestrator that distinguishes restart-vs-stop-routing.
+
+- **Zod-validated env loading rule** — `process.env` is parsed through a Zod schema at boot,
+  before `NestFactory.create`. Bad env aborts the process; valid env returns a typed `env`
+  object so callers don't null-check.
+
+- **BullMQ worker patterns** in `api.md`: job-idempotency rule, retry+backoff defaults,
+  dead-letter-queue handling via `failed` event, concurrency guidance, "workers belong in
+  their own Nx app" rule.
+
+- **OpenAPI → typed frontend client** pointer in `api.md`: `openapi-typescript` against the
+  committed `docs/openapi.json` produces a typed fetch client the frontend uses; backend
+  renames surface as TS errors in the frontend at compile time.
+
+- **Playwright E2E section** in `testing.md` — covers `apps/client-e2e/`, scope ("happy-path
+  user journeys, NOT exhaustive backend retests"), and CI guidance.
+
+- **Storybook + MSW component workflow section** in `testing.md` — one set of MSW handlers
+  drives both stories and Vitest component tests, importing paths from the generated OpenAPI
+  client so mocks are type-checked.
+
+- **Commitlint enforcement section** in `code-quality.md` — `@commitlint/cli` +
+  `@commitlint/config-conventional` + a husky `commit-msg` hook so bad commit messages can't
+  land. Subject-case rule relaxed so `(F[XXX] step N/Total)` tags still pass.
+
+- **Production Dockerfile templates** in `deployment.md` — multi-stage Dockerfile for the
+  NestJS API (non-root user, `node:22-alpine` runtime) and the React static build (served by
+  `nginx:alpine`). Notes on `docker buildx` for ARM Droplets and worker-process variants.
+
+- **Secret Management section** in `deployment.md` — provider comparison (Doppler, Infisical,
+  SOPS + age, HashiCorp Vault, DO App Platform built-in) with explicit DigitalOcean fit per
+  provider. Detail in `integrations.md` → "Secret Management" with Doppler-on-Droplet and
+  SOPS-on-Droplet deploy-script patterns.
+
+- **New opt-in integrations** added to `PROJECT.md` and `/setup-project` Q6:
+  - `tracing` — OpenTelemetry distributed tracing (pairs with Grafana Cloud)
+  - `secrets` — production secret manager
+  - `feature-flags` — GrowthBook / Unleash / LaunchDarkly
+  - `i18n` — react-i18next + ICU MessageFormat
+  - `e2e` — Playwright
+
+- **`.github/renovate.json`** — weekly Monday-morning dependency PRs, patch/minor auto-merged
+  for stable packages, major upgrades labeled for human review, Prisma/Nx/TanStack/
+  testing-library grouped so they bump together. Pairs with `/check-updates`.
+
+- **`/new-adr [title]` command** — scaffolds a new ADR section in
+  `.claude/knowledge/decisions.md` with `Status: proposed` and `[fill in]` placeholders.
+  Stops here intentionally — the value of an ADR is the human reasoning.
+
+- **`scripts/start-cloudflared.sh`** — companion to the Cloudflare Tunnel option in
+  `/setup-project`. Reads `CLOUDFLARE_TUNNEL_TOKEN` from the env and runs the tunnel against
+  the configured `API_PORT` / `CLIENT_PORT`.
+
+- **Three ADRs added to `decisions.md`** documenting the bigger 1.4.0 choices:
+  - **ADR-005** TanStack Router as the default frontend router
+  - **ADR-006** Pluggable auth provider — Better Auth (default) + Zitadel + Hydra
+  - **ADR-007** Testing runner split — Vitest (frontend) + Jest (backend)
+
+- **`scripts/harden-server.sh`** — baseline server hardening pass for fresh Ubuntu staging /
+  production servers: SSH port change (default 22 → 22222) via a sshd_config drop-in, key-only
+  auth, root-password login disabled, `MaxAuthTries 3`, `ClientAliveInterval`, **ufw** with
+  default-deny + new SSH port + 80/443, **fail2ban** for SSH brute-force protection,
+  **unattended-upgrades** for automatic security patches, optional **Lynis** audit. Safety:
+  keeps port 22 open temporarily and tells you to confirm the new port from a separate
+  terminal BEFORE closing it. `scripts/staging-setup.sh` now offers to run hardening as the
+  first step; `deployment.md` documents the recommended "production bootstrap sequence."
+
+- **`scripts/start-preview.sh`** — builds the React client in production mode and serves it
+  via `vite preview` (Nx target if available, falls back to `vite preview` in the app dir).
+  Useful for verifying the production bundle locally before deploying, reproducing
+  production-only bugs, or running Lighthouse against a realistic build.
+
+### Fixed
+
+- **CI workflow versions** — `.github/workflows/ci.yml` now uses `NODE_VERSION: '22'`,
+  `PNPM_VERSION: '11'`, and `postgres:18` instead of `postgres:17`.
+
+- **`scripts/install-prerequisites-ubuntu.sh`** — installs Node 22 (`setup_22.x`) and pnpm 11
+  instead of 20 / 10. Version-detection regexes updated to accept 22+ / 11+.
+
+- **`scripts/validate-setup.sh`** — Node-version check raised from `>= 20` to `>= 22`.
+
+- **Prisma 7.8 migration rule corrected from live testing** — the original gotcha said
+  "Prisma 7.2+ reads `DATABASE_URL` from `.env` in CWD automatically." A live end-to-end test
+  (postgres:18 in a sandbox container, fresh `pnpm add prisma@7.8.0 @prisma/adapter-pg@7.8.0`)
+  proved this is no longer true for `prisma migrate dev` — it now requires either a
+  `prisma.config.ts` file or an explicit `--url=...` flag. `stack-gotchas.md` and
+  `database.md` updated with the verified-working pattern.
+
+- **pnpm 11 + Prisma postinstall** — pnpm 11 blocks Prisma's postinstall scripts by default
+  (`ERR_PNPM_IGNORED_BUILDS` for `@prisma/engines`, `esbuild`, `prisma`). Now documented in
+  `stack-gotchas.md` Prisma section — either `pnpm approve-builds` or rely on the kit's
+  `prisma-generate.sh` hook running `prisma generate` explicitly on schema edits.
+
+- **Nginx `listen` directive** — `staging-setup.sh` previously emitted `listen 443 ssl http2`,
+  which Nginx 1.28+ deprecated. Replaced with `listen 443 ssl; http2 on;` (the new form). The
+  config still passes `nginx -t` either way, but the deprecated form emits a warning.
+
+### Tested
+
+The 1.4.0 release was validated end-to-end in a Docker-sandboxed clone:
+
+- postgres:18 (live container) reachable from a node:22-alpine runner on a private network
+- VERSION ↔ CHANGELOG match, all 6 JSON files parse via `jq`, all 17 shell scripts pass
+  `bash -n`
+- **Prisma 7.8 migration loop** — `prisma migrate dev --url=$URL` creates `migration.sql` +
+  `migration_lock.toml`, applies, records in `_prisma_migrations`; second additive migration
+  (`add_source` column) applied as an independent migration
+- **PrismaPg adapter CRUD** — `new PrismaPg({ connectionString })`, create / findUnique /
+  findMany / delete / count, `prisma.$disconnect()` (no `pool.end()` — adapter owns the pool)
+- **Biome 2.4.15** clean on biome.json + a sample TS file
+- **Templated nginx config** (rate limits + security headers from `staging-setup.sh`) passes
+  `nginx -t`
+- **install-pre-commit.sh** correctly detects missing `@biomejs/biome` and instructs the user
+- **Backend testing** — Jest + ts-jest + `@Injectable()` + `@Inject()` —
+  `Reflect.getMetadata("design:paramtypes", UserService)` returns `[UserRepository]`,
+  confirming decorator metadata IS preserved (the entire reason for the Jest-for-backend rule)
+- **Frontend testing** — Vitest + jsdom + React + `@testing-library/react` — component
+  renders, `screen.getByRole("heading").toHaveTextContent` matcher works
+- **Both projects clean against Biome 2.4.15** after `biome check --write`
+
+The findings from this pass are the corrections listed above.
+
+### Changed
+
+- **Testing rule split — Vitest for the frontend, Jest for the backend.** `testing.md` now
+  documents both runners with the rule "Vitest for `apps/client` + frontend libs, Jest + ts-jest
+  for `apps/api` + backend/domain libs." The decorator-metadata problem only affects NestJS,
+  so blanket "never Vitest" was overly broad. New "Vitest Configuration (frontend)" section
+  with a sample `vitest.config.ts`. `stack-gotchas.md`, `test-writer` agent, `CLAUDE.md`
+  stack overview, README default stack table, and SETUP all updated. The hard rule stays:
+  **NEVER run NestJS tests under Vitest** — DI silently breaks.
+
+- **Migrations rule corrected to "raw Prisma from workspace root, NOT Nx."** `database.md`'s
+  old "always use Nx" advice contradicted `stack-gotchas.md`'s battle-tested guidance — Nx
+  changes CWD before invoking Prisma, breaking Prisma 7's `.env` lookup. Fixed across
+  `database.md`, `db-expert.md` (Rule #2), `ai-workflow.md` (Zod-schema propagation step 3),
+  `CLAUDE.md` Quick Commands, `setup-project.md` Step D, `deployment.md` CI/CD section, and
+  `SETUP.md` Database Setup. `generate`/`seed`/`studio` via Nx are still fine — only
+  migrations need workspace-root raw Prisma.
+
+- **`db-expert` agent Rule #3 added** — `PrismaPg` adapter is instantiated with a config
+  object, never a `pg.Pool`. Cleanup via `prisma.$disconnect()`. Critical for Prisma 7.
+
+- **Stack version bumps across all template references.** Locked-in:
+  - **Prisma 7.4 → 7.8** (driver-adapter mode required)
+  - **PostgreSQL 17 → 18**
+  - **Nx 20 → 22**, **pnpm 10 → 11**
+  - **Vite 6 → 8**, **React 19 → 19.2**
+  - **Zod 3 → 4**, **Jest 29 → 30**
+  - **TypeScript ~5.6 → ~5.9**, **Node 20+ → 22+**
+  - **Redis 7 → 8** in docker-compose; Valkey 8 as an alternative
+  - **Biome schema 2.4.11 → 2.4.15** in `biome.json`
+  Updated: README "Default Stack" table, SETUP "Stack Overview", `CLAUDE.md` stack overview,
+  `package.json.template.md` devDependencies, `setup-project.md` version-check table,
+  `check-updates.md` tracked-dependency table, `database.md` stack header, `code-quality.md`.
+
+- **PrismaPg 7.x adapter gotcha** added to `stack-gotchas.md` and `database.md` — pass a
+  config object, NOT a `pg.Pool`. Diagnostic clues (`Writer.addCString` trace,
+  `ERR_INVALID_ARG_TYPE`, beforeAll hang) listed so the bug is recognizable. Bundled with the
+  "Prisma 7 standalone scripts need a driver adapter" entry and the "hand-craft migration SQL
+  for non-additive changes" entry.
+
+- **Frontend `pages/` → `routes/`.** With TanStack Router file-based routing, `apps/client/src/routes/`
+  replaces `apps/client/src/pages/`. Updated in `frontend.md` Component Structure block,
+  `CLAUDE.md` Code Location Cheat Sheet, and frontend conventions.
+
+- **CLAUDE.md stack overview rewritten** to reflect: TanStack Router added, OpenAPI line,
+  auth providers (Better Auth or Zitadel + Hydra opt-in), Prisma 7 + PG18 + PgBouncer,
+  Vitest/Jest split, Axiom/Grafana/Better Stack logging, Redis/Valkey, Zod (no version).
+
+- **Default Auth section in `api.md`** now opens with an "Auth Provider — Better Auth (default)
+  or Zitadel" preamble pointing to `integrations.md` for the Zitadel JWT-guard pattern. Better
+  Auth content unchanged below it.
+
+- **`docker-compose.yml`:** Postgres `17 → 18` (both dev + test), pgvector image hints updated
+  to `pg18`, Redis `7-alpine → 8-alpine`, Valkey comment added.
+
+- **`.env.example`** restructured: `DIRECT_URL` placeholder for PgBouncer migrations, Zitadel
+  block, Hydra block, generalized logging block with Axiom + Grafana Cloud + Better Stack
+  env vars, `CLOUDFLARE_TUNNEL_TOKEN` placeholder.
+
+- **`package.json.template.md` Notes** now documents: test-runner package split (Vitest deps
+  for frontend, Jest deps for backend), the database lib's three matched Prisma packages
+  (`@prisma/client`, `@prisma/adapter-pg`, `prisma`) at 7.8.0+, and the `@nestjs/swagger`
+  dependency for `apps/api`.
+
+### Why
+
+Three downstream signals drove this release:
+
+1. **The Prisma 7.8 upgrade hit real bugs.** `/check-updates` recommended Prisma 7.8, and the
+   `PrismaPg` constructor change cost real debugging time (cryptic `ERR_INVALID_ARG_TYPE` in
+   `pg-protocol`, traced to a caller-side API change). Documenting the diagnostic clues and
+   the v6 → v7 instantiation pattern saves anyone else from chasing peer-dep ghosts. The
+   "migrations contradiction" between `database.md` and `stack-gotchas.md` was the same
+   pattern — both files now agree.
+2. **Frontend/backend testing genuinely diverged.** The blanket "never Vitest" rule was
+   overcorrecting. Vitest pairs natively with Vite for the frontend (faster, simpler config);
+   Jest + ts-jest stays mandatory for NestJS (decorator metadata). Splitting the rule by app
+   matches how the runners actually behave.
+3. **Multiple downstream projects wanted opt-in alternatives** — Zitadel as the auth provider
+   when Better Auth's surface didn't fit; Hydra when machine-to-machine tokens needed their
+   own grant flow; and structured logging where a "Sentry checklist item" wasn't enough.
+   Making these first-class opt-in integrations (with `/setup-project` wiring + a single
+   on-demand knowledge file) keeps the always-loaded baseline lean while letting projects
+   pick.
+
+OpenAPI + PgBouncer + documentation discipline are filling in gaps that every real project
+ends up addressing anyway — putting them in the kit means they happen by default, not by
+afterthought.
+
+No breaking changes to existing commands or workflows. Pulling 1.4.0 into an older project
+adds the new integrations and version targets without disturbing existing setups; the
+`/check-updates` table will show the bumps and let you decide which to apply.
+
+---
+
 ## [1.3.0] — 2026-04-14
 
 New command filling the gap between `/quick` (throwaway same-branch fix, no docs) and `/new-feature` (full spec + dev plan + registry entry). Distilled from a downstream install where the user repeatedly wanted "a `/quick` but on a branch with a tiny paper trail so it can go through PR review."

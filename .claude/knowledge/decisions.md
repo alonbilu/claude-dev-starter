@@ -1,6 +1,31 @@
 # Architecture Decisions Log
 
-Record significant architectural decisions here. Format: context → decision → rationale → consequences.
+This file is the project's **Architecture Decision Records** (ADRs) log — a short,
+chronological list of significant technical choices the team has made.
+
+## What is an ADR?
+
+An **Architecture Decision Record** captures one significant technical choice, **why** it was
+made, what alternatives were ruled out, and what changes as a result. It's how future
+contributors (and future-you) understand *why* the codebase looks the way it does without
+reconstructing it from git history or guessing at the original tradeoffs.
+
+A good ADR:
+
+- Is **scoped to one decision** — not a feature spec, not a code design doc
+- Captures the **alternatives ruled out** and the reason
+- Is **dated**, **numbered** (ADR-001, ADR-002, …), and has a **status**
+  (`proposed` / `accepted` / `superseded` / `deprecated`)
+- Is **immutable** once accepted — if the decision changes, add a new ADR that **supersedes**
+  the old one rather than rewriting history
+
+If you're tempted to write a long PR description justifying a stack choice — that PR
+description IS an ADR. Put it here and link from the PR.
+
+**Scaffold a new ADR with the `/new-adr [title]` command** — it auto-increments the number,
+stamps today's date, and inserts the template with `Status: proposed`.
+
+Format: `context → decision → rationale → consequences`.
 
 ---
 
@@ -161,3 +186,130 @@ Content target: ≤8k tokens. File tree (top 2 levels), key services/libs, API e
 - New projects default to NOT having `codebase-map.md` — they rename the template when ready
 - Tier-aware commands may still grep/explore beyond what the map lists; the map is a starting point
 - When the map drifts from reality, `/trim-context` will flag it for refresh
+
+---
+
+## ADR-005: TanStack Router as the default frontend router
+
+**Date:** 2026-05-17
+**Status:** accepted
+
+### Context
+
+The kit shipped with TanStack Query for server state but no documented router. Real projects
+ended up adopting either React Router (string-typed routes, manual search-param handling) or
+TanStack Router (file-based, typed search params). Filter-heavy UIs (catalog/search/admin
+listings) hit the search-param-typing pain repeatedly.
+
+### Decision
+
+Default the frontend stack to **TanStack Router**. Routes live in `apps/client/src/routes/`
+(file-based). Search params are validated with Zod schemas from `libs/shared/types/`. The
+generated `routeTree.gen.ts` is never edited by hand.
+
+### Rationale
+
+- **Typed search params eliminate a class of refactor bugs.** Renaming a route param or
+  search key fails at compile time at every call site, not at runtime in a forgotten flow.
+- **Loaders pair naturally with TanStack Query** — start the fetch on navigation, keep
+  `useQuery` as the read path. No third state library needed.
+- **Scaling note we explicitly checked:** route-tree size scales with the app's structure,
+  not with tenant count. Storefront/admin in the 30-80 route range performs comfortably; the
+  "hundreds of routes" caveat doesn't apply here.
+- Ruled out: React Router (string-typed routes), TanStack Start (overlaps with the existing
+  Vite + NestJS split).
+
+### Consequences
+
+- `frontend.md` documents file-based routing + typed search params + loader/query interplay.
+- `apps/client/src/pages/` is renamed to `apps/client/src/routes/` across the kit's docs.
+- `/setup-project` confirms TanStack Router during stack-confirmation; users can still swap
+  to React Router (will require rewriting `frontend.md`).
+
+---
+
+## ADR-006: Pluggable auth provider — Better Auth (default) + Zitadel + Hydra
+
+**Date:** 2026-05-17
+**Status:** accepted
+
+### Context
+
+Better Auth was hardcoded as the auth provider. Real downstream projects sometimes need a
+full external OIDC identity provider (Zitadel) — enterprise SSO, org/role models, Management
+API for backend-side user queries. Separately, machine-to-machine tokens (third-party API
+clients, service-to-service, webhook callers) are a different problem entirely — not a human
+login.
+
+### Decision
+
+- Make the app auth provider **pluggable** via `PROJECT.md` → `auth_provider`:
+  `better-auth` (default) or `zitadel`. Pick one.
+- Add `hydra` as a separate opt-in **integration** (not a provider swap) for M2M auth.
+  Coexists with Better Auth or Zitadel — they handle different traffic.
+- Provider-specific setup + gotchas live in `.claude/knowledge/integrations.md`. The rules
+  files (`api.md`, `stack-gotchas.md`) keep Better Auth as the documented default; the
+  knowledge file is loaded on-demand for Zitadel/Hydra projects.
+
+### Rationale
+
+- Better Auth stays the simplest path — library, no external service, ships with everything.
+- Zitadel is the cleanest "we need a real IdP" upgrade — OIDC + Management API + multi-tenant
+  org model out of the box.
+- Hydra handles M2M cleanly via `client_credentials`. Combining it with Better Auth/Zitadel
+  on a single Better-Auth-only setup would have meant reinventing OAuth2 token issuance.
+- Keeping integration content in `knowledge/` rather than `rules/` keeps the always-loaded
+  context budget flat for projects that don't use them.
+
+### Consequences
+
+- `api.md` opens its Auth section with the provider-choice preamble pointing at the knowledge
+  file for the non-default options.
+- `/setup-project` asks Q6a "Auth provider" when the auth layer is active.
+- Two new env-var blocks in `.env.example` (commented; uncommented per choice).
+- Future provider additions (Clerk, Supabase Auth) can slot in alongside without disturbing
+  the default.
+
+---
+
+## ADR-007: Testing runner split — Vitest (frontend) + Jest (backend)
+
+**Date:** 2026-05-17
+**Status:** accepted
+
+### Context
+
+The kit's rule was "Jest ONLY, never Vitest." The reason was real — Vitest's esbuild/SWC
+transformer does NOT preserve `emitDecoratorMetadata`, which silently breaks NestJS DI
+(services come back `undefined` in controllers/guards). But the blanket rule overcorrected:
+on the React frontend, decorator metadata isn't used at all, and Vitest pairs natively with
+Vite, sharing config + transform pipeline + watch behavior.
+
+### Decision
+
+Split the testing rule by app:
+
+| App / lib | Runner | Reason |
+|-----------|--------|--------|
+| `apps/client` + frontend libs (React) | **Vitest** | Vite-native, fast |
+| `apps/api` + backend/domain libs (NestJS) | **Jest** + ts-jest | Decorator metadata preserved |
+| E2E | **Playwright** | Cross-browser, ships with debugger |
+
+The hard rule remains: **NEVER run NestJS tests under Vitest** — DI silently fails.
+
+### Rationale
+
+- Two runners means two configs, but each is the natural choice for its app — no compromise
+  toolchain for either side.
+- `pnpm nx test [project]` abstracts the runner, so day-to-day commands stay identical.
+- E2E sits separately because it isn't unit/integration; Playwright is the de facto pick.
+
+### Consequences
+
+- `testing.md` documents both configs + a Playwright section.
+- `test-writer` agent description and rules updated to mention both runners and the hard
+  rule.
+- `package.json.template.md` lists Jest + ts-jest + @types/jest for the backend, and Vitest +
+  @vitejs/plugin-react + jsdom + @testing-library/\* for the frontend.
+- The "NEVER use Vitest for the NestJS backend" gotcha in `stack-gotchas.md` is reframed to
+  scope the rule to NestJS, not all tests.

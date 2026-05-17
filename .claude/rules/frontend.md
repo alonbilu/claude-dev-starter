@@ -26,6 +26,57 @@ All forms use React Hook Form with `zodResolver`. Schema from `libs/shared/types
 
 ---
 
+## Routing — TanStack Router
+
+The router is **TanStack Router** (file-based). Routes live in `apps/client/src/routes/`; the
+route tree is generated into `routeTree.gen.ts` — never edit that file by hand.
+
+### Typed search params are first-class state
+
+TanStack Router treats URL search params as **typed, validated state** — not strings. Validate
+them with a Zod schema from `libs/shared/types/`:
+
+```typescript
+// apps/client/src/routes/catalog.tsx
+import { createFileRoute } from '@tanstack/react-router';
+import { CatalogFiltersSchema } from '@app/types';
+
+export const Route = createFileRoute('/catalog')({
+  validateSearch: CatalogFiltersSchema,        // typed + validated search params
+  loaderDeps: ({ search }) => ({ search }),
+  loader: ({ deps }) => fetchCatalog(deps.search),
+  component: CatalogPage,
+});
+
+// Reading typed search params anywhere in the route — fully type-safe
+const { destination, dateFrom, pax } = Route.useSearch();
+```
+
+**Why this matters:** renaming a route param or search key breaks at **compile time** at every
+usage site. For filter-heavy UIs (catalog filters, dates, pax, destinations) this catches a
+real class of refactor bug.
+
+### Loaders vs TanStack Query
+
+Route `loader`s and TanStack Query are complementary: loaders run on navigation and can prime
+the query cache; components still read through `useQuery` for caching, refetch, and mutations.
+Use the loader to start the fetch early; keep `useQuery` as the read path.
+
+### Navigation — never hand-build URLs
+
+```typescript
+import { Link, useNavigate } from '@tanstack/react-router';
+
+<Link to="/catalog" search={{ destination: 'PAR' }}>Paris</Link>;
+
+const navigate = useNavigate();
+navigate({ to: '/catalog', search: (prev) => ({ ...prev, pax: 2 }) });
+```
+
+> Frontend tests run on **Vitest** (see `testing.md`) — never Jest for `apps/client`.
+
+---
+
 ## TanStack Query Patterns
 
 ### Data-fetching hook
@@ -102,7 +153,7 @@ export function CreateResourceForm() {
 
 ```
 apps/client/src/
-├── pages/              # Page-level components (one per route)
+├── routes/             # File-based routes (TanStack Router) — routeTree.gen.ts is generated
 ├── components/         # Feature-specific components (not reusable)
 │   ├── forms/
 │   ├── layouts/

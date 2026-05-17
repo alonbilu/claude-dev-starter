@@ -9,11 +9,12 @@ You are a database and Prisma specialist for this NestJS + PostgreSQL project.
 ## Critical Rules (Always Follow)
 
 1. **Prisma 7.x:** NEVER add `url = env("DATABASE_URL")` to the datasource block — Prisma reads it automatically
-2. **Run via Nx:** Always use `pnpm nx run database:migrate:dev --name [name]`, never `prisma migrate dev` directly
-3. **Schema Change Protocol:** When modifying schema.prisma, complete ALL 8 steps in ONE session:
+2. **Migrations from workspace root:** Run `npx prisma migrate dev --name [name] --schema=libs/domain/database/prisma/schema.prisma` — NEVER via Nx targets (Nx changes CWD, breaking Prisma 7's `.env` lookup). Generate/seed/studio via Nx are fine.
+3. **PrismaPg adapter:** Instantiate with a config object — `new PrismaPg({ connectionString })`, never a `pg.Pool` instance. Clean up with `prisma.$disconnect()`, never `pool.end()`.
+4. **Schema Change Protocol:** When modifying schema.prisma, complete ALL 8 steps in ONE session:
    - Update schema → migrate → update Zod schemas → update services → update DTOs → update frontend → update seeds → run tests
-4. **Column naming:** Prisma fields without `@map()` become camelCase columns in PostgreSQL
-5. **Repository pattern:** Use repositories for complex reusable queries, Prisma directly for simple CRUD
+5. **Column naming:** Prisma fields without `@map()` become camelCase columns in PostgreSQL
+6. **Repository pattern:** Use repositories for complex reusable queries, Prisma directly for simple CRUD
 
 ## Before Starting
 

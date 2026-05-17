@@ -1,13 +1,20 @@
 # Testing Rules
 
-## ⚠️ CRITICAL: Jest ONLY — Never Vitest
+## ⚠️ CRITICAL: Vitest for the frontend, Jest for the backend
 
-**Framework:** Jest with ts-jest
+**Two test runners, split by app:**
 
-**Why:** Vitest's esbuild/SWC does NOT preserve `emitDecoratorMetadata`. NestJS DI relies on this
-metadata — without it, services are `undefined` in controllers/guards.
+| App / lib | Runner | Why |
+|-----------|--------|-----|
+| `apps/client` + frontend libs (React) | **Vitest** | Pairs natively with Vite — shares its config + transform pipeline; fast watch |
+| `apps/api` + backend/domain libs (NestJS) | **Jest** with ts-jest | Vitest's esbuild/SWC does NOT preserve `emitDecoratorMetadata` — NestJS DI breaks (services `undefined` in controllers/guards) |
 
-**Applies to:** ALL tests — unit, integration, everything.
+**The hard rule:** NEVER run NestJS tests under Vitest. The decorator-metadata problem makes DI
+silently fail. Jest with ts-jest is mandatory for anything using NestJS decorators
+(`@Injectable`, `@Controller`, `@Inject`). The frontend has no decorator-metadata dependency,
+so Vitest is the better fit there.
+
+`pnpm nx test [project]` runs whichever runner that project is configured for.
 
 ---
 
@@ -68,6 +75,36 @@ import 'reflect-metadata';
   }
 }
 ```
+
+---
+
+## Vitest Configuration (frontend)
+
+Frontend projects (`apps/client`, React libs) use Vitest. It reuses the Vite config, so there
+is no separate transform pipeline to maintain.
+
+```typescript
+// vitest.config.ts
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
+  },
+});
+```
+
+```typescript
+// vitest.setup.ts
+import '@testing-library/jest-dom/vitest';
+```
+
+Use `@testing-library/react` for component tests. Do NOT import `reflect-metadata` here — that
+is a backend/Jest concern. Never point Vitest at NestJS code.
 
 ---
 
@@ -169,6 +206,38 @@ jest.mock('stripe', () => ({
   })),
 }));
 ```
+
+---
+
+## E2E Tests — Playwright
+
+E2E specs live in `apps/client-e2e/` (or `apps/e2e/` for fullstack flows). Playwright is the
+default — Chromium + Firefox + WebKit, strong API, great debugger.
+
+```bash
+pnpm dlx playwright install --with-deps   # one-time per machine
+pnpm nx e2e client-e2e                    # run the E2E suite
+pnpm nx e2e client-e2e --ui               # interactive runner
+```
+
+**Scope:**
+- E2E covers happy-path user flows end-to-end (signup → first-feature → settings).
+- Do NOT exhaustively retest backend logic in E2E — that belongs in Jest integration tests.
+- Run E2E in CI on every PR against a freshly-seeded test DB + a built client+API.
+- One spec per top-level user journey; not one per component.
+
+---
+
+## Frontend Component Workflow — Storybook + MSW
+
+For component-driven development on the React frontend:
+
+- **Storybook** for isolated component dev — `pnpm dlx storybook@latest init`. Stories live
+  next to components (`*.stories.tsx`). Especially useful for `libs/shared/ui/` components.
+- **MSW** (Mock Service Worker) mocks API calls for both Storybook stories AND Vitest
+  component tests — one set of handlers, used in both. Handlers live in
+  `libs/shared/api-client/src/lib/mocks/` and import paths from the generated OpenAPI client,
+  so mock responses are type-checked against the real API contract.
 
 ---
 

@@ -26,6 +26,13 @@ type: saas-web-app
 - [ ] mobile        # React Native
 - [ ] cli           # Command-line interface
 
+## Auth Provider
+<!-- Only relevant when the `auth` layer is active. Pick ONE provider. -->
+<!-- better-auth — library-based, cookie sessions, runs inside your API (default) -->
+<!-- zitadel     — full OIDC identity provider + Management API queries -->
+<!-- See .claude/knowledge/integrations.md for Zitadel setup + gotchas. -->
+auth_provider: better-auth
+
 ## Optional Integrations
 <!-- Enable the ones you need — /setup-project will wire them up -->
 - [ ] payments      # Stripe
@@ -33,8 +40,15 @@ type: saas-web-app
 - [ ] storage       # S3-compatible (DigitalOcean Spaces / AWS)
 - [ ] llm           # OpenAI / Anthropic
 - [ ] rag           # pgvector / embeddings
-- [ ] queue         # BullMQ background jobs
+- [ ] queue         # BullMQ background jobs (Redis or Valkey)
 - [ ] realtime      # WebSockets / SSE
+- [ ] hydra         # ORY Hydra — OAuth2 server for machine-to-machine / API tokens
+- [ ] logging       # Structured logging — Axiom / Grafana Cloud / Better Stack (pick at setup)
+- [ ] tracing       # OpenTelemetry distributed tracing (pairs with Grafana Cloud)
+- [ ] secrets       # Production secret management — Doppler / Infisical / SOPS / Vault (pick at setup)
+- [ ] feature-flags # Feature flags / experiments — GrowthBook / Unleash / LaunchDarkly (pick at setup)
+- [ ] i18n          # Localization — react-i18next + ICU MessageFormat
+- [ ] e2e           # End-to-end testing — Playwright
 
 ## Deployment Target
 <!-- Choose one: digital-ocean | vercel | aws | docker-self-hosted | cloudflare | none -->

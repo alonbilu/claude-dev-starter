@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":pinDevDependencies"],
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "packageRules": [
+    {
+      "description": "Auto-merge non-major bumps for stable packages",
+      "matchUpdateTypes": ["patch", "minor"],
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true
+    },
+    {
+      "description": "Major bumps need human review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major-upgrade"]
+    },
+    {
+      "description": "Group Prisma packages — they must move together",
+      "matchPackagePatterns": ["^@prisma/", "^prisma$"],
+      "groupName": "prisma packages"
+    },
+    {
+      "description": "Group Nx packages — they must move together",
+      "matchPackagePatterns": ["^@nx/", "^nx$"],
+      "groupName": "nx packages"
+    },
+    {
+      "description": "Group TanStack packages",
+      "matchPackagePatterns": ["^@tanstack/"],
+      "groupName": "tanstack packages"
+    },
+    {
+      "description": "Group testing-library packages",
+      "matchPackagePatterns": ["^@testing-library/"],
+      "groupName": "testing-library"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  }
+}

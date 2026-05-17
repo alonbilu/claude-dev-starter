@@ -4,7 +4,18 @@
 
 Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
-**Current version: 1.2.0** — see [CHANGELOG.md](CHANGELOG.md). New in 1.2.0: Biome 2.4 config migration (fixes broken `biome.json` on Biome ≥ 2.1), new `worker` project type for long-running Node processes (BullMQ consumers / queue runners), new `docs/INDEPENDENT-MULTI-REPO.md` describing the "each repo fully independent" pattern as a sibling to the hub variant, statusline now shows `Project: <dirname>` so multi-repo CLI sessions can tell which repo they're rooted at, `*.tsbuildinfo` pre-ignored. See the full entry in CHANGELOG. The 1.1.x line shipped: tier-aware commands, multi-repo hub variant, `/setup-project` asks about Claude Max plan + thinking mode, `/complete-feature` user-invoked-only review gate, explicit STOP-for-review checkpoints after each planning command, Prisma 7 migration + NestJS env-loading gotchas.
+**Current version: 1.4.0** — see [CHANGELOG.md](CHANGELOG.md). 1.4.0 is the broadest release since 1.0 — stack bumps, a real testing-runner split, a pluggable auth model, and seven new opt-in integrations. **Headline changes:**
+
+- **Stack bumps** — Prisma 7.8 (driver-adapter mode), PostgreSQL 18, Nx 22, pnpm 11, Vite 8, React 19.2, Zod 4, Jest 30, TypeScript 5.9, Node 22.
+- **TanStack Router** added to the frontend (file-based routing, typed search params validated through Zod).
+- **Testing runner split** — Vitest (frontend) + Jest (backend). The old "never Vitest" rule was overcorrecting; Vitest pairs natively with Vite and has no decorator-metadata dependency. NEVER for NestJS though — DI silently breaks.
+- **Pluggable auth provider** — Better Auth (default) or Zitadel (OIDC + Management API queries). Hydra as a separate opt-in for machine-to-machine tokens.
+- **Seven new opt-in integrations**: `hydra` (M2M auth), `logging` (Axiom / Grafana Cloud / Better Stack — provider choice), `tracing` (OpenTelemetry), `secrets` (Doppler / Infisical / SOPS / Vault, with DigitalOcean fit guidance), `feature-flags` (GrowthBook / Unleash / LaunchDarkly), `i18n` (react-i18next), `e2e` (Playwright).
+- **API hardening built in** — OpenAPI via `@nestjs/swagger`, `helmet` + `@nestjs/throttler` rate limiting, K8s-style liveness/readiness probes, Zod-validated env loading at boot, BullMQ worker patterns (idempotency, retries, DLQ).
+- **Database** — PgBouncer guidance, PrismaPg adapter gotcha (constructor takes a config object, NOT a `pg.Pool`), migrations from workspace root (NOT via Nx).
+- **DX** — `commitlint` enforcement, `.github/renovate.json` for weekly auto-bump PRs, production Dockerfile templates, `/new-adr` command, `scripts/start-cloudflared.sh`, Cloudflare Tunnel step in `/setup-project`, Valkey as a drop-in Redis replacement, documentation discipline baked into the per-step checklist, three new ADRs.
+
+The 1.3.0 line added `/quickbranch`. See CHANGELOG for the full list.
 
 ---
 
@@ -67,8 +78,8 @@ Claude delegates to focused agents with domain-specific context:
 
 | Tool | Version |
 |------|---------|
-| Node.js | 20+ |
-| pnpm | 10+ |
+| Node.js | 22+ |
+| pnpm | 11+ |
 | Docker | Latest |
 | Claude Code CLI | Latest |
 | gh CLI | Latest (optional, for `/create-pr`) |
@@ -110,15 +121,43 @@ The framework defaults to this production-tested stack. During `/setup-project`,
 
 | Layer | Default | Alternatives |
 |-------|---------|-------------|
-| Monorepo | Nx 20 + pnpm 10 | — |
-| Frontend | React 19 + Vite 6 + Tailwind v4 + Shadcn/ui | Vue, Svelte, Next.js |
+| Monorepo | Nx 22 + pnpm 11 | — |
+| Frontend | React 19.2 + Vite 8 + Tailwind v4 + Shadcn/ui | Vue, Svelte, Next.js |
+| Routing | TanStack Router (file-based, typed search params) | React Router |
 | State | TanStack Query v5 + React Hook Form + Zod | SWR, Redux |
 | Backend | NestJS 11 + esbuild | Express, Fastify, Hono |
-| Auth | Better Auth 1.5 | NextAuth, Clerk, Supabase Auth |
-| Database | Prisma 7.4 + PostgreSQL 17 | Drizzle, TypeORM, Knex |
-| Validation | Zod 3 (single source of truth) | — |
-| Testing | Jest + ts-jest | (**never Vitest** — breaks NestJS DI) |
-| Linting | Biome 2 | (**never ESLint**) |
+| API contract | OpenAPI via `@nestjs/swagger` (`/api/docs`) | — |
+| Auth | Better Auth 1.5 (default) or **Zitadel** | NextAuth, Clerk, Supabase Auth |
+| M2M auth | ORY Hydra (opt-in `hydra` integration) | — |
+| Database | Prisma 7.8 + PostgreSQL 18 (PgBouncer for pooling) | Drizzle, TypeORM, Knex |
+| Cache / queue | Redis 8 — or **Valkey** (drop-in, BSD-licensed) | Memcached |
+| Validation | Zod 4 (single source of truth) | — |
+| Testing | **Vitest** (frontend) + **Jest + ts-jest** (backend) | (**never Vitest** for NestJS — breaks DI) |
+| Logging | Axiom / Grafana Cloud / Better Stack (opt-in `logging`) | Sentry |
+| Linting | Biome 2.4 | (**never ESLint**) |
+
+### Opt-in integrations (`PROJECT.md` → `Optional Integrations`)
+
+Each integration is wired by `/setup-project` only when enabled; the rules-files baseline
+stays lean for projects that don't use them. See `.claude/knowledge/integrations.md` for
+setup + gotchas.
+
+| Integration | What it adds | Provider choice |
+|-------------|-------------|-----------------|
+| `payments` | Stripe subscriptions + webhook handling | — |
+| `email` | Resend + React Email templates | — |
+| `storage` | S3-compatible object storage | — |
+| `llm` | OpenAI / Anthropic provider integrations | — |
+| `rag` | pgvector embeddings + similarity search | — |
+| `queue` | BullMQ background jobs | Redis or **Valkey** |
+| `realtime` | WebSockets / SSE | — |
+| `hydra` | OAuth2 server for M2M / API tokens | ORY Hydra |
+| `logging` | Structured logging — frontend + backend | **Axiom / Grafana Cloud / Better Stack** |
+| `tracing` | OpenTelemetry distributed tracing | — |
+| `secrets` | Production secret manager | **Doppler** (recommended for DO) / Infisical / SOPS / Vault |
+| `feature-flags` | Feature flags / experiments | GrowthBook / Unleash / LaunchDarkly |
+| `i18n` | Localization | react-i18next + ICU MessageFormat |
+| `e2e` | End-to-end testing | Playwright |
 
 **Why React + Vite + NestJS over Next.js?** The default uses separated frontend/backend apps. This gives you full NestJS power (DI, guards, interceptors, queues, WebSockets) and independent scaling. Next.js is better for content/SEO-heavy sites with simple APIs. The setup wizard explains the full comparison if you consider swapping. See [`decisions.md`](.claude/knowledge/decisions.md) for the detailed architecture decision record.
 
@@ -188,6 +227,7 @@ See `.claude/rules/ai-workflow.md` "Planning Checkpoints" for the full table and
 | `/revise-spec [name]` | Update spec mid-feature |
 | `/release-milestone` | Major/minor version bump |
 | `/check-updates` | Weekly stack version check — major upgrades and security fixes |
+| `/new-adr [title]` | Scaffold a new Architecture Decision Record in `.claude/knowledge/decisions.md` |
 | `/help` or `/?` | Show all commands |
 
 ### GitHub (After `/create-pr`)
@@ -566,9 +606,9 @@ claude-dev-starter/
 │   │   └── ...                      ← 20+ more commands
 │   ├── agents/                      ← Specialized subagents
 │   │   ├── db-expert.md             ← Prisma, migrations, queries
-│   │   ├── test-writer.md           ← Jest tests, mocks, coverage
+│   │   ├── test-writer.md           ← Vitest (frontend) + Jest (backend) tests
 │   │   ├── api-builder.md           ← NestJS controllers, DTOs
-│   │   └── ui-builder.md            ← React, TanStack Query, forms
+│   │   └── ui-builder.md            ← React routes, forms, TanStack Router + Query
 │   ├── hooks/                       ← Automation scripts
 │   │   ├── biome-format.sh          ← Auto-format after edits
 │   │   ├── prisma-generate.sh       ← Auto-generate after schema changes
@@ -576,19 +616,21 @@ claude-dev-starter/
 │   ├── knowledge/                   ← On-demand reference (not always loaded)
 │   │   ├── stack-gotchas.md         ← Critical pitfalls with fixes
 │   │   ├── patterns.md              ← Reusable code patterns
-│   │   └── decisions.md             ← Architecture decision log
+│   │   ├── decisions.md             ← Architecture decision log (ADRs)
+│   │   └── integrations.md          ← Opt-in integrations: Zitadel, Hydra, logging, etc.
 │   └── rules/                       ← Always loaded (referenced in CLAUDE.md)
 │       ├── architecture.md          ← Layering, reuse, import boundaries
-│       ├── api.md                   ← NestJS, Better Auth, validation
-│       ├── database.md              ← Prisma 7, migrations, gotchas
-│       ├── frontend.md              ← React, TanStack Query, forms
-│       ├── testing.md               ← Jest setup, coverage requirements
-│       ├── code-quality.md          ← Biome, lint-staged, conventions
-│       ├── deployment.md            ← Docker, environments, deploy scripts
+│       ├── api.md                   ← NestJS, auth providers, OpenAPI, validation
+│       ├── database.md              ← Prisma 7.8, migrations, PgBouncer, gotchas
+│       ├── frontend.md              ← React, TanStack Router + Query, forms
+│       ├── testing.md               ← Vitest (frontend) + Jest (backend), coverage
+│       ├── code-quality.md          ← Biome, lint-staged, commitlint
+│       ├── deployment.md            ← Docker, Dockerfile, secrets, hardening
 │       └── ai-workflow.md           ← Feature workflow, brain.md protocol
 │
 ├── .github/
 │   ├── workflows/ci.yml             ← CI: lint, test, build on every PR
+│   ├── renovate.json                ← Weekly auto-bump PRs (paired with /check-updates)
 │   └── pull_request_template.md     ← Structured PR template
 │
 ├── docs/
@@ -598,12 +640,20 @@ claude-dev-starter/
 │   ├── GITHUB-WORKFLOW.md           ← PR review & merge operations
 │   ├── GITHUB-CLI-REFERENCE.md      ← gh CLI command reference
 │   ├── MIGRATION-FROM-EXISTING.md   ← Adopting in existing projects
+│   ├── INDEPENDENT-MULTI-REPO.md    ← Multi-repo: each repo independent
+│   ├── MULTI-REPO-HUB.md            ← Multi-repo: hub pattern
 │   └── templates/feature/           ← Feature document templates
 │
 ├── scripts/
 │   ├── setup-env.sh                 ← Env file wizard
 │   ├── validate-setup.sh            ← Setup verification
 │   ├── dev.sh                       ← Development orchestrator
+│   ├── start-preview.sh             ← Vite preview server (production bundle, local)
+│   ├── start-cloudflared.sh         ← Cloudflare Tunnel for local dev
+│   ├── install-prerequisites-ubuntu.sh   ← One-shot Ubuntu installer
+│   ├── install-pre-commit.sh        ← Husky + lint-staged + Biome
+│   ├── harden-server.sh             ← Server hardening (SSH/ufw/fail2ban/auto-updates)
+│   ├── staging-setup.sh             ← Server bootstrap (calls harden-server.sh)
 │   ├── staging-deploy.sh            ← Staging deploy
 │   ├── production-deploy.sh         ← Production deploy + rollback
 │   └── trim-context.sh              ← Context audit + cleanup
@@ -615,7 +665,7 @@ claude-dev-starter/
 
 ---
 
-## Critical Gotchas (Top 5)
+## Critical Gotchas (Top 7)
 
 Full details in `.claude/knowledge/stack-gotchas.md`:
 
@@ -623,8 +673,10 @@ Full details in `.claude/knowledge/stack-gotchas.md`:
 |--------|-----|
 | NestJS DI injects `undefined` | Never `import type` for services; always `import { Service }` |
 | esbuild strips decorator metadata | Always `@Inject(Service)` on every constructor param |
-| NestJS tests fail with Vitest | Use Jest only — Vitest doesn't preserve `emitDecoratorMetadata` |
-| Prisma 7 datasource error | Remove `url = env(...)` from datasource block |
+| NestJS tests fail with Vitest | Backend uses **Jest + ts-jest** — Vitest doesn't preserve `emitDecoratorMetadata`. Frontend is fine with Vitest. |
+| `PrismaPg` crashes with `ERR_INVALID_ARG_TYPE` | Pass a config object: `new PrismaPg({ connectionString })` — NOT a `pg.Pool` |
+| `prisma migrate dev` fails with "datasource.url required" | Prisma 7.8 needs `--url=...` explicitly (or a `prisma.config.ts`); `.env` is NOT auto-read for `migrate` |
+| `pnpm install` skips Prisma postinstall (`ERR_PNPM_IGNORED_BUILDS`) | Run `prisma generate` explicitly, or `pnpm approve-builds` once |
 | lint-staged stash lost | NEVER `git stash drop` after a failed pre-commit hook |
 
 ---

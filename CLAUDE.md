@@ -41,12 +41,14 @@ Then **wait** for the user to run `/setup-project` before doing anything else.
 > Populated by `/setup-project`. Until then, these are template defaults.
 
 - **Monorepo:** Nx + pnpm
-- **Frontend:** React + Vite + TanStack Query v5 + React Hook Form + Zod + Tailwind + Shadcn/ui
+- **Frontend:** React + Vite + TanStack Router + TanStack Query + React Hook Form + Zod + Tailwind + Shadcn/ui
 - **Backend:** NestJS + BullMQ (if queue enabled)
-- **Auth:** Better Auth + `@thallesp/nestjs-better-auth`
-- **Database:** Prisma + PostgreSQL (pgvector if rag enabled)
+- **API contract:** OpenAPI via `@nestjs/swagger` (Swagger UI at `/api/docs`)
+- **Auth:** Better Auth (default) or Zitadel — see `PROJECT.md` → `auth_provider`. Hydra (opt-in) for machine-to-machine tokens.
+- **Database:** Prisma 7 + PostgreSQL 18 (pgvector if rag enabled; PgBouncer for connection pooling)
 - **Validation:** Zod (single source of truth)
-- **Testing:** Jest ONLY (never Vitest)
+- **Testing:** Vitest (frontend) + Jest (backend — NEVER Vitest for NestJS)
+- **Logging:** Axiom (opt-in `logging` integration) — frontend + backend
 - **Linting:** Biome ONLY (never ESLint)
 - **GitHub:** Always use `gh` CLI (never raw GitHub API or browser URLs)
 - **API port:** 3333 | **Client port:** 4200
@@ -152,15 +154,15 @@ libs/
 
 ```bash
 # Infrastructure
-docker compose up -d              # start PostgreSQL + Redis
+docker compose up -d              # start PostgreSQL + Redis/Valkey
 docker compose down               # stop
 
 # Apps (run locally, not in Docker)
 pnpm nx serve api                 # NestJS: http://localhost:3333
 pnpm nx serve client              # React: http://localhost:4200
 
-# Database
-pnpm nx run database:migrate:dev --name [name]
+# Database (migrations: raw Prisma from workspace root — NOT via Nx)
+npx prisma migrate dev --name [name] --schema=libs/domain/database/prisma/schema.prisma
 pnpm nx run database:generate
 pnpm nx run database:seed
 pnpm nx run database:studio
@@ -217,9 +219,9 @@ pnpm check:fix                    # Biome fix entire workspace
 
 Claude delegates to focused agents for better output quality:
 - **db-expert** — Prisma schema, migrations, repositories
-- **test-writer** — Jest tests, mocks, coverage
+- **test-writer** — Vitest (frontend) + Jest (backend) tests, mocks, coverage
 - **api-builder** — NestJS controllers, DTOs, modules
-- **ui-builder** — React pages, forms, TanStack Query hooks
+- **ui-builder** — React routes, forms, TanStack Router + Query hooks
 
 ---
 
@@ -232,7 +234,7 @@ Claude delegates to focused agents for better output quality:
 | Database Query | `libs/domain/database/src/lib/repositories/` |
 | API Controller | `apps/api/src/app/[feature]/[name].controller.ts` |
 | API DTO | `apps/api/src/app/[feature]/dto/` |
-| React Page | `apps/client/src/pages/` |
+| React Route | `apps/client/src/routes/` (TanStack Router, file-based) |
 | Reusable UI Component | `libs/shared/ui/src/lib/components/` |
 | NestJS Guard | `libs/backend/core/src/lib/guards/` |
 | Email Template | `libs/backend/email/src/lib/templates/` |
@@ -243,10 +245,10 @@ Claude delegates to focused agents for better output quality:
 ## Detailed Rules
 
 - **Architecture:** `.claude/rules/architecture.md` — layering, import rules, reuse commandments
-- **Database:** `.claude/rules/database.md` — Prisma, migrations, gotchas
-- **API:** `.claude/rules/api.md` — NestJS, Better Auth, validation
-- **Frontend:** `.claude/rules/frontend.md` — React, TanStack Query, forms, Shadcn
-- **Testing:** `.claude/rules/testing.md` — Jest setup, patterns, coverage requirements
+- **Database:** `.claude/rules/database.md` — Prisma, migrations, PgBouncer, gotchas
+- **API:** `.claude/rules/api.md` — NestJS, auth providers, OpenAPI/Swagger, validation
+- **Frontend:** `.claude/rules/frontend.md` — React, TanStack Router + Query, forms, Shadcn
+- **Testing:** `.claude/rules/testing.md` — Vitest (frontend) + Jest (backend), coverage requirements
 - **Code Quality:** `.claude/rules/code-quality.md` — Biome, lint-staged, conventions
 - **Deployment:** `.claude/rules/deployment.md` — Docker, environments, deploy scripts
 - **Publishing:** `.claude/rules/publishing.md` — opt-in, for projects that publish npm packages (`.d.ts` emission, `.npmignore` traps, cross-consumer audits)
@@ -257,6 +259,7 @@ Claude delegates to focused agents for better output quality:
 - `.claude/knowledge/stack-gotchas.md` — Critical gotchas (DI, Prisma, testing, Biome, Zod)
 - `.claude/knowledge/patterns.md` — Reusable code patterns (backend + frontend)
 - `.claude/knowledge/decisions.md` — Architecture decisions log
+- `.claude/knowledge/integrations.md` — Opt-in integrations: Zitadel, Hydra, Axiom, Valkey
 
 ---
 

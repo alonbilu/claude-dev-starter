@@ -124,13 +124,146 @@ datasource db {
 }
 ```
 
-### Prisma 7.x migrations: run from project root, NEVER via Nx targets
+### PrismaPg 7.x adapter: pass a config object, NOT a `pg.Pool`
 
-Battle-tested on a real project. Prisma 7.2+ removes `url = env(...)` from the datasource block and reads `DATABASE_URL` from `.env` in CWD. This looks clean but **breaks Nx-wrapped migration commands** — Nx changes the working directory before invoking Prisma, so `.env` lookup fails and you get:
+In Prisma 7, the `PrismaPg` constructor takes a **config object** — not a `pg.Pool` instance.
+Passing a Pool crashes at runtime with a cryptic `ERR_INVALID_ARG_TYPE` from pg-protocol's
+serializer. The stack trace points at pg-protocol, not your code, making it hard to diagnose.
+
+```typescript
+// ❌ V6 form — crashes on Prisma 7
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+const adapter = new PrismaPg(pool);          // ← passes a Pool, crashes
+const prisma = new PrismaClient({ adapter });
+await pool.end();
+
+// ✅ V7 form — the adapter owns the pool internally
+import { PrismaPg } from '@prisma/adapter-pg';
+const adapter = new PrismaPg({ connectionString: process.env['DATABASE_URL'] });
+const prisma = new PrismaClient({ adapter });
+await prisma.$disconnect();   // tears down the pool — pool.end() is wrong
+```
+
+Custom pool options go inside the same config object (same keys as `pg.Pool`):
+
+```typescript
+new PrismaPg({
+  connectionString: process.env['DATABASE_URL'],
+  connectionTimeoutMillis: 5_000,
+  idleTimeoutMillis: 300_000,
+  ssl: { rejectUnauthorized: false },
+});
+```
+
+**Diagnostic clues** — any one of these means this bug: `Writer.addCString` in the stack
+trace, `pg-protocol/.../serializer.ts`, `ERR_INVALID_ARG_TYPE`, `"Received an instance of
+Object"` from `Buffer.byteLength`, or an integration test hanging forever in `beforeAll`.
+
+**Applies to every site that instantiates `PrismaPg`** — `prisma.service.ts`, `seed.ts`,
+integration-test helpers, and data-migration scripts.
+
+### Prisma 7 standalone scripts need a driver adapter — no bare `PrismaClient`
+
+In Prisma 7, standalone scripts (seed, data-migration scripts, test helpers) **cannot** use
+`new PrismaClient()` alone — they need the driver-adapter pattern. Plain instantiation throws:
 
 ```
-Error: datasource.url property is required
+PrismaClientInitializationError: PrismaClient needs to be constructed with a
+non-empty, valid PrismaClientOptions
 ```
+
+```typescript
+// ✅ Correct for standalone scripts in Prisma 7
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
+
+const adapter = new PrismaPg({ connectionString: process.env['DATABASE_URL'] });
+const prisma = new PrismaClient({ adapter });
+// ... use prisma
+await prisma.$disconnect();
+```
+
+### Hand-craft migration SQL for non-additive schema changes
+
+Prisma auto-generates **lossy** migrations for column renames, `NOT NULL` constraints on
+populated tables, and partial unique indexes — it drops + recreates, destroying data.
+
+**Trigger:** the generated migration contains `DROP COLUMN`, `DROP TABLE`, or recreates
+something that already holds live data.
+
+```bash
+# 1. Create the migration stub WITHOUT applying it
+npx prisma migrate dev --create-only --name my_migration \
+  --schema=libs/domain/database/prisma/schema.prisma
+
+# 2. Inspect the generated SQL; rewrite the lossy parts:
+#    RENAME:   ALTER TABLE "Foo" RENAME COLUMN "oldName" TO "newName";
+#    BACKFILL: UPDATE "Foo" SET "col" = (subquery) WHERE "col" IS NULL;
+#              ALTER TABLE "Foo" ALTER COLUMN "col" SET NOT NULL;
+#    PARTIAL:  CREATE UNIQUE INDEX "Foo_col_idx" ON "Foo"("col") WHERE (condition);
+
+# 3. Apply
+npx prisma migrate dev --schema=libs/domain/database/prisma/schema.prisma
+```
+
+### Prisma 7.8 migrations: pass `--url=...` explicitly (the `.env` auto-read no longer works for `migrate dev`)
+
+**Verified live on Prisma 7.8 + PostgreSQL 18 (May 2026).** Prisma 7.8 changed the rules
+again: the datasource block STILL doesn't carry `url = env(...)`, but `prisma migrate dev` /
+`migrate deploy` no longer auto-reads `DATABASE_URL` from `.env`. Instead the CLI expects a
+`prisma.config.ts` file at the workspace root, OR a `--url=...` flag on every command.
+
+Without one of those, you get:
+
+```
+Error: The datasource.url property is required in your Prisma config file when using prisma migrate dev.
+```
+
+**The simplest working pattern** (verified end-to-end against Postgres 18):
+
+```bash
+# DATABASE_URL still goes in .env for runtime (the PrismaClient + PrismaPg adapter reads it),
+# but the migrate CLI needs --url= explicitly:
+
+source .env   # or: export DATABASE_URL=$(grep ^DATABASE_URL .env | cut -d= -f2 | tr -d '"')
+
+npx prisma migrate dev --name add_users \
+  --schema=libs/domain/database/prisma/schema.prisma \
+  --url="$DATABASE_URL"
+
+npx prisma generate \
+  --schema=libs/domain/database/prisma/schema.prisma
+```
+
+**Alternative — a `prisma.config.ts` at workspace root** so the URL doesn't need to be on
+every CLI invocation:
+
+```typescript
+// prisma.config.ts (workspace root)
+import path from 'node:path';
+import 'dotenv/config';
+import { defineConfig } from 'prisma/config';
+
+export default defineConfig({
+  schema: path.join(import.meta.dirname, 'libs/domain/database/prisma/schema.prisma'),
+  migrations: {
+    path: path.join(import.meta.dirname, 'libs/domain/database/prisma/migrations'),
+  },
+});
+```
+
+Pick one approach and stick with it across the project.
+
+**Nx is still wrong for migrations** for the same original reason (it changes CWD, which
+breaks the `dotenv/config` import inside `prisma.config.ts`). Run migrations as raw Prisma
+from the workspace root. `pnpm nx run database:generate` / `seed` / `studio` are still fine.
+
+**pnpm 11 + Prisma postinstall:** pnpm 11 blocks Prisma's postinstall by default
+(`ERR_PNPM_IGNORED_BUILDS` for `@prisma/engines`, `esbuild`, `prisma`). Either run
+`pnpm approve-builds` once to allow them, or just run `prisma generate` explicitly after
+install — which the kit's `prisma-generate.sh` hook does on schema edits anyway.
 
 The correct workflow is raw Prisma CLI **from the workspace root**, with an explicit `--schema` flag pointing at your schema:
 
@@ -192,10 +325,12 @@ Use `@@map("snake_case_table")` for table names if you prefer snake_case tables 
 
 ## Testing
 
-### NEVER use Vitest for NestJS projects
+### NEVER use Vitest for the NestJS backend
 Vitest's esbuild/SWC does NOT preserve `emitDecoratorMetadata`. Services will be `undefined` in controllers and guards.
 
-**Use Jest with ts-jest for everything.**
+**Use Jest with ts-jest for the NestJS backend** (`apps/api` + backend/domain libs). The React
+frontend (`apps/client` + frontend libs) uses **Vitest** — it has no decorator-metadata
+dependency, so the bug doesn't apply there. Split by app; never cross the runners over.
 
 ### `tsconfig.spec.json` must have these exact settings
 ```json
@@ -213,6 +348,22 @@ Vitest's esbuild/SWC does NOT preserve `emitDecoratorMetadata`. Services will be
 docker compose up -d postgres-test
 ```
 Set `DATABASE_URL` to `DATABASE_URL_TEST` in test files — not the dev database.
+
+### Cross-project tests need explicit `moduleNameMapper` entries
+
+The Nx Jest preset does NOT resolve every `@app/*` alias automatically. When a test in lib A
+imports from lib B, add an explicit entry to the consumer's `jest.config.ts`:
+
+```typescript
+moduleNameMapper: {
+  '^@app/advisor$': '<rootDir>/../../domain/advisor/src/index.ts',
+  // ...one line per cross-lib dependency used in tests
+}
+```
+
+**Symptom:** `Cannot find module '@app/foo'` in tests, even though TypeScript compiles fine.
+**Why:** the TS compiler resolves aliases from `tsconfig.base.json`; Jest's resolver does not
+inherit them unless the preset propagates them — and it doesn't for every case.
 
 ---
 
@@ -280,6 +431,37 @@ onSuccess: (result) => {
 ```
 
 **Symptom of stale cache:** Feature works on page REFRESH but not on SPA navigation.
+
+### `useMutation` objects in a `useEffect` dependency array cause infinite loops
+
+Putting a `useMutation` result in a `useEffect` dependency array triggers infinite re-runs:
+calling `.mutate()` changes the mutation's internal state (`isPending`), which produces a new
+object reference, which re-fires the effect while the trigger condition is still true.
+
+**Fix — `useRef` guard:**
+
+```typescript
+const completingRef = useRef(false);
+const mutationRef = useRef(myMutation);
+mutationRef.current = myMutation;   // keep the ref current WITHOUT adding it to deps
+
+useEffect(() => {
+  if (!operationId || completingRef.current) return;
+  if (statusData?.status === 'COMPLETED') {
+    completingRef.current = true;
+    mutationRef.current.mutate(
+      { operationId },
+      {
+        onSuccess: () => { completingRef.current = false; setOperationId(null); },
+        onError: () => { completingRef.current = false; setOperationId(null); },
+      },
+    );
+  }
+}, [statusData?.status, operationId]);   // ← minimal deps, NO mutation objects
+```
+
+Move mutation objects and callbacks into refs (updated by assignment, not via deps), add a
+boolean re-entry guard, and keep the dependency array to only the values that should re-trigger.
 
 ---
 
@@ -360,6 +542,25 @@ pnpm nx g @nx/js:library my-feature --directory=libs/domain/my-feature
 # Remove from libs/domain/my-feature/project.json:
 # "build": { ... }   ← delete this entire target
 ```
+
+---
+
+## Debugging
+
+### After an upgrade, a cryptic library error → read the upgrade guide FIRST
+
+When a low-level library (pg-protocol, esbuild, etc.) throws a cryptic error right after you
+upgraded a higher-level package (Prisma, Nx, etc.), the instinct is to chase peer-dependency
+version mismatches. That instinct is almost always wrong when all the packages are from the
+same release line.
+
+**Better heuristic:** read the upgrade guide for the package you bumped BEFORE auditing
+peer-dep versions. Breaking API changes are documented there; version-mismatch chasing is
+expensive when the real cause is a caller-side API change.
+
+**Example:** `ERR_INVALID_ARG_TYPE` from `pg-protocol/serializer.ts` after a Prisma 6 → 7
+bump looked like a `pg` / `pg-protocol` / `adapter-pg` version conflict. It was actually the
+`PrismaPg` constructor signature change documented in the Prisma 7 upgrade guide.
 
 ---
 

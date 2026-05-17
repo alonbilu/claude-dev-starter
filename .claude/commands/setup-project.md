@@ -13,24 +13,24 @@ Before starting setup, validate the environment:
 
 **Check prerequisites:**
 
-1. **Node.js 20+**
+1. **Node.js 22+**
    ```bash
    node --version
    ```
-   If not found or < 20: STOP. Tell user:
+   If not found or < 22: STOP. Tell user:
    ```
-   Node.js 20 or higher is required.
+   Node.js 22 or higher is required.
    Install from: https://nodejs.org/ (LTS recommended)
    Then run /setup-project again.
    ```
 
-2. **pnpm 10+**
+2. **pnpm 11+**
    ```bash
    pnpm --version
    ```
    If not found: STOP. Tell user:
    ```
-   pnpm 10+ is required (npm/yarn won't work).
+   pnpm 11+ is required (npm/yarn won't work).
    Install with: npm install -g pnpm
    Then run /setup-project again.
    ```
@@ -166,8 +166,8 @@ Based on your description, I'd recommend:
 
   ➤ 1. saas-web-app (recommended)
        Stack: React + Vite + NestJS + Prisma + PostgreSQL + Better Auth
-       UI: Tailwind + Shadcn/ui | Forms: React Hook Form + Zod
-       Data: TanStack Query v5 | Testing: Jest | Linting: Biome
+       UI: Tailwind + Shadcn/ui | Routing: TanStack Router | Forms: React Hook Form + Zod
+       Data: TanStack Query v5 | Testing: Vitest (frontend) + Jest (backend) | Linting: Biome
 
   2. api-only        — NestJS + Prisma + PostgreSQL (no frontend)
   3. fullstack-web   — Same as saas-web-app but no billing/auth layer
@@ -189,13 +189,15 @@ Choosing it means everything works out of the box. Other types may require manua
 Here's your default stack — all pre-configured and ready to go:
 
   Frontend:   React + Vite + Tailwind + Shadcn/ui
+  Routing:    TanStack Router (file-based, typed search params)
   State:      TanStack Query v5 (server) + Zustand (client, if needed)
   Forms:      React Hook Form + Zod resolver
   Backend:    NestJS (with Nx workspace)
-  Database:   Prisma + PostgreSQL 17
-  Auth:       Better Auth (cookie-based sessions)
+  API contract: OpenAPI via @nestjs/swagger
+  Database:   Prisma 7.8 + PostgreSQL 18 (PgBouncer for pooling in staging/prod)
+  Auth:       Better Auth (default) or Zitadel — pick one
   Validation: Zod (single source of truth for types)
-  Testing:    Jest (never Vitest — breaks NestJS DI)
+  Testing:    Vitest (frontend) + Jest (backend — NEVER Vitest for NestJS)
   Linting:    Biome (never ESLint)
   Monorepo:   Nx + pnpm
 
@@ -211,7 +213,7 @@ Note: Some swaps require manual configuration changes.
   - CSS framework (Tailwind → CSS Modules, Styled Components, etc.)
   - Backend framework (NestJS → Express, Fastify, etc.)
   - Database (PostgreSQL → MySQL, SQLite, MongoDB, etc.)
-  - Auth provider (Better Auth → NextAuth, Clerk, etc.)
+  - Auth provider (Better Auth → Zitadel, NextAuth, Clerk, etc.)
   - ORM (Prisma → Drizzle, TypeORM, etc.)
 
 Type the tool category to change, or "done" when finished:
@@ -334,18 +336,22 @@ stable versions, not whatever was hardcoded when the template was last updated.
 
 | Dependency | Template version | Search query |
 |-----------|-----------------|--------------|
-| React | 19 | `React latest stable version [current year]` |
-| Vite | 6 | `Vite latest stable version [current year]` |
+| React | 19.2 | `React latest stable version [current year]` |
+| Vite | 8 | `Vite latest stable version [current year]` |
 | Tailwind CSS | v4 | `Tailwind CSS latest stable version [current year]` |
+| TanStack Router | v1 | `TanStack Router latest stable version [current year]` |
 | NestJS | 11 | `NestJS latest stable version [current year]` |
-| Prisma | 7.4 | `Prisma ORM latest stable version [current year]` |
-| PostgreSQL | 17 | `PostgreSQL latest stable version [current year]` |
+| Prisma | 7.8 | `Prisma ORM latest stable version [current year]` |
+| PostgreSQL | 18 | `PostgreSQL latest stable version [current year]` |
 | Better Auth | 1.5 | `Better Auth latest stable version [current year]` |
-| Biome | 2 | `Biome linter latest stable version [current year]` |
-| pnpm | 10 | `pnpm latest stable version [current year]` |
+| Biome | 2.4 | `Biome linter latest stable version [current year]` |
+| pnpm | 11 | `pnpm latest stable version [current year]` |
+| Vitest | 3 | `Vitest latest stable version [current year]` |
+| Jest | 30 | `Jest latest stable version [current year]` |
+| Nx | 22 | `Nx latest stable version [current year]` |
 
 **Rules:**
-- Only flag **major version** upgrades (e.g., React 19 → 20, not 19.2 → 19.3)
+- Only flag **major version** upgrades (e.g., React 19.2 → 20, not 19.2 → 19.3)
 - Only flag versions that have been **stable for at least 1 month** (no RC/beta)
 - Skip tools the user swapped out in Q4
 
@@ -389,7 +395,7 @@ Active layers for your [type] project:
 
   [x] frontend      — React + Vite + Tailwind + Shadcn/ui
   [x] backend       — NestJS + Zod validation
-  [x] database      — Prisma + PostgreSQL 17
+  [x] database      — Prisma + PostgreSQL 18
   [x] auth          — Better Auth (cookie-based sessions)
   [ ] mobile        — React Native (not included by default)
 
@@ -405,11 +411,57 @@ Which optional integrations do you need?
   [ ] storage    — File uploads (S3-compatible object storage)
   [ ] llm        — LLM providers (OpenAI, Anthropic, etc.)
   [ ] rag        — Vector search / embeddings (requires pgvector)
-  [ ] queue      — Background jobs (BullMQ + Redis)
+  [ ] queue      — Background jobs (BullMQ + Redis or Valkey)
   [ ] realtime   — WebSockets / SSE
+  [ ] hydra      — ORY Hydra OAuth2 server for machine-to-machine / API tokens
+  [ ] logging    — Structured logging (Axiom / Grafana Cloud / Better Stack)
+  [ ] tracing    — OpenTelemetry distributed tracing (pairs with Grafana Cloud)
+  [ ] secrets    — Production secret management (Doppler / Infisical / SOPS / Vault)
+  [ ] feature-flags — Feature flags / experiments (GrowthBook / Unleash / LaunchDarkly)
+  [ ] i18n       — Localization (react-i18next)
+  [ ] e2e        — End-to-end testing (Playwright)
 
 Type integration names to enable (space-separated), or press Enter to skip all:
 ```
+
+**Q6a: Auth provider** (only ask if the `auth` layer is active)
+
+```
+Two choices for the auth layer:
+
+  1. better-auth (default) — library-based, cookie sessions, runs INSIDE your API.
+                              Simplest; good for self-contained SaaS.
+  2. zitadel               — external OIDC identity provider + Management API queries.
+                              Use when you want enterprise SSO, org/role models, or to query
+                              users/roles from your backend. Setup notes:
+                              .claude/knowledge/integrations.md → Zitadel.
+
+Enter 1/2 [1]:
+```
+
+Record as `auth_provider: better-auth | zitadel` in PROJECT.md.
+
+**Q6b: Logging provider** (only ask if the `logging` integration is enabled)
+
+```
+Pick a logging/observability provider. The pros/cons:
+
+  1. axiom         — Structured event logs, simple ingest, generous free tier.
+                     Best for: "just logs, fast." Logs-only — no metrics/traces/dashboards.
+
+  2. grafana-cloud — Full observability suite: logs (Loki) + metrics (Mimir) + traces (Tempo)
+                     + dashboards. Best for: also wanting metrics/traces/dashboards in one
+                     platform. Heavier to wire up.
+
+  3. better-stack  — Logs + uptime monitoring + incident management in one product.
+                     Best for: wanting logs PLUS uptime/on-call in one tool. Smaller
+                     ecosystem than Grafana.
+
+Enter 1/2/3 [1]:
+```
+
+Record as `logging_provider: axiom | grafana-cloud | better-stack` in PROJECT.md, and
+uncomment the matching env var block in `.env.example`.
 
 **Q7: Deployment target**
 ```
@@ -468,13 +520,15 @@ Do you want a separate test database?
 [1]:
 ```
 
-**Concern: Redis** (only if queue or realtime integration is enabled)
+**Concern: Redis or Valkey** (only if queue or realtime integration is enabled)
 ```
-How do you want to run Redis?
+Valkey is a drop-in, BSD-licensed Redis fork — same protocol, same client code.
+Pick one image; the rest of the setup is identical.
 
-  1. Docker locally (recommended)
-  2. Managed cloud (Redis Cloud, Upstash)
-  3. Not needed — remove from setup
+  1. Docker locally — Redis 8 (default)
+  2. Docker locally — Valkey 8 (fully open-source license)
+  3. Managed cloud (Redis Cloud, Upstash, AWS ElastiCache, Aiven Valkey)
+  4. Not needed — remove from setup
 
 [1]:
 ```
@@ -482,10 +536,32 @@ How do you want to run Redis?
 **Concern: pgvector** (only if rag integration is enabled)
 ```
 The 'rag' integration requires pgvector. I'll switch the PostgreSQL image to
-pgvector/pgvector:pg17 in docker-compose.yml. This is compatible with standard Postgres.
+pgvector/pgvector:pg18 in docker-compose.yml. This is compatible with standard Postgres.
 
 Confirm? [yes]:
 ```
+
+**Concern: Cloudflare Tunnel** (optional — expose local dev to a public hostname)
+```
+Want to expose your local dev environment via a Cloudflare Tunnel?
+Useful when:
+  • A teammate / OAuth provider / webhook source needs a public URL into your laptop
+  • You're hosting dev on your own home server and want a stable public endpoint
+Alternative: scripts/start-ngrok.sh (ad-hoc, no Cloudflare account needed).
+
+  1. Yes — set up a Cloudflare Tunnel now (requires a Cloudflare account + `cloudflared`)
+  2. Skip — I'll use localhost / ngrok for now
+
+[2]:
+```
+
+If they pick 1:
+- Confirm `cloudflared` is installed (`cloudflared --version`); install instructions if not.
+- Walk them through `cloudflared tunnel login`, `cloudflared tunnel create <name>`, and
+  `cloudflared tunnel route dns <name> dev.yourdomain.com`.
+- Add `CLOUDFLARE_TUNNEL_TOKEN=...` to `.env` (uncomment from `.env.example`).
+- Suggest a `scripts/start-cloudflared.sh` helper that runs the tunnel pointing at
+  `http://localhost:[CLIENT_PORT]` and/or `[API_PORT]`.
 
 **Concern: App execution**
 ```
@@ -671,7 +747,7 @@ Ready to finish setup? I can run these steps for you:
   Run this now? [yes/no/skip]
 
   Step D: Run initial database migration  ← only if database layer is active
-  → pnpm nx run database:migrate:dev --name init
+  → npx prisma migrate dev --name init --schema=libs/domain/database/prisma/schema.prisma
   Run this now? [yes/no/skip]
 
   Step E: Verify build

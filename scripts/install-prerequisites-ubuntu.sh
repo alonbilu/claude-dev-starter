@@ -2,7 +2,7 @@
 # install-prerequisites-ubuntu.sh — Install all dev prerequisites on Ubuntu 22.04+
 # Usage: bash scripts/install-prerequisites-ubuntu.sh
 #
-# Installs: Node.js 20, pnpm 10, Docker Engine, Claude Code CLI, gh CLI
+# Installs: Node.js 22, pnpm 11, Docker Engine, Claude Code CLI, gh CLI
 # Note: VS Code is desktop-only — install manually from https://code.visualstudio.com if needed
 
 set -euo pipefail
@@ -20,21 +20,21 @@ echo "===================================================="
 echo "Target: Ubuntu 22.04+"
 echo ""
 
-# ── Node.js 20 (via NodeSource) ─────────────────────────────────────────────
-if node --version 2>/dev/null | grep -q "^v2[0-9]"; then
+# ── Node.js 22 (via NodeSource) ─────────────────────────────────────────────
+if node --version 2>/dev/null | grep -qE "^v(2[2-9]|[3-9][0-9])"; then
   ok "Node.js $(node --version) already installed"
 else
-  info "Installing Node.js 20..."
-  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  info "Installing Node.js 22..."
+  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
   sudo apt-get install -y nodejs
   ok "Node.js $(node --version) installed"
 fi
 
-# ── pnpm 10 ─────────────────────────────────────────────────────────────────
-if pnpm --version 2>/dev/null | grep -q "^10"; then
+# ── pnpm 11 ─────────────────────────────────────────────────────────────────
+if pnpm --version 2>/dev/null | grep -qE "^(1[1-9]|[2-9][0-9])"; then
   ok "pnpm $(pnpm --version) already installed"
 else
-  info "Installing pnpm 10..."
+  info "Installing pnpm 11..."
   npm install -g pnpm@latest
   ok "pnpm $(pnpm --version) installed"
 fi

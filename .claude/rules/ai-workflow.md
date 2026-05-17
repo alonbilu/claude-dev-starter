@@ -441,13 +441,33 @@ chore: complete F003 email-verification (v1.2.0)
 
 ---
 
+## Documentation — Update As You Build
+
+Documentation is part of "done", not a later chore. As you implement, in the SAME step:
+
+- **API docs:** every new or changed endpoint must be reflected in the OpenAPI document. DTOs
+  derived from Zod via `createZodDto` carry their shapes automatically; add `@ApiTags()` /
+  `@ApiResponse()` where they add value. When the contract changes, re-export
+  `/api/docs-json` → `docs/openapi.json` and commit it in the same step.
+- **Code docs:** add a short doc comment to every exported service method, non-trivial
+  utility, and domain type — explain WHY / intent, not a restatement of the code. Keep inline
+  comments for non-obvious constraints only.
+- **Feature docs:** keep the feature's `CONTEXT.md` and `STATUS.md` current — that is what
+  `/resume-feature` relies on.
+- **README / module docs:** when a step adds a new module, lib, or externally-visible
+  behavior, update the relevant README or `docs/` page in the same commit.
+
+A step is not complete until its documentation is.
+
+---
+
 ## Zod Schema Changes = Immediate Propagation
 
 When ANY Zod schema in `libs/shared/types` changes, update ALL of these in the SAME session:
 
 1. Zod schema (`libs/shared/types/`)
 2. Prisma schema (`libs/domain/database/prisma/schema.prisma`)
-3. Generate migration (`pnpm nx run database:migrate:dev --name [name]`)
+3. Generate migration (`npx prisma migrate dev --name [name] --schema=libs/domain/database/prisma/schema.prisma`)
 4. Backend DTOs (`apps/api/src/app/[feature]/dto/`)
 5. Domain services (handle new field)
 6. Frontend forms/queries
@@ -466,6 +486,7 @@ When ANY Zod schema in `libs/shared/types` changes, update ALL of these in the S
 - [ ] No import boundary violations
 - [ ] No duplicate code created — searched before writing
 - [ ] All types imported from shared types lib
+- [ ] Docs updated — API/OpenAPI doc, code doc-comments, README/module docs
 - [ ] STATUS.md updated
 
 ---

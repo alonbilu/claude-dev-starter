@@ -13,20 +13,26 @@ Search the web for the latest stable versions of these core dependencies (read P
 
 | Dependency | Current default | Check for |
 |-----------|----------------|-----------|
-| React | 19 | Major release (e.g., React 20) |
-| Vite | 6 | Major release |
+| React | 19.2 | Major release (e.g., React 20) |
+| Vite | 8 | Major release |
 | Tailwind CSS | v4 | Major release |
 | Shadcn/ui | latest | Breaking changes or major redesign |
+| TanStack Router | v1 | Major release (v2+) |
 | TanStack Query | v5 | Major release (v6+) |
 | NestJS | 11 | Major release (v12+) |
-| Prisma | 7.4 | Major release (v8+) or important minor (security) |
-| PostgreSQL | 17 | Major release (18+) — only if stable and LTS-equivalent |
+| Prisma | 7.8 | Major release (v8+) or important minor (security) |
+| PostgreSQL | 18 | Major release (19+) — only if stable and LTS-equivalent |
 | Better Auth | 1.5 | Major release (2.0+) or important security patch |
-| Biome | 2 | Major release (3+) |
-| pnpm | 10 | Major release (11+) |
-| Zod | 3 | Major release (4+) |
-| Jest | 29 | Major release (30+) |
-| Nx | 20 | Major release (21+) |
+| Biome | 2.4 | Major release (3+) |
+| pnpm | 11 | Major release (12+) |
+| Zod | 4 | Major release (5+) |
+| Vitest | 3 | Major release (4+) |
+| Jest | 30 | Major release (31+) |
+| Nx | 22 | Major release (23+) |
+| TypeScript | 5.9 | Major release (6+) |
+
+**Integration dependencies** (check only if enabled in `PROJECT.md`): `@nestjs/swagger`,
+Zitadel SDKs, ORY Hydra, `@axiomhq/*`. Same rule — flag only major releases or security fixes.
 
 ## How to check
 

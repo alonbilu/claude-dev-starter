@@ -2,8 +2,8 @@
 
 ## Stack
 
-**ORM:** Prisma (latest)
-**Database:** PostgreSQL 17
+**ORM:** Prisma 7.8+ (driver-adapter mode — `@prisma/adapter-pg`)
+**Database:** PostgreSQL 18
 **Optional:** pgvector (enable when `rag` integration is active)
 **Location:** `libs/domain/database/`
 
@@ -58,20 +58,50 @@ When in doubt: `npx prisma generate`. Idempotent and fast.
 
 ---
 
-## ⚠️ CRITICAL: Run Prisma Commands via Nx (not directly)
+## ⚠️ CRITICAL: Run migrations from the workspace root (NOT via Nx)
 
-Prisma CLI needs the correct CWD (`libs/domain/database/`). Nx handles this automatically.
+Prisma 7.2+ reads `DATABASE_URL` from `.env` in the current working directory. Nx changes the
+working directory before invoking Prisma, so the env lookup fails (`Error: datasource.url
+property is required`). Always run **migrations** with raw Prisma from the workspace root, with
+an explicit `--schema` flag.
 
 ```bash
-# ✅ Correct — Nx applies the right cwd
-pnpm nx run database:migrate:dev --name add_user_email_verified
+# ✅ Correct — raw Prisma, explicit --schema, from the workspace root
+npx prisma migrate dev --name add_user_email_verified \
+  --schema=libs/domain/database/prisma/schema.prisma
+
+# ✅ Generate / seed / studio — Nx is fine for these (no DATABASE_URL env lookup)
 pnpm nx run database:generate
 pnpm nx run database:seed
 pnpm nx run database:studio
 
-# ❌ Wrong — wrong CWD, schema not found
-prisma migrate dev
+# ❌ Wrong — Nx changes CWD, .env lookup fails
+pnpm nx run database:migrate:dev --name ...
 ```
+
+See `.claude/knowledge/stack-gotchas.md` → Prisma for the full migration workflow, including
+idle-connection cleanup and the `db push` vs `migrate deploy` distinction for test DBs.
+
+---
+
+## ⚠️ CRITICAL: PrismaPg adapter constructor (Prisma 7.x)
+
+Pass a **config object** to `PrismaPg`, not a `pg.Pool` instance. Passing a Pool crashes at
+runtime with a cryptic `ERR_INVALID_ARG_TYPE` from pg-protocol's serializer.
+
+```typescript
+// ✅ V7 form — the adapter owns the pool
+import { PrismaPg } from '@prisma/adapter-pg';
+
+const adapter = new PrismaPg({ connectionString: process.env['DATABASE_URL'] });
+const prisma = new PrismaClient({ adapter });
+// cleanup:
+await prisma.$disconnect();   // do NOT call pool.end()
+```
+
+Applies everywhere Prisma is instantiated: `prisma.service.ts`, `seed.ts`, test helpers, and
+standalone scripts. Prisma 7 standalone scripts also **require** this adapter — bare
+`new PrismaClient()` throws `PrismaClientInitializationError`. See `stack-gotchas.md` → Prisma.
 
 ---
 
@@ -79,15 +109,23 @@ prisma migrate dev
 
 ```bash
 # 1. Modify schema.prisma
-# 2. Generate migration (descriptive name!)
-pnpm nx run database:migrate:dev --name add_user_email_verification
+# 2. Generate migration — raw Prisma, from workspace root, with --url= (Prisma 7.8+ no
+#    longer auto-reads .env for migrate; see stack-gotchas.md for the prisma.config.ts
+#    alternative). DATABASE_URL still lives in .env for runtime use.
+source .env   # or: export DATABASE_URL=...
+npx prisma migrate dev --name add_user_email_verification \
+  --schema=libs/domain/database/prisma/schema.prisma \
+  --url="$DATABASE_URL"
 
-# 3. Review generated SQL in prisma/migrations/
-# 4. Test locally
-# 5. Commit migration files
+# 3. Regenerate the Prisma Client (pnpm 11 blocks the postinstall — run explicitly).
+npx prisma generate --schema=libs/domain/database/prisma/schema.prisma
+
+# 4. Review generated SQL in prisma/migrations/, test locally, commit migration files.
 
 # Staging/production (non-interactive):
-pnpm nx run database:migrate:deploy
+npx prisma migrate deploy \
+  --schema=libs/domain/database/prisma/schema.prisma \
+  --url="$DATABASE_URL"
 ```
 
 **Migration naming:** Use descriptive, actionable names:
@@ -106,7 +144,7 @@ pnpm nx run database:migrate:deploy
 When modifying a Prisma schema, follow this **exact order** and do NOT defer any step:
 
 1. Update `schema.prisma`
-2. `pnpm nx run database:migrate:dev --name [descriptive_name]`
+2. `npx prisma migrate dev --name [descriptive_name] --schema=libs/domain/database/prisma/schema.prisma`
 3. Update Zod schemas in `libs/shared/types/`
 4. Update domain services
 5. Update API DTOs
@@ -189,12 +227,32 @@ beforeEach(async () => {
 
 ---
 
+## PgBouncer (Connection Pooling)
+
+Serverless and many-instance deployments exhaust Postgres connections fast. Put **PgBouncer**
+in front of Postgres in **transaction** pooling mode.
+
+With Prisma 7 driver adapters (`@prisma/adapter-pg`):
+
+- **Runtime queries** go through PgBouncer — point `DATABASE_URL` at the PgBouncer port
+  (commonly `6432`) and append `?pgbouncer=true` so Prisma disables prepared statements.
+- **Migrations** need a DIRECT connection — PgBouncer's transaction mode can't run them. Keep a
+  separate `DIRECT_URL` pointing straight at Postgres and use it when migrating:
+  ```bash
+  DATABASE_URL="$DIRECT_URL" npx prisma migrate dev \
+    --schema=libs/domain/database/prisma/schema.prisma
+  ```
+- Local single-instance dev usually doesn't need PgBouncer — enable it for staging/production
+  and any serverless target.
+
+---
+
 ## pgvector (RAG Integration Only)
 
 Only needed when `rag` integration is enabled in `PROJECT.md`.
 
 When enabled:
-1. Switch `docker-compose.yml` image: `postgres:17` → `pgvector/pgvector:pg17`
+1. Switch `docker-compose.yml` image: `postgres:18` → `pgvector/pgvector:pg18`
 2. Add `extensions = [vector]` to datasource block
 3. Schema example:
 ```prisma

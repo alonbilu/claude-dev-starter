@@ -51,9 +51,11 @@
 ---
 
 ## Testing Conventions
-- Jest only (never Vitest)
-- `tsconfig.spec.json`: `"module": "commonjs"`, `"emitDecoratorMetadata": true`
-- `jest.setup.ts`: `import 'reflect-metadata'` as first line
+- **Vitest for frontend** (`apps/client` + React libs), **Jest + ts-jest for backend** (`apps/api` + NestJS) — NEVER Vitest for NestJS (breaks decorator metadata → DI silently fails)
+- Backend `tsconfig.spec.json`: `"module": "commonjs"`, `"emitDecoratorMetadata": true`
+- Backend `jest.setup.ts`: `import 'reflect-metadata'` as first line
+- Frontend `vitest.config.ts`: reuses `vite.config.ts`; `environment: 'jsdom'`
+- E2E: Playwright (`apps/client-e2e/`)
 - Test DB runs on port 5443 (separate from dev DB on 5442)
 - Co-locate tests: `user.service.ts` → `user.service.spec.ts` in same folder
 
