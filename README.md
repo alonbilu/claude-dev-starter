@@ -4,18 +4,7 @@
 
 Stop re-explaining your stack to Claude every session. Stop repeating the same mistakes. Stop losing context between sessions. This framework pre-loads Claude with architecture rules, critical gotchas, automated hooks, specialized subagents, and a feature workflow — so every session starts at full speed.
 
-**Current version: 1.4.0** — see [CHANGELOG.md](CHANGELOG.md). 1.4.0 is the broadest release since 1.0 — stack bumps, a real testing-runner split, a pluggable auth model, and seven new opt-in integrations. **Headline changes:**
-
-- **Stack bumps** — Prisma 7.8 (driver-adapter mode), PostgreSQL 18, Nx 22, pnpm 11, Vite 8, React 19.2, Zod 4, Jest 30, TypeScript 5.9, Node 22.
-- **TanStack Router** added to the frontend (file-based routing, typed search params validated through Zod).
-- **Testing runner split** — Vitest (frontend) + Jest (backend). The old "never Vitest" rule was overcorrecting; Vitest pairs natively with Vite and has no decorator-metadata dependency. NEVER for NestJS though — DI silently breaks.
-- **Pluggable auth provider** — Better Auth (default) or Zitadel (OIDC + Management API queries). Hydra as a separate opt-in for machine-to-machine tokens.
-- **Seven new opt-in integrations**: `hydra` (M2M auth), `logging` (Axiom / Grafana Cloud / Better Stack — provider choice), `tracing` (OpenTelemetry), `secrets` (Doppler / Infisical / SOPS / Vault, with DigitalOcean fit guidance), `feature-flags` (GrowthBook / Unleash / LaunchDarkly), `i18n` (react-i18next), `e2e` (Playwright).
-- **API hardening built in** — OpenAPI via `@nestjs/swagger`, `helmet` + `@nestjs/throttler` rate limiting, K8s-style liveness/readiness probes, Zod-validated env loading at boot, BullMQ worker patterns (idempotency, retries, DLQ).
-- **Database** — PgBouncer guidance, PrismaPg adapter gotcha (constructor takes a config object, NOT a `pg.Pool`), migrations from workspace root (NOT via Nx).
-- **DX** — `commitlint` enforcement, `.github/renovate.json` for weekly auto-bump PRs, production Dockerfile templates, `/new-adr` command, `scripts/start-cloudflared.sh`, Cloudflare Tunnel step in `/setup-project`, Valkey as a drop-in Redis replacement, documentation discipline baked into the per-step checklist, three new ADRs.
-
-The 1.3.0 line added `/quickbranch`. See CHANGELOG for the full list.
+**Current version: 1.4.0** — see [CHANGELOG.md](CHANGELOG.md) for what's new.
 
 ---
 
