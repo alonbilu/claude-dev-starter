@@ -6,6 +6,87 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.5.1] — 2026-05-18
+
+Follow-up patch release closing the gaps that v1.5.0 missed. The same downstream user who
+reported the 17 scaffolding gotchas re-ran setup against v1.5.0 and found **four more
+critical issues** I'd dismissed or hadn't caught. All four are now fixed; the new "Why this
+release matters" line below explains the time accounting from the bug report.
+
+### Fixed
+
+- **`pnpm-workspace.yaml` `allowBuilds:` is the REAL pnpm 11 approval mechanism** — not
+  `.npmrc`, not `package.json` `pnpm.onlyBuiltDependencies`. `nx init` writes the file with
+  literal placeholder strings (`@nestjs/core: set this to true or false`) which pnpm reads
+  as "not true" → still blocked. **90 minutes lost in the downstream debug session.**
+  `scripts/init-workspace.sh` now follows `nx init` with a `node -e` block that strips the
+  placeholder lines and rewrites all 18 known builds to `true`. The kit also documents this
+  as a top-level entry in `stack-gotchas.md` → "Scaffolding & Tooling" with the full
+  reproducer + the snippet for anyone writing their own scaffold.
+
+- **PostgreSQL 18 changed the data-directory mount path.** PG ≤ 17 stored data under
+  `/var/lib/postgresql/data` inside the official Docker image. PG 18 stores it under
+  `/var/lib/postgresql/` itself — the old `/data` path becomes "unused mount/volume" and
+  the container exits at boot with a `pg_ctlcluster` compatibility error. The kit's
+  `docker-compose.yml` template now uses the PG 18+ path for both `postgres` and
+  `postgres-test` services. Verified live in the downstream user's run.
+
+- **`.claude/settings.json` deny list blocked `.env` writes during setup.** The wizard
+  needed to render `.env` from a template + chmod 600, but `Write(.env)` and `Edit(.env)`
+  were in the deny list (alongside `.env.local`, `.env.staging`, `.env.production`).
+  Setup users had to manually relax these mid-flow. Relaxed: `.env` and `.env.local` are
+  now writable; `.env.staging` and `.env.production` remain denied (those carry real
+  production secrets and are the right targets for a strict policy).
+
+- **Wizard cwd-hygiene rule** in `/setup-project`. The downstream user's worst single
+  failure mode was the Bash tool's cwd persisting across separate invocations — one earlier
+  `cd node_modules/.pnpm/.../unrs-resolver && ...` call leaked into every subsequent
+  generator, writing 11 corrupted `project.json` files with `sourceRoot` paths buried 4
+  levels deep in `node_modules/`. The wizard prompt now has a top-level "CRITICAL CWD
+  HYGIENE" section instructing Claude to never `cd` into transitive deps without a
+  subshell, to re-anchor every Bash call, and to assert `PROJECT.md` exists before any
+  generator. The same gotcha is documented in `stack-gotchas.md` with the user's full
+  recovery story.
+
+### Added
+
+- **Axiom EU-region 403 bug** documented in `.claude/knowledge/integrations.md` → Logging
+  Gotchas. EU-region Axiom workspaces have a token-binding bug where every API endpoint
+  returns 403 (including `/v1/user`); the same token at the US endpoint returns 400
+  "primary region mismatch". Workaround until Axiom fixes server-side: use the US region
+  for operational logs. Verified 2026-05.
+
+- **pnpm 11.0.x `pnpm add -D` bug** documented in `stack-gotchas.md`: deps land in
+  `pnpm-lock.yaml` but skip `package.json` `devDependencies`. Fixed in pnpm 11.5+. The
+  kit's `init-workspace.sh` now pins `packageManager: pnpm@11.5.0` to prevent it.
+
+### Why this release matters
+
+v1.5.0 fixed the 17 gotchas from the original bug report, but it shipped without addressing
+four others the same user surfaced in the follow-up. Time accounting from the downstream
+report:
+
+| Gap | Wasted setup time |
+|-----|-------------------|
+| Stuck cwd → 11 corrupted project.json files | ~45 min recovery |
+| `pnpm-workspace.yaml` `allowBuilds` placeholder discovery | ~90 min debugging |
+| Pre-commit / husky / install ordering | ~15 min |
+| `.env` deny rule mid-flow | ~10 min |
+| PG18 mount path | ~5 min |
+| Axiom EU 403 (non-kit, doc gap) | ~60 min |
+| **Total friction on top of productive setup** | **~3.5 hours** |
+
+With v1.5.1, a fresh `git clone` + `/setup-project` should be a clean ~1-hour end-to-end
+setup with no manual recovery. All four "blocker" categories now have either a fix in the
+script or an explicit hygiene rule in the wizard prompt.
+
+The downstream user is offering additional PRs (project-isolated Cloudflare Tunnel setup,
+`verify-zitadel.js` / `verify-observability.js` post-setup smoke tests, a
+`docs/setup/EXTERNAL-SERVICES.md` checklist) — those land in a follow-up release after
+review.
+
+---
+
 ## [1.5.0] — 2026-05-18
 
 Closes the workspace-scaffolding gap that hit a downstream user on the v1.4.0/1.4.1

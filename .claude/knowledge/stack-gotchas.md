@@ -589,15 +589,71 @@ documented above, but the SAME block hits a wide net of other packages: **`unrs-
 init` reports a non-zero exit even though the install itself succeeded — `nx init`'s wrapper
 sees the postinstall warning's non-zero exit and propagates it.
 
-Defensive preamble — write **before** the first `pnpm install`:
+### CRITICAL: `pnpm-workspace.yaml` `allowBuilds:` is the REAL approval mechanism (not `.npmrc`)
+
+**Battle-tested by a downstream user who burned 90 minutes on this.** Symptoms:
+
+- `pnpm install` / `pnpm nx build` fails with `[ERR_PNPM_IGNORED_BUILDS]` exit 1
+- Setting `dangerously-allow-all-builds=true` in `.npmrc` — **ignored**
+- Setting `strict-builds=false`, `enable-pre-post-scripts=true` — **ignored**
+- Adding every blocked package to `package.json` `pnpm.onlyBuiltDependencies` — **ignored**
+- `pnpm rebuild`, `pnpm install --force`, regenerating lockfile — **no effect**
+
+**Root cause:** `nx init` writes a `pnpm-workspace.yaml` with this:
+
+```yaml
+allowBuilds:
+  '@nestjs/core': set this to true or false
+  '@parcel/watcher': set this to true or false
+  esbuild: set this to true or false
+  ...
+  nx: true
+```
+
+Only `nx: true` is approved. The other entries contain the **literal placeholder string**
+`set this to true or false`, which pnpm interprets as "not true" → still blocked. This file
+is where `pnpm approve-builds` writes its answers, and it's the source of truth in pnpm 11
+— **`.npmrc` and `package.json` configs are ignored when this file has entries.**
+
+**Fix:** after `nx init`, rewrite `pnpm-workspace.yaml`'s `allowBuilds:` to set every entry
+to `true`. The kit's `scripts/init-workspace.sh` does this automatically; if you write your
+own scaffold, this is the snippet:
 
 ```bash
-# .npmrc — accept all build scripts (or use `pnpm approve-builds` interactively after each install)
-cat > .npmrc <<'EOF'
-dangerously-allow-all-builds=true
-EOF
+node -e "
+const fs = require('fs');
+const builds = ['@biomejs/biome','@nestjs/core','@parcel/watcher','@prisma/client',
+  '@prisma/engines','@scarf/scarf','@sentry/cli','@swc/core','esbuild','husky','less',
+  'msgpackr-extract','nx','prisma','sharp','unrs-resolver'];
+const block = 'allowBuilds:\n' +
+  builds.map(k => \"  '\" + k + \"': true\").join('\n') +
+  '\nignoredBuiltDependencies: []\n';
+let c = fs.existsSync('pnpm-workspace.yaml') ? fs.readFileSync('pnpm-workspace.yaml','utf8') : '';
+// strip existing allowBuilds / ignoredBuiltDependencies blocks
+let skip = false;
+c = c.split('\n').filter(l => {
+  if (l.match(/^(allowBuilds|ignoredBuiltDependencies):/)) { skip = true; return false; }
+  if (skip && (l.match(/^\s+\S/) || l === '')) return false;
+  skip = false; return true;
+}).join('\n').replace(/\n+\$/,'\n');
+fs.writeFileSync('pnpm-workspace.yaml', c + block);
+"
+```
 
-# package.json — explicit allow-list (preferred over .npmrc for security)
+`.npmrc` and `package.json.pnpm.onlyBuiltDependencies` STILL serve as documentation of what
+the project considers approved; they just aren't the runtime gate in pnpm 11.
+
+### pnpm 11.0.x: `pnpm add -D` doesn't always land in `package.json` devDependencies
+
+Known pnpm 11.0.x bug — `pnpm add -D X` lands the entry in `pnpm-lock.yaml` but skips
+writing it to `package.json` `devDependencies`. Fixed in **pnpm 11.5+**. Upgrade with
+`npm i -g pnpm@latest`. The kit's scaffold scripts now pin `packageManager: pnpm@11.5.0` in
+`package.json` to prevent this.
+
+Defensive preamble for your own scripts — write **before** the first `pnpm install`:
+
+```bash
+# package.json — explicit allow-list (this is documentation; allowBuilds in pnpm-workspace.yaml is the runtime gate)
 node -e "
   const fs = require('fs');
   const p = JSON.parse(fs.readFileSync('package.json','utf8'));
@@ -609,10 +665,6 @@ node -e "
 # After installing everything, force any blocked postinstalls to run:
 pnpm rebuild
 ```
-
-Bonus: **pnpm 11.0.x has a known bug** where `pnpm add -D` lands deps in `pnpm-lock.yaml`
-but NOT in `package.json` `devDependencies`. Upgrade to **pnpm 11.5+** to avoid it
-(`npm i -g pnpm@latest`).
 
 ### `prepare: "husky"` ordering footgun
 
@@ -735,6 +787,65 @@ PG 18's `initdb` on a fresh volume occasionally takes longer than the kit's defa
 fine but subsequent migrations or queries error with `the database system is starting up`,
 extend the healthcheck `retries` in `docker-compose.yml` or add an explicit wait loop
 (see "doesn't wait for healthy" above).
+
+### PostgreSQL 18 changed the data-directory mount path
+
+**Verified live.** PG 17 and earlier stored data under `/var/lib/postgresql/data` inside the
+official Docker image. **PG 18 changed this** — the data lives in `/var/lib/postgresql/`
+itself (compatible with `pg_ctlcluster`), and the old `/data` path is reported as "unused
+mount/volume" with the container exiting on boot:
+
+```
+Error: in 18+, these Docker images are configured to store database data in a format which
+is compatible with "pg_ctlcluster"… data in: /var/lib/postgresql/data (unused mount/volume)
+```
+
+**Fix:** change `docker-compose.yml` volume mounts:
+
+```yaml
+# ❌ PG <= 17 path — fails silently on PG 18
+volumes:
+  - postgres_data:/var/lib/postgresql/data
+
+# ✅ PG 18+ path
+volumes:
+  - postgres_data:/var/lib/postgresql
+```
+
+The kit's `docker-compose.yml` template uses the PG 18+ path as of v1.5.1.
+
+### `cd` in a Claude Code Bash tool call PERSISTS across subsequent invocations
+
+When the `/setup-project` wizard runs, it makes many separate Bash tool calls. **The Bash
+tool's working directory is preserved between calls.** If any call does
+`cd node_modules/.pnpm/.../unrs-resolver && npm run postinstall` (for instance, to manually
+re-run a blocked postinstall), the next call's cwd is **also** that directory — and every
+subsequent `pnpm nx g` writes `apps/`, `libs/`, and their generated `project.json` /
+`tsconfig.json` / `webpack.config.js` files INSIDE the wrong path.
+
+A downstream user hit this in a real /setup-project run — **11 corrupted `project.json`
+files**, every one with `sourceRoot` paths baked in like
+`node_modules/.pnpm/unrs-resolver@1.11.1/node_modules/unrs-resolver/apps/api/src`.
+
+**Three defenses, layered:**
+
+1. **NEVER `cd` into `node_modules/` in a Bash tool call.** If you must execute something
+   inside a transitive dependency, scope the `cd` to a subshell so it doesn't leak:
+   `( cd node_modules/.pnpm/.../pkg && some-command )`. The parent shell's cwd is preserved.
+
+2. **Re-anchor at the top of every multi-step Bash invocation:**
+   `cd "$PROJECT_ROOT"` as the first line of each call. The kit's
+   `scripts/init-workspace.sh` does this once at the script top because it runs as a SINGLE
+   bash process (child processes can't change parent's cwd) — but standalone wizard Bash
+   calls can each be a separate process, so re-anchor in each.
+
+3. **Assert before every generator:** `[ -f PROJECT.md ] || { echo "wrong cwd"; exit 1; }`
+   confirms you're at the project root.
+
+The cwd-persistence is a feature of the Bash tool (it makes multi-step shell flows
+ergonomic), but in a scaffolding context it's the worst kind of footgun — silent
+corruption with no error until you `cat libs/shared/types/project.json` and see the
+buried path.
 
 ---
 

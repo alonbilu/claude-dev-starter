@@ -174,6 +174,13 @@ Batch client events and flush on `visibilitychange` so logs survive tab close.
 - Ingestion is async + batched — an immediate crash can drop the last batch. Flush in error
   boundaries and on `beforeunload`/`visibilitychange`.
 - Keep API logs and web logs in separate datasets/streams; correlate with a shared `requestId`.
+- **Axiom EU-region token routing (verified 2026-05):** workspaces created in the EU region
+  have a token-binding bug where API tokens return `403` on every endpoint (including
+  `/v1/user`). The same token at the US endpoint returns `400` "primary region mismatch" —
+  proving the token is valid but the EU deployment can't see its permissions. **Workaround:**
+  create the workspace in the US region for now. Operational logs are non-PII so the US
+  region is GDPR-acceptable for this use case. Retest the EU region periodically; Axiom is
+  fixing this server-side.
 
 ---
 

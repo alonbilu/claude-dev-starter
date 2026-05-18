@@ -7,6 +7,38 @@ suggest sensible defaults, collect all answers, then configure the project autom
 
 ---
 
+## ⚠️ CRITICAL CWD HYGIENE — read before every Bash tool call
+
+Your Claude Code **Bash tool preserves cwd across separate invocations.** If at any point in
+this wizard you `cd` into `node_modules/`, a temp directory, or anywhere outside the project
+root, **every subsequent Bash call inherits that cwd** — and every `pnpm nx g` will write
+`apps/` and `libs/` and their generated `project.json` / `tsconfig.json` / `vite.config.mts`
+files INSIDE the wrong path. A downstream user hit exactly this and ended up with 11
+corrupted `project.json` files whose `sourceRoot` was buried 4 levels into `node_modules/`.
+Multi-hour recovery.
+
+**The three hygiene rules — apply to every Bash tool call you make during /setup-project:**
+
+1. **NEVER `cd` into `node_modules/` or any temp directory.** If you need to execute
+   something inside a transitive dependency (rare — usually `pnpm rebuild <pkg>` is enough),
+   wrap the `cd` in a subshell so it doesn't leak to the next Bash call:
+   `( cd node_modules/.pnpm/.../pkg && some-command )`.
+
+2. **Re-anchor at the top of every Bash call that does anything beyond `git status` /
+   `ls`.** Start each call with `cd "$PROJECT_ROOT"` (or `cd /absolute/path/to/repo/root`).
+
+3. **Assert before any generator:**
+   `[ -f PROJECT.md ] || { echo "✗ wrong cwd — abort"; exit 1; }`. PROJECT.md is the
+   project-root marker.
+
+The kit's `scripts/init-workspace.sh` (Step 5b) handles this correctly because it runs as a
+single bash process where child commands can't change the parent's cwd — but your standalone
+Bash tool calls outside that script don't have that protection.
+
+See `.claude/knowledge/stack-gotchas.md` → "Scaffolding & Tooling" for the full story.
+
+---
+
 ## Step 0 — Pre-Flight Validation
 
 Before starting setup, validate the environment:

@@ -69,14 +69,10 @@
       "Bash(git reset --hard*)",
       "Bash(git stash drop*)",
       "Bash(docker system prune*)",
-      "Write(.env)",
       "Write(.env.staging)",
       "Write(.env.production)",
-      "Write(.env.local)",
-      "Edit(.env)",
       "Edit(.env.staging)",
-      "Edit(.env.production)",
-      "Edit(.env.local)"
+      "Edit(.env.production)"
     ]
   }
 }

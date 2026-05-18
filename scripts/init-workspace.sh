@@ -132,7 +132,7 @@ EOF
 ok ".npmrc in place"
 
 # ───────────────────────────────────────────────────────────────
-# [4] nx init (idempotent)
+# [4] nx init (idempotent) + REWRITE pnpm-workspace.yaml allowBuilds
 # ───────────────────────────────────────────────────────────────
 hdr "Initializing Nx into the existing directory"
 if [ -f nx.json ]; then
@@ -145,6 +145,53 @@ else
   [ -f nx.json ] || { warn "nx init did not produce nx.json — bailing"; exit 1; }
   ok "Nx initialized"
 fi
+
+# CRITICAL: nx init writes pnpm-workspace.yaml with an `allowBuilds:` section where every
+# entry has the LITERAL PLACEHOLDER STRING "set this to true or false" — pnpm reads anything
+# that isn't `true` as "blocked," so every subsequent `pnpm install` keeps emitting
+# ERR_PNPM_IGNORED_BUILDS no matter what `.npmrc` or `pnpm.onlyBuiltDependencies` says.
+# This file is the actual source of truth in pnpm 11; rewrite it to set every entry to true.
+# (Lesson from a 90-minute debug session — see stack-gotchas.md → "Scaffolding & Tooling".)
+hdr "Rewriting pnpm-workspace.yaml allowBuilds (the real pnpm 11 approval mechanism)"
+node -e "
+const fs = require('fs');
+const path = 'pnpm-workspace.yaml';
+
+const requiredBuilds = [
+  '@biomejs/biome', '@nestjs/core', '@parcel/watcher',
+  '@prisma/client', '@prisma/engines', '@scarf/scarf',
+  '@sentry/cli', '@swc/core', 'esbuild', 'husky',
+  'less', 'msgpackr-extract', 'nx', 'prisma',
+  'sharp', 'unrs-resolver', 'cypress', '@nx/nx-linux-x64-gnu'
+];
+
+const block =
+  'allowBuilds:\n' +
+  requiredBuilds.map(k => \"  '\" + k + \"': true\").join('\n') +
+  '\nignoredBuiltDependencies: []\n';
+
+let content = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
+
+// Strip any existing allowBuilds: / ignoredBuiltDependencies: blocks (and their indented bodies)
+const lines = content.split('\n');
+const out = [];
+let skip = false;
+for (const line of lines) {
+  if (line.match(/^(allowBuilds|ignoredBuiltDependencies):/)) { skip = true; continue; }
+  if (skip) {
+    if (line.match(/^\s+\S/) || line === '') continue;
+    skip = false;
+  }
+  out.push(line);
+}
+content = out.join('\n').replace(/\n+\$/, '\n');
+if (!content.endsWith('\n')) content += '\n';
+content += block;
+
+fs.writeFileSync(path, content);
+console.log('  rewrote ' + requiredBuilds.length + ' allowBuilds entries to true');
+"
+ok "pnpm-workspace.yaml allowBuilds normalized"
 
 # ───────────────────────────────────────────────────────────────
 # [5] Install Nx generators (idempotent)

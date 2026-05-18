@@ -10,7 +10,9 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # PG18+ note: the official image stores data under /var/lib/postgresql/ (not /data).
+      # The old /data path becomes "unused mount/volume" and postgres exits at boot.
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -28,7 +30,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - postgres_test_data:/var/lib/postgresql/data
+      # PG18+ note: see postgres service above — same mount-path change applies.
+      - postgres_test_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
