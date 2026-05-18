@@ -838,6 +838,15 @@ Ready to finish setup? I can run these steps for you:
   Without this, Biome is decorative — nothing prevents lint regressions
   from being committed. The script is idempotent (safe to re-run).
   Run this now? [yes/no/skip]
+
+  Step G: Smoke-test external services
+  → node scripts/verify-zitadel.js          (only if auth_provider == zitadel)
+  → node scripts/verify-observability.js    (whichever logging / Sentry provider is configured)
+  These scripts send REAL test events to the configured providers and report
+  back per-check OK/FAIL. They catch credential / region / permission issues
+  BEFORE you spend hours wondering why your API returns 401. Zero-dep — they
+  read .env directly with built-in Node.
+  Run these now? [yes/no/skip]
 ```
 
 For each approved step: run it, show output summary, confirm success, move to next.
@@ -892,6 +901,19 @@ Common issues:
   • "Biome check failed" → lint error, suggest: pnpm check:fix
 
 If fails: show error snippet, offer specific fix based on error message
+```
+
+**Step G — smoke-test external services**
+```
+Common issues:
+  • verify-zitadel.js → 403 on Management API: service account missing role grants (ORG_OWNER)
+  • verify-zitadel.js → JWT signing fails: service-account keyfile path wrong / not readable
+  • verify-observability.js → Axiom 403: token-binding bug if workspace is in EU region. Try US.
+  • verify-observability.js → Sentry 400: DSN format wrong; check the project DSN URL
+  • verify-observability.js → no providers ran: env vars not loaded from .env. Verify file exists.
+
+If a check fails, leave the script's failure to guide the fix and move on; the kit's
+docs/setup/EXTERNAL-SERVICES.md gives the per-provider checklist.
 ```
 
 **Step F — install pre-commit hook**

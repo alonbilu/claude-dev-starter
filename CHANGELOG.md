@@ -6,6 +6,85 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.6.0] — 2026-05-18
+
+Closes the post-setup verification loop. v1.5.x got the workspace scaffolding clean — but
+once it's set up, users were still spending an hour wondering why their first API call
+returned 401, because the kit had no way to *test* that the credentials in `.env`
+actually worked. v1.6.0 adds zero-dep verification scripts + a single-source-of-truth
+checklist, and wires them into `/setup-project` as a new Step G.
+
+### Added
+
+- **`scripts/setup-cloudflared.sh`** — project-isolated Cloudflare Tunnel setup (the
+  contribution offered in the downstream report). Solves the multi-project pain where
+  `cloudflared tunnel login` always writes to `~/.cloudflared/cert.pem` — running it for a
+  second project overwrites the first project's global cert. This script:
+  1. Backs up `~/.cloudflared/cert.pem` (if present) with a timestamped suffix
+  2. Removes it so `tunnel login` writes a fresh one
+  3. Runs `cloudflared tunnel login` interactively
+  4. Moves the new cert to `./.cloudflared/cert.pem` (project-local, chmod 600, gitignored)
+  5. Restores the previous global cert from the backup
+  6. Creates a named tunnel using the project-local cert (`TUNNEL_ORIGIN_CERT` env override)
+  7. Routes DNS to a chosen hostname
+  8. Writes `./.cloudflared/config.yml`
+  9. Prints the `CLOUDFLARE_TUNNEL_TOKEN` for `.env`
+
+  Idempotent — re-runs offer to skip or rebuild. Companion to the existing
+  `scripts/start-cloudflared.sh` which boots a configured tunnel.
+
+- **`scripts/verify-zitadel.js`** — zero-dep Node smoke test for Zitadel credentials.
+  Reads `.env` directly (no `dotenv` dep), fetches `.well-known/openid-configuration`,
+  signs an RS256 JWT with the service-account private key (using Node's built-in
+  `crypto`), exchanges it for an access token, then calls the Management API
+  (`/management/v1/orgs/me`) to confirm the service account has actual permissions.
+  Per-check OK/FAIL with the exact HTTP status and body snippet. Exit codes: `0` ok,
+  `1` config error, `2` network, `3` Zitadel rejection.
+
+- **`scripts/verify-observability.js`** — same shape, auto-detects which observability
+  providers are configured in `.env` and POSTs a real test event to each:
+  - Axiom (`AXIOM_TOKEN` + `AXIOM_DATASET`) — POSTs to `/v1/datasets/.../ingest`,
+    surfaces the EU 403 bug with a hint to switch to US region
+  - Grafana Cloud / Loki (`GRAFANA_LOKI_URL` + `GRAFANA_CLOUD_API_KEY` +
+    `GRAFANA_CLOUD_USER`) — POSTs a labeled line to the push endpoint
+  - Better Stack (`BETTERSTACK_SOURCE_TOKEN`) — POSTs to `in.logs.betterstack.com`
+  - Sentry (`SENTRY_DSN`) — parses the DSN, POSTs to the project's `store/` endpoint with
+    the right `X-Sentry-Auth` header
+
+  Every check prints a verifyId tag so the user can find their test event in the provider's
+  UI. Skips checks for unconfigured providers (no spurious failures).
+
+- **`docs/setup/EXTERNAL-SERVICES.md`** — single-source-of-truth checklist for every
+  third-party account / API key / token the project needs. Per-section status legend
+  (🔴 blocker / 🟡 in progress / 🟢 done / ⚪ deferred) and a verify command at the
+  bottom of each section. Covers: Zitadel + Better Auth, Hydra, Axiom + Grafana Cloud +
+  Better Stack, Sentry, OpenTelemetry tracing, Doppler + SOPS, GrowthBook + Unleash +
+  LaunchDarkly, Resend, Stripe, S3, Cloudflare Tunnel. Replaces hidden TODOs in
+  `.env` files — what's configured and what's blocking is visible to the whole team.
+
+- **Step G in `/setup-project` — Smoke-test external services.** Final guided-execution
+  sub-step that runs `verify-zitadel.js` + `verify-observability.js` and reports
+  results inline. Includes the per-script failure-mode reference (Axiom EU 403, Zitadel
+  ORG_OWNER missing, Sentry DSN format, etc.) so the wizard can guide the user to a fix
+  immediately instead of dropping them into a debug session.
+
+### Why this release matters
+
+The downstream user's bug report counted ~60 minutes lost to the Axiom EU 403 issue alone —
+that's the kind of "credentials are correct but the service is misconfigured" debugging
+that costs whole afternoons. Adding a smoke test that takes ~2 seconds to run + writes a
+real event to the actual provider eliminates 90% of those rabbit holes: either the test
+returns 200 (everything works) or it returns the exact provider error (you fix that one
+thing). The `EXTERNAL-SERVICES.md` checklist captures the steps that aren't testable via
+HTTP — bucket CORS rules, sending-domain DNS verification, Stripe webhook registration,
+etc. — so even the manual setup has a tracked status.
+
+Outstanding contributions from the bug report: `.npmrc` baseline (already in v1.5.0's
+scaffolder), pre-flight stuck-cwd check (already in v1.5.1's wizard hygiene rule).
+Everything offered has landed.
+
+---
+
 ## [1.5.1] — 2026-05-18
 
 Follow-up patch release closing the gaps that v1.5.0 missed. The same downstream user who
