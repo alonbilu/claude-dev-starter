@@ -165,11 +165,11 @@ Based on their description, recommend a type. Show the recommended stack for eac
 Based on your description, I'd recommend:
 
   ➤ 1. saas-web-app (recommended)
-       Stack: React + Vite + NestJS + Prisma + PostgreSQL + Better Auth
+       Stack: React + Vite + NestJS + Prisma 7.8 + PostgreSQL 18 + Better Auth
        UI: Tailwind + Shadcn/ui | Routing: TanStack Router | Forms: React Hook Form + Zod
        Data: TanStack Query v5 | Testing: Vitest (frontend) + Jest (backend) | Linting: Biome
 
-  2. api-only        — NestJS + Prisma + PostgreSQL (no frontend)
+  2. api-only        — NestJS + Prisma 7.8 + PostgreSQL 18 (no frontend)
   3. fullstack-web   — Same as saas-web-app but no billing/auth layer
   4. cli             — Node.js CLI (one-shot invocations; no daemon)
   5. library         — Reusable package (types, utils, SDK)
@@ -354,6 +354,7 @@ stable versions, not whatever was hardcoded when the template was last updated.
 - Only flag **major version** upgrades (e.g., React 19.2 → 20, not 19.2 → 19.3)
 - Only flag versions that have been **stable for at least 1 month** (no RC/beta)
 - Skip tools the user swapped out in Q4
+- **NEVER recommend a version BELOW the kit's pin.** The version check exists only to flag NEWER stable majors — never older. Read the "Template version" column above as the floor, not a suggestion. (Past incident: Claude recommended PostgreSQL 16 from training data instead of the pinned 18 — the user had to manually correct.)
 
 **If newer versions are found**, show:
 ```
@@ -500,11 +501,11 @@ If they say "change", ask about each concern one at a time:
 
 **Concern: PostgreSQL**
 ```
-How do you want to run PostgreSQL?
+How do you want to run PostgreSQL? (default image: postgres:18)
 
-  1. Docker locally (recommended — zero config, isolated)
-  2. Managed cloud (Supabase, DigitalOcean, Railway, Neon)
-  3. I have my own PostgreSQL running
+  1. Docker locally — postgres:18 (recommended — zero config, isolated)
+  2. Managed cloud (Supabase, DigitalOcean, Railway, Neon) — must be PG18+
+  3. I have my own PostgreSQL running — must be PG18+
 
 [1]:
 ```

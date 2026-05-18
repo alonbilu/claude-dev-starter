@@ -6,6 +6,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.4.1] — 2026-05-18
+
+Hot-fix release. Plugs a wizard drift hole reported by a downstream user:
+after pulling 1.4.0 and running `/setup-project`, Claude proposed
+PostgreSQL 16 from training data even though every pinned reference in
+the kit said 18. Root cause: a couple of stack-summary lines in the
+wizard mentioned `PostgreSQL` with no version, leaving the LLM room to
+fill in a stale default.
+
+### Fixed
+
+- **`/setup-project` Q3 recommended-stack lines** now include explicit
+  versions: `Prisma 7.8 + PostgreSQL 18` in both the `saas-web-app` summary
+  and the `api-only` one-liner. No more version-less stack descriptions.
+
+- **`/setup-project` Q4b version-check rules** add an explicit floor:
+  *NEVER recommend a version BELOW the kit's pin.* The check is only
+  allowed to flag newer stable majors. Documents the PG16 drift incident
+  inline so future Claude sessions can't repeat it.
+
+- **`/setup-project` Step 2 "Concern: PostgreSQL"** now names the image
+  tag (`postgres:18`) in option 1 and warns that managed/external choices
+  must also be PG18+. Removes the last version-less surface in the wizard.
+
+No behaviour changes to any other workflow. Pulling 1.4.1 over 1.4.0 is
+a same-session re-clone; no migration steps.
+
+---
+
 ## [1.4.0] — 2026-05-17
 
 Distilled from real downstream upgrades: Prisma 6 → 7.8, the testing-runner split between
