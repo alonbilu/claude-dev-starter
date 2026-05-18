@@ -28,25 +28,43 @@ if [ ! -f "package.json" ]; then
   exit 1
 fi
 
-# 2. Verify biome is installed (precondition)
-if ! npm ls @biomejs/biome >/dev/null 2>&1; then
-  echo "[install-pre-commit] WARN: @biomejs/biome is not installed yet."
-  echo "  Install it first:  npm install --save-dev @biomejs/biome"
-  echo "  Then re-run this script."
-  exit 1
-fi
-
-# 3. Detect package manager (default to npm)
+# 3. Detect package manager (default to npm) — needed for the dep-presence check below.
 PM="npm"
 if [ -f "pnpm-lock.yaml" ]; then PM="pnpm"; fi
 if [ -f "yarn.lock" ]; then PM="yarn"; fi
 echo "[install-pre-commit] detected package manager: $PM"
 
+# PM-aware dep-presence check. `npm ls` returns non-zero under pnpm's strict
+# flat layout (deps live in node_modules/.pnpm/*), so we have to ask the right
+# tool. The package.json `dependencies` / `devDependencies` check works for any
+# PM and avoids the lockfile-format differences.
+dep_present() {
+  local name="$1"
+  node -e "
+    const p = JSON.parse(require('fs').readFileSync('package.json','utf8'));
+    const has = (p.dependencies && p.dependencies['$name']) ||
+                (p.devDependencies && p.devDependencies['$name']);
+    process.exit(has ? 0 : 1);
+  " 2>/dev/null
+}
+
+# 2. Verify biome is installed (precondition)
+if ! dep_present "@biomejs/biome"; then
+  echo "[install-pre-commit] WARN: @biomejs/biome is not in package.json."
+  case "$PM" in
+    pnpm) echo "  Install:  pnpm add -D @biomejs/biome" ;;
+    yarn) echo "  Install:  yarn add -D @biomejs/biome" ;;
+    *)    echo "  Install:  npm install --save-dev @biomejs/biome" ;;
+  esac
+  echo "  Then re-run this script."
+  exit 1
+fi
+
 # 4. Install husky + lint-staged if missing
 NEEDS_HUSKY=true
 NEEDS_LINT_STAGED=true
-if npm ls husky >/dev/null 2>&1; then NEEDS_HUSKY=false; fi
-if npm ls lint-staged >/dev/null 2>&1; then NEEDS_LINT_STAGED=false; fi
+if dep_present "husky"; then NEEDS_HUSKY=false; fi
+if dep_present "lint-staged"; then NEEDS_LINT_STAGED=false; fi
 
 if [ "$NEEDS_HUSKY" = true ] || [ "$NEEDS_LINT_STAGED" = true ]; then
   echo "[install-pre-commit] installing dev deps: husky lint-staged"

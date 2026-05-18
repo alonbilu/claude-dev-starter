@@ -712,6 +712,52 @@ Apply the configuration to every hardcoded value in the repo. Make these changes
 
 ---
 
+## Step 5b — Scaffold the Nx workspace
+
+By now `PROJECT.md` is fully populated, but **the Nx workspace itself doesn't exist yet** —
+no `package.json`, no `apps/`, no `libs/`. The kit ships
+[`scripts/init-workspace.sh`](../../scripts/init-workspace.sh) which does this end-to-end,
+baking in every gotcha from real downstream runs (cwd guards, pnpm 11 build-script
+preamble, prepare:husky ordering, Nx 22 `--name=` requirement, post-gen build-target
+cleanup, healthy-wait on docker compose, project-discovery assertion at the end).
+
+**Tell the user:**
+
+```
+Your config is written. Next I need to scaffold the actual Nx workspace
+(apps/api, apps/client, libs/shared/*, libs/domain/database, etc.). This runs
+scripts/init-workspace.sh which is idempotent and reads PROJECT.md to install
+the right deps for your auth provider + integrations.
+
+Expected time: 2-5 minutes (mostly pnpm install).
+
+Run scripts/init-workspace.sh now? [yes/no]
+```
+
+If **yes**: run `bash scripts/init-workspace.sh`. Stream output as it goes. The script's
+own final pass runs a build smoke test (`pnpm nx build api && pnpm nx build client`) so
+success means everything compiles.
+
+If **no**: skip Step 5b and Step 6's app-level steps (B–E below) — there are no apps to
+install / build / migrate against until the workspace is scaffolded.
+
+**Common failure modes** (the script handles all of these automatically; this is for your
+mental model only):
+
+- pnpm 11 + `nx init`: pre-writes `pnpm.onlyBuiltDependencies` so the postinstall block
+  doesn't cascade. If you still see `ERR_PNPM_IGNORED_BUILDS`, the deps installed but the
+  postinstalls didn't fire — the script's final `pnpm rebuild` cleans this up.
+- Nx 22 generator schemas reject positional args: script uses `--name=...` everywhere.
+- `prepare: "husky"` before husky is installed: script defers adding the prepare script
+  until after `husky` lands in `node_modules` (via `scripts/install-pre-commit.sh`).
+- `docker compose up -d` doesn't wait for healthy: script polls postgres health (90s).
+- Stale plugin cache: script runs `pnpm nx reset` at the end before the project-discovery
+  assertion.
+
+See `.claude/knowledge/stack-gotchas.md` → "Scaffolding & Tooling" for the full set.
+
+---
+
 ## Step 6 — Summary + Guided Execution
 
 Print a confirmation table of every change made, then offer to run setup steps with permission:

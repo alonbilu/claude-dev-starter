@@ -108,7 +108,21 @@ The Prisma driver-adapter setup needs matching versions across three packages:
 `PrismaPg` in v7 takes a **config object** — not a `pg.Pool`. See
 `.claude/knowledge/stack-gotchas.md` → "PrismaPg 7.x adapter" for the constructor signature.
 
-### API contract
+### API contract — `apps/api/package.json`
 
-The NestJS API uses `@nestjs/swagger` for its OpenAPI document — add `@nestjs/swagger` to
-`apps/api`'s dependencies.
+The NestJS API needs `@nestjs/swagger` for its OpenAPI document, plus the security middleware
+referenced in `.claude/rules/api.md`:
+
+```json
+{
+  "dependencies": {
+    "@nestjs/swagger": "^11.x.x",
+    "@nestjs/throttler": "^7.x.x",
+    "helmet": "^8.x.x"
+  }
+}
+```
+
+`helmet` and `@nestjs/throttler` are required by `apps/api/src/main.ts` for security headers
+and rate limiting (see api.md → "Security Middleware"). The OpenAPI doc is served at
+`/api/docs` and exported to `docs/openapi.json` on contract changes.

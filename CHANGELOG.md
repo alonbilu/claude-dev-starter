@@ -6,6 +6,90 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.5.0] — 2026-05-18
+
+Closes the workspace-scaffolding gap that hit a downstream user on the v1.4.0/1.4.1
+release: `/setup-project` configured PROJECT.md / CI / scripts / docs, but
+**didn't actually scaffold the Nx workspace** — no `apps/`, no `libs/`, no `package.json`.
+The user ran `/setup-project`, got the green "configured" message, and then `pnpm install`
+failed because there was nothing to install. They wrote their own scaffold script and
+reported 17 distinct gotchas they hit along the way. Every one of those gotchas is now
+baked into the kit.
+
+### Added
+
+- **`scripts/init-workspace.sh`** — runnable, idempotent, ~495-line workspace scaffolder
+  that reads `PROJECT.md` and produces a working Nx workspace. Every step is the distilled
+  output of the downstream bug report. Highlights:
+  - **cwd guard** anchored to the project root (script aborts unless `PROJECT.md` is in
+    cwd) — protects against the failure mode where shells get stuck in
+    `node_modules/.pnpm/...` cwds and `pnpm nx g` writes `sourceRoot` paths into the
+    middle of the dependency tree.
+  - `set -euo pipefail` + step-by-step idempotency guards (`[ -d apps/client ] || pnpm nx g ...`).
+  - **pnpm 11 build-script preamble** — pre-writes `pnpm.onlyBuiltDependencies` covering
+    `@prisma/engines`, `prisma`, `esbuild`, `unrs-resolver` (the nx-init dep that surfaced
+    the issue), `@swc/core`, `@nestjs/core`, `sharp`. Tolerates `nx init`'s non-zero exit
+    when only the postinstall warning is the problem.
+  - **`--name=` on every Nx generator** — Nx 22.7+ schemas reject positional args
+    (`Schema does not support positional arguments. Argument 'api' found.`); the script
+    uses the explicit flag everywhere so it works across generator versions.
+  - **Post-generation `build` target removal** for domain/shared libs — documented in
+    architecture.md but unscripted before now; the script does it with a tiny `node -e`
+    loop over `project.json` files.
+  - **Reads PROJECT.md** for `type`, `auth_provider`, and the integration checkboxes;
+    installs only what's needed (Zitadel vs Better Auth, GrowthBook vs Unleash vs
+    LaunchDarkly, Axiom vs Grafana Cloud vs Better Stack, etc.).
+  - **Healthy-wait on docker compose** (90s `pnpm nx ...` race protection).
+  - **Final-pass** runs `pnpm rebuild` (force any blocked postinstalls to fire),
+    `pnpm nx reset` (clear stale plugin cache), and asserts every expected project shows
+    up in `pnpm nx show projects` before declaring success.
+  - **Build smoke test** at the end (`pnpm nx build api && pnpm nx build client`) so
+    "scaffold complete" actually means "everything compiles."
+
+- **Step 5b in `/setup-project`** — wires the scaffolder into the wizard between
+  "patch files" (Step 5) and "guided execution" (Step 6). User-prompted `[yes/no]`
+  before running.
+
+- **Scaffolding & Tooling gotchas section** in `.claude/knowledge/stack-gotchas.md` — a new
+  section documenting the failure modes the init-workspace.sh script protects against, so
+  anyone writing their own scaffolding script doesn't re-discover them:
+  - cwd guards (with the 11-corrupted-`project.json` story from the bug report)
+  - Idempotency patterns
+  - pnpm 11 build-script blocking beyond Prisma (`unrs-resolver`, `nx init`, etc.) +
+    pnpm 11.0.x devDeps-not-landing bug → bump to 11.5+
+  - `prepare: "husky"` ordering footgun
+  - Nx 22+ generators rejecting positional args
+  - `npm ls X` doesn't work under pnpm (the bug the kit's own
+    `install-pre-commit.sh` had)
+  - Post-generation `build` target removal as a code snippet
+  - `docker compose up -d` doesn't wait for healthy + the polling loop
+  - Final-pass `nx show projects` assertion as a safety net
+  - PG18 healthy-state confirmation
+
+### Fixed
+
+- **`scripts/install-pre-commit.sh`** no longer uses `npm ls @biomejs/biome` for its
+  dep-presence check — that always returns non-zero under pnpm's strict-flat `node_modules`
+  layout, so the script wrongly bailed even when Biome WAS installed. Replaced with a
+  PM-agnostic check against `package.json`'s `dependencies` / `devDependencies` (works for
+  any package manager).
+
+- **`package.json.template.md`** now documents `@nestjs/swagger`, `helmet`, and
+  `@nestjs/throttler` as `apps/api` dependencies in an actual JSON block (the previous
+  prose-only mention was missed when copying the dep list).
+
+### Why this release matters
+
+v1.4.0/1.4.1 made the kit's docs / rules / wizard say all the right things, but the kit
+still wasn't actually executable end-to-end — a fresh clone + `/setup-project` left you
+with a beautifully-configured directory that had no app to run. v1.5.0 closes that loop.
+
+Credit to the downstream user who ran the gauntlet and reported all 17 gotchas with their
+exact recovery steps. The Scaffolding section of stack-gotchas.md is essentially a
+transcript of that bug report, restructured.
+
+---
+
 ## [1.4.1] — 2026-05-18
 
 Hot-fix release. Plugs a wizard drift hole reported by a downstream user:

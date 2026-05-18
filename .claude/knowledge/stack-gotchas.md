@@ -545,6 +545,199 @@ pnpm nx g @nx/js:library my-feature --directory=libs/domain/my-feature
 
 ---
 
+## Scaffolding & Tooling
+
+Battle-tested gotchas from a real `scripts/init-workspace.sh` run by a downstream user.
+**Every script that touches a project's filesystem should start with these guards.**
+
+### Always anchor scripts to the project root with a cwd guard
+
+If a user (or another script) runs your scaffolding script from a subdirectory — or worse,
+from inside `node_modules/.pnpm/.../*/` (which happens when shells get stuck in weird cwds) —
+every `pnpm nx g` and `pnpm add` will write into the wrong place. Symptom from a real run:
+**11 corrupted `project.json` files** with `sourceRoot` paths like
+`node_modules/.pnpm/unrs-resolver@1.11.1/.../apps/api/src` baked in.
+
+```bash
+# Standard preamble for any scaffolding/install script:
+set -euo pipefail
+cd "$(dirname "$0")/.."
+# Sanity check — confirm we landed at the actual project root:
+[ -f PROJECT.md ] || { echo "✗ Not at project root (no PROJECT.md)"; exit 1; }
+```
+
+### Idempotency — every step needs a "skip if already done" guard
+
+Re-running a partial scaffolding script otherwise blows up:
+- `pnpm init` fails with `package.json already exists`
+- `pnpm nx g @nx/react:application client` fails with `project already exists`
+- `pnpm add` of already-installed deps is wasted time
+
+Wrap each step:
+
+```bash
+[ -f package.json ]               || pnpm init
+[ -d apps/client ]                || pnpm nx g @nx/react:application --name=client ...
+[ -d libs/shared/types ]          || pnpm nx g @nx/js:library --name=types --directory=libs/shared/types ...
+```
+
+### pnpm 11 blocks postinstall scripts beyond Prisma
+
+The Prisma gotcha (`ERR_PNPM_IGNORED_BUILDS` for `@prisma/engines` / `esbuild` / `prisma`) is
+documented above, but the SAME block hits a wide net of other packages: **`unrs-resolver`**
+(which `nx init` pulls in), **`@swc/core`**, **`puppeteer`**, etc. Symptom: `pnpm dlx nx@latest
+init` reports a non-zero exit even though the install itself succeeded — `nx init`'s wrapper
+sees the postinstall warning's non-zero exit and propagates it.
+
+Defensive preamble — write **before** the first `pnpm install`:
+
+```bash
+# .npmrc — accept all build scripts (or use `pnpm approve-builds` interactively after each install)
+cat > .npmrc <<'EOF'
+dangerously-allow-all-builds=true
+EOF
+
+# package.json — explicit allow-list (preferred over .npmrc for security)
+node -e "
+  const fs = require('fs');
+  const p = JSON.parse(fs.readFileSync('package.json','utf8'));
+  p.pnpm = p.pnpm || {};
+  p.pnpm.onlyBuiltDependencies = ['@prisma/engines','esbuild','prisma','unrs-resolver','@swc/core'];
+  fs.writeFileSync('package.json', JSON.stringify(p,null,2) + '\n');
+"
+
+# After installing everything, force any blocked postinstalls to run:
+pnpm rebuild
+```
+
+Bonus: **pnpm 11.0.x has a known bug** where `pnpm add -D` lands deps in `pnpm-lock.yaml`
+but NOT in `package.json` `devDependencies`. Upgrade to **pnpm 11.5+** to avoid it
+(`npm i -g pnpm@latest`).
+
+### `prepare: "husky"` ordering footgun
+
+If `package.json` has `"scripts": { "prepare": "husky" }` BEFORE `husky` itself is installed,
+**every subsequent `pnpm install` fails** with `sh: husky: not found` — including the
+`pnpm install` that `pnpm dlx nx init` runs internally. Cascade failure: the whole
+scaffolding aborts.
+
+```json
+// Order matters in scaffold scripts:
+//   1. pnpm add -D husky
+//   2. THEN add "prepare": "husky" to package.json
+//
+// Defensive alternative if you must add it before the install (templates etc):
+{
+  "scripts": {
+    "prepare": "husky || true"
+  }
+}
+```
+
+`scripts/install-pre-commit.sh` does the right thing — adds the script ONLY after
+husky is in `node_modules`.
+
+### Nx 22+ generator schemas reject positional args — always pass `--name=`
+
+Nx 22.7+ tightened the generator schemas. Calling
+`pnpm nx g @nx/nest:application api ...` fails with:
+
+> Schema does not support positional arguments. Argument 'api' found.
+
+The React generator's schema (`@nx/react:application`) still accepts the positional name in
+22.7, but **don't bet on it**. Use the explicit flag for every generator:
+
+```bash
+# ✅ Always works on Nx 22+
+pnpm nx g @nx/nest:application --name=api --directory=apps/api ...
+pnpm nx g @nx/react:application --name=client --directory=apps/client ...
+pnpm nx g @nx/js:library --name=types --directory=libs/shared/types ...
+
+# ❌ Schema rejects (intermittent — depends on generator version)
+pnpm nx g @nx/nest:application api ...
+```
+
+### `npm ls X` doesn't work under pnpm — use a PM-aware dep check
+
+pnpm's strict-flat `node_modules/.pnpm/` layout doesn't expose top-level symlinks the way
+npm does, so `npm ls some-package` returns non-zero under pnpm even when the dep IS
+installed. Scripts that gate on `npm ls X` (like the kit's original `install-pre-commit.sh`)
+bail incorrectly.
+
+**Fix** — check `package.json` directly, which works for any PM:
+
+```bash
+dep_present() {
+  node -e "
+    const p = JSON.parse(require('fs').readFileSync('package.json','utf8'));
+    const has = (p.dependencies && p.dependencies['$1']) ||
+                (p.devDependencies && p.devDependencies['$1']);
+    process.exit(has ? 0 : 1);
+  " 2>/dev/null
+}
+dep_present "@biomejs/biome" || pnpm add -D @biomejs/biome
+```
+
+### After generating a domain/shared lib, REMOVE the `build` target
+
+Documented in architecture.md but not scripted anywhere. Without removing it, every
+`pnpm nx affected -t build` rebuilds every domain lib that has no consumable artifact, wasting
+CI minutes. Bake it into your scaffold script:
+
+```bash
+for lib in libs/shared/types libs/shared/utils libs/shared/config libs/domain/database; do
+  [ -f "$lib/project.json" ] && node -e "
+    const fs=require('fs'), f='$lib/project.json';
+    const j=JSON.parse(fs.readFileSync(f,'utf8'));
+    if (j.targets) delete j.targets.build;
+    fs.writeFileSync(f, JSON.stringify(j,null,2) + '\n');
+  "
+done
+```
+
+### `docker compose up -d` doesn't wait for healthy — your migrate step races it
+
+`docker compose up -d` returns as soon as containers START, not when they're ready. If your
+script then runs `prisma migrate dev` or `pnpm nx build api`, it may race a Postgres that's
+still in initdb. Always wait for healthy state:
+
+```bash
+docker compose up -d
+echo "Waiting for postgres to become healthy..."
+timeout 60 bash -c '
+  until docker compose ps --format json \
+    | jq -e ".[] | select(.Service==\"postgres\") | .Health == \"healthy\"" >/dev/null; do
+    sleep 2
+  done
+'
+```
+
+### Final scaffold verification: `nx show projects` should print all expected names
+
+Catches every flavour of "the generator silently ran in the wrong cwd / under the wrong
+preset / with a stale plugin cache." Add at the very end:
+
+```bash
+pnpm nx reset                          # clear stale plugin discovery cache
+pnpm rebuild                           # run any postinstalls that were blocked
+EXPECTED="api client core database types ui utils config"
+ACTUAL=$(pnpm nx show projects 2>/dev/null | sort | tr '\n' ' ')
+for name in $EXPECTED; do
+  echo "$ACTUAL" | grep -qw "$name" || { echo "✗ Missing project: $name"; exit 1; }
+done
+echo "✓ All expected projects discovered."
+```
+
+### PostgreSQL 18: confirm container reaches healthy state before proceeding
+
+PG 18's `initdb` on a fresh volume occasionally takes longer than the kit's default
+`pg_isready` check accommodates, especially on slow disks. If `docker compose up -d` looks
+fine but subsequent migrations or queries error with `the database system is starting up`,
+extend the healthcheck `retries` in `docker-compose.yml` or add an explicit wait loop
+(see "doesn't wait for healthy" above).
+
+---
+
 ## Debugging
 
 ### After an upgrade, a cryptic library error → read the upgrade guide FIRST
