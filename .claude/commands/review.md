@@ -58,6 +58,17 @@ For each changed file, check:
 - [ ] No `it.skip` or `describe.skip` in new tests
 - [ ] External services mocked
 - [ ] Test DB used for integration tests (port 5443, not 5442)
+- [ ] **Falsify the acceptance test** — for a new rule/acceptance test, confirm it goes RED without the
+      change under test. A test that passes because it never exercised the case is worse than none; watch
+      for fixtures shaped to match the implementation (single-mode / edge-case seed data is the tell).
+
+**Shared-field semantics (catches "correct in isolation, contradictory together"):**
+- [ ] When a change adds a check that reads a field ANOTHER rule/consumer already reads, verify they
+      AGREE on what that field means. This is a GENERAL pattern for any shared field — a denormalized
+      copy, a user-supplied value, an upstream/LLM echo, a cached flag — not one domain. Divergent
+      interpretations pass every isolated test yet contradict each other: e.g. one consumer treats the
+      value as *committed* (derives downstream state from it) while a new one treats it as merely
+      *advisory*. Grep the field name across all rules/consumers and reconcile before shipping.
 
 ### 4. Diff Review
 
