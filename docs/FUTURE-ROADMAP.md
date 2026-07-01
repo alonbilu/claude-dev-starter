@@ -134,6 +134,7 @@ Small things considered, decided "not yet":
 - **Audible notification hooks on session events** — tried; too environment-dependent (works in native terminal, flaky in VSCode Remote SSH, impossible on headless servers). Not a good default.
 - **`/sync-repos` as a built-in command** — only useful for the multi-repo hub variant (see `MULTI-REPO-HUB.md`). Left to copy-paste from the variant doc rather than shipped in the default install.
 - **Tier-aware `/briefing`** (see #6) — would build on the tier-aware work already in the kit; blocked on #6 being ready first.
+- **How does vendored `.claude/` tooling stay in sync across seeded repos?** — each project gets its OWN copy of `review.md` (and the other commands/rules), so a canonical improvement in the starter silently leaves every downstream copy behind; today drift is caught only by someone remembering. This is the same failure class as a canonical value living in two places with no enforced sync. Decide before there are 5 repos instead of 2: are these files meant to be **vendored per-repo** (and if so, ship a drift check — e.g. a `/check-updates`-style diff of local `.claude/` vs the pinned starter version) or **referenced from a single source**? Relates to `MULTI-REPO-HUB.md` + the deferred `/sync-repos` idea above. No answer needed today — just needs to be written down.
 
 If you need any of these right now in your own project, the entries above have enough detail to implement early. We'll promote them to the starter when we have data supporting the defaults.
 
