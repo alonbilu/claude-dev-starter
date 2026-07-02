@@ -70,6 +70,17 @@ For each changed file, check:
       value as *committed* (derives downstream state from it) while a new one treats it as merely
       *advisory*. Grep the field name across all rules/consumers and reconcile before shipping.
 
+**Amendment sweep (catches "the doc/code contradicts itself after a revision"):**
+- [ ] When amending a decision — in a spec, a plan, OR code — grep the whole doc/code set for every
+      RESTATEMENT of the old design and sweep them all in the same pass. Amendments applied only at the
+      decision's home section leave downstream sections (API tables, error matrices, test descriptions,
+      commit-message templates, CONTEXT primers) describing the superseded design — and those are what
+      implementers/tests actually read.
+- [ ] **"Edit executed" ≠ "edit landed":** after ANY review-application pass, grep the target docs for
+      each finding ID before declaring it applied. Scripted find-replace against stale document state
+      fails SILENTLY, and the failure is invisible until someone diffs intent against text. Verify every
+      replacement matched at edit time AND grep-verify per finding before commit.
+
 ### 4. Diff Review
 
 Review the actual code changes:
