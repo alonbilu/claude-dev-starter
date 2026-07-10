@@ -78,6 +78,25 @@ This ensures all step commits go to the feature branch, not main.
 
 ---
 
+## Pre-Coding Architect Review Gate (MANDATORY on Step 1)
+
+If `{{STEP_NUMBER}}` is `1` (or `all` starting from 1) AND `STATUS.md` does NOT contain
+"Architect Review Gate" marked DONE for the current plan:
+
+1. **BEFORE any implementation**, spawn a READ-ONLY architect subagent (`subagent_type: Plan`;
+   if unavailable, a general agent explicitly told: review only, never modify files).
+2. Brief it with the template in `docs/process/pre-coding-architect-review-handoff.md` §8 —
+   it must read ALL planning docs + house rules + brain.md, spot-check every "already exists"
+   claim against real code with file:line evidence, and report: Verdict / Critical issues /
+   Improvements / Discussion-worthy / Spot-check table / What is good.
+3. Present the FULL findings to the user. The user decides fix vs defer — never silently apply.
+4. **Critical issues HARD-BLOCK step 1** until resolved or the user explicitly says proceed.
+5. Record the outcome: `review-findings.md` (ERRATA — wins over spec/plan), ERRATA banner on
+   3-spec.md + 4-dev-plan.md, and "Architect Review Gate: DONE <date>" in STATUS.md.
+6. Skip this gate for /quick, /quickbranch, /hotfix, /scaffold lanes.
+
+---
+
 ## Execution
 
 1. Read `4-dev-plan.md` → find Step {{STEP_NUMBER}}
