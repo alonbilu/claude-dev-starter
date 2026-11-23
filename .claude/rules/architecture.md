@@ -107,7 +107,20 @@ instance first, then reuse it.
 **Rules:**
 - Top layers can import from bottom layers
 - Bottom layers CANNOT import from top layers
-- Verify with: `pnpm nx graph`
+- Visualize with: `pnpm nx graph`
+
+**This is enforced, not advisory.** `pnpm verify` runs `scripts/check-boundaries.js`, which
+reads Nx's project graph (so `@app/*` aliases and relative imports are both resolved) and
+fails on:
+
+- any import from a lower layer into a higher one (❌ cells in the table below)
+- `apps/*` importing another app
+- a circular dependency between projects
+
+The ⚠️ cells (same-layer imports) are allowed by the check; keep them rare. When it fails,
+move the shared code *down* a layer — never suppress the check. A layer is identified by
+folder (`apps/`, `libs/backend/`, `libs/domain/`, `libs/shared/`); projects elsewhere are not
+governed.
 
 ---
 
@@ -210,7 +223,13 @@ pnpm nx g @nx/js:library my-feature --directory=libs/domain/my-feature
 
 # Remove from libs/domain/my-feature/project.json:
 # "build": { ... }   ← delete this entire target block
+
+# Then format what the generator wrote and confirm the workspace is still green:
+pnpm check:fix && pnpm verify
 ```
+
+Always pass `--importPath=@app/[name]` (see `/scaffold domain-lib`) — without it Nx aliases
+the lib by its bare name and `@app/[name]` imports do not resolve.
 
 ---
 
@@ -220,5 +239,5 @@ pnpm nx g @nx/js:library my-feature --directory=libs/domain/my-feature
 - [ ] Checked `libs/shared/types/` for existing types
 - [ ] Checked `libs/shared/ui/` for existing components
 - [ ] Checked `libs/shared/utils/` for existing utilities
-- [ ] Verified import direction is legal (bottom → bottom is never allowed)
+- [ ] Import direction is legal (`pnpm verify` will fail if it is not)
 - [ ] This lib needs a `build` target? (domain libs: NO)

@@ -62,6 +62,51 @@ something before any agent is trusted to work without a human reading every line
 - `production-deploy.sh` accepts `BACKUP_DIR`, `HEALTH_URL`, `HEALTH_RETRY_DELAY` and
   `PRISMA_SCHEMA` overrides (defaults unchanged).
 
+### Added — Part B: prose rules become checks that fail
+
+- **`pnpm verify` — one definition of green** (`scripts/verify.sh`). Lint (`biome ci .`),
+  import boundaries, `nx affected -t typecheck`, `nx affected -t test --coverage`,
+  `nx affected -t build`. All five always run; non-zero exit if any failed. `--all` checks
+  every project. `/start-coding`, `/quick`, `/quickbranch`, `/review`, `/hotfix`, `/debug`,
+  `/resume-feature` and CI now run this one command instead of each listing its own subset.
+- **Import rules are enforced** (`scripts/check-boundaries.js`). Reads Nx's project graph and
+  fails on any upward import across `apps → libs/backend → libs/domain → libs/shared`, on
+  app → app imports, and on circular dependencies, printing the offending `file:line`.
+  No new dependency. (A Biome `noRestrictedImports` rule was considered and rejected: the
+  `@app/*` aliases do not encode a layer — `libs/shared/auth` and `libs/backend/auth` would
+  both be `@app/auth` — so a specifier pattern cannot tell a legal import from an illegal one.)
+- **Coverage minimums are enforced.** `tools/coverage-thresholds.cjs` holds the numbers from
+  `testing.md`; `jest.preset.js` applies them to every Jest project by layer and the Vitest
+  configs read the same file. `collectCoverageFrom` is set too, so a source file with no test
+  counts as 0% instead of being invisible. Gate metric: lines and statements.
+- **`scripts/setup-quality-gates.js`** — idempotent wiring, run by `init-workspace.sh`: adds
+  the `verify` / `check` / `format` scripts to `package.json` (they were documented but never
+  created), patches the Jest preset and Vitest configs, and installs opt-in CI workflows. Run
+  it by hand to add the gates to a project created from an older kit.
+- **Playwright smoke workflow, only when `e2e` is enabled.** `docs/templates/ci/e2e.yml` is
+  copied to `.github/workflows/e2e.yml` when `e2e` is `[x]` in `PROJECT.md` and removed when
+  it is not.
+- **Regression test first.** `/debug` gained a "write a failing test" step before the fix;
+  `/hotfix` makes it mandatory, records the red run in `1-hotfix.md`, and stages by path
+  instead of `git add .`.
+- `scripts/tests/test-check-boundaries.sh` — fixture-graph tests for the boundary checker.
+- A fresh workspace must start green: `init-workspace.sh` formats the generated files with
+  Biome, gives `libs/backend/core` a real module test, and ends with `pnpm verify --all`.
+
+### Changed — Part B
+
+- **CI is one job that runs `pnpm verify`.** The old `lint` job ran `nx affected -t lint`,
+  which matches no target in a generated workspace (projects are created with
+  `--linter=none`): it ran 0 tasks and passed. The old `test` job passed `--no-coverage`.
+  There was no typecheck and no boundary check.
+- `testing.md` and CI now agree: coverage minimums are gated; E2E runs in CI only when the
+  `e2e` integration is enabled (the doc previously said "every PR" with no job behind it).
+- `code-quality.md`: lint is a workspace-level Biome run, not an Nx target; run
+  `pnpm check:fix` after any `nx g` generator.
+- `biome.json` ignores `nx-welcome.tsx` (generated sample page that fails a11y rules) and
+  `pnpm-workspace.yaml` (rewritten by pnpm).
+- `.claude/settings.json` allows `pnpm verify*`.
+
 ---
 
 ## [1.6.0] — 2026-05-18

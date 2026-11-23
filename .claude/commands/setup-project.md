@@ -766,9 +766,14 @@ Expected time: 2-5 minutes (mostly pnpm install).
 Run scripts/init-workspace.sh now? [yes/no]
 ```
 
-If **yes**: run `bash scripts/init-workspace.sh`. Stream output as it goes. The script's
-own final pass runs a build smoke test (`pnpm nx build api && pnpm nx build client`) so
-success means everything compiles.
+If **yes**: run `bash scripts/init-workspace.sh`. Stream output as it goes. The script wires
+the quality gates (`scripts/setup-quality-gates.js`: the `pnpm verify` script, per-layer
+coverage minimums, and `.github/workflows/e2e.yml` when `e2e` is enabled), and its final pass
+runs `pnpm verify --all` — so success means the new workspace lints, type-checks, passes its
+tests above the coverage minimums, and builds.
+
+If the user enables or disables the `e2e` integration later, re-run
+`node scripts/setup-quality-gates.js` to add or remove the workflow.
 
 If **no**: skip Step 5b and Step 6's app-level steps (B–E below) — there are no apps to
 install / build / migrate against until the workspace is scaffolded.
@@ -829,8 +834,9 @@ Ready to finish setup? I can run these steps for you:
   → npx prisma migrate dev --name init --schema=libs/domain/database/prisma/schema.prisma
   Run this now? [yes/no/skip]
 
-  Step E: Verify build
-  → pnpm nx build api
+  Step E: Verify the workspace
+  → pnpm verify --all
+  Lint, import boundaries, typecheck, tests + coverage minimums, build.
   Run this now? [yes/no/skip]
 
   Step F: Install pre-commit hook (Biome via husky)
@@ -893,9 +899,11 @@ Common issues:
 If fails: suggest running: docker compose logs postgres (to inspect logs)
 ```
 
-**Step E — build**
+**Step E — pnpm verify --all**
 ```
 Common issues:
+  • "lint (biome) FAILED" on generated files → run: pnpm check:fix
+  • "No tests found" in a libs/domain or libs/backend project → gated layers need a test
   • "error TS7030: Not all code paths return a value" → TypeScript error, show snippet
   • "Cannot find module" → dependency missing, suggest: pnpm install
   • "Biome check failed" → lint error, suggest: pnpm check:fix

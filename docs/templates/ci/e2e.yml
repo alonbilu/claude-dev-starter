@@ -1,0 +1,77 @@
+# Playwright smoke test. Template: docs/templates/ci/e2e.yml
+# Copied to .github/workflows/e2e.yml by scripts/setup-quality-gates.js when `e2e` is
+# enabled in PROJECT.md. Edit the installed copy for project-specific needs.
+name: E2E
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '11'
+
+jobs:
+  smoke:
+    name: Playwright smoke (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5443:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      CI: 'true'
+      DATABASE_URL: postgresql://test:test@localhost:5443/test
+      DATABASE_URL_TEST: postgresql://test:test@localhost:5443/test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      # The generated Playwright config builds the client and serves it with `vite preview`
+      # when CI is set, so this job needs no separate build step.
+      #
+      # Flows that need the API: add steps here to apply migrations
+      # (`npx prisma migrate deploy --schema=libs/domain/database/prisma/schema.prisma`),
+      # seed, and start the built API before this step — the postgres service above is
+      # already running for that.
+      - name: Run smoke tests
+        run: pnpm nx e2e client-e2e -- --project=chromium
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            dist/.playwright/
+            apps/client-e2e/test-output/
+          if-no-files-found: ignore
+          retention-days: 7

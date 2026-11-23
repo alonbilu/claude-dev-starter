@@ -89,15 +89,33 @@ Tell the user:
 ```
 Ready. Implement your fix on branch hotfix/HF[XXX]-{{HOTFIX_NAME}}.
 
-Recommended approach:
-  1. Reproduce the bug first (confirm broken state)
-  2. Write a failing test
+Required order — regression test FIRST, even under time pressure:
+  1. Reproduce the bug (confirm the broken state)
+  2. Write a test that reproduces it and RUN it — it must FAIL, for the reason in the bug report
   3. Implement the minimal fix
-  4. Verify the test passes
-  5. Run full test suite
+  4. Run the same test — it must now PASS
+  5. pnpm verify
 
 Describe the fix and I'll help implement it, or just go ahead and let me know when done.
 ```
+
+### Regression test first (MANDATORY)
+
+Do not touch production code until a test reproduces the bug:
+
+1. **Write the test** at the lowest level that shows the bug (service/unit test if possible,
+   integration test if it only appears through the HTTP layer or the database).
+2. **Run it and watch it fail.** Paste the failing assertion into `1-hotfix.md` →
+   "Regression test". The failure must be the bug itself — not a typo, a missing import, or
+   a fixture that never reaches the faulty code.
+3. **Fix**, then run the same test again and watch it pass.
+4. **Falsify once more:** if in any doubt, revert the fix (`git stash` the production change
+   only), confirm the test goes red again, restore the fix.
+
+A test that was never red proves nothing: it may pass because it never exercised the bug. The
+only acceptable reason to skip this is that the bug genuinely cannot be reached by an
+automated test (e.g. infrastructure misconfiguration) — say so explicitly in `1-hotfix.md`
+and describe how the fix was verified instead.
 
 As the fix is implemented:
 - Fill `1-hotfix.md` → Root Cause, Approach, Files Changed
@@ -109,10 +127,11 @@ As the fix is implemented:
 
 Once fix is implemented, run:
 ```bash
-pnpm nx affected -t lint
-pnpm nx affected -t test
-pnpm nx affected -t build
+pnpm verify
 ```
+
+Must exit 0 (lint, import boundaries, typecheck, test + coverage minimums, build), and the
+regression test from Step 4 must be part of the diff.
 
 Walk through the validation checklist in `1-hotfix.md`. Diagnose and fix any failures before proceeding.
 
@@ -121,9 +140,11 @@ Walk through the validation checklist in `1-hotfix.md`. Diagnose and fix any fai
 ## Step 6 — Commit & Update Status
 
 ```bash
-git add .
+git status --short
+git add <the fix> <the regression test> docs/hotfixes/active/HF[XXX]-{{HOTFIX_NAME}}/
 git commit -m "fix(HF[XXX]): {{HOTFIX_NAME}} — [one-line description of fix]"
 ```
+Stage by path — never `git add .` (it sweeps unrelated work into an emergency fix).
 
 Update `STATUS.md`:
 - Check off completed checklist items

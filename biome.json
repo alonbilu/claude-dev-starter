@@ -21,7 +21,9 @@
       "!**/*.generated.js",
       "!**/*.tsbuildinfo",
       "!**/_archive",
-      "!**/module_old"
+      "!**/module_old",
+      "!**/nx-welcome.tsx",
+      "!**/pnpm-workspace.yaml"
     ]
   },
   "formatter": {

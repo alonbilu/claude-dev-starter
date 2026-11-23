@@ -26,11 +26,11 @@ Quick task: $ARGUMENTS
    - Frontend changes → `.claude/rules/frontend.md`
    - Test changes → `.claude/rules/testing.md`
 4. **Implement** — Make the change. Keep it minimal and focused.
-5. **Validate:**
+5. **Validate** — must exit 0 before you commit:
    ```bash
-   pnpm nx affected -t lint
-   pnpm nx affected -t test
+   pnpm verify
    ```
+   (lint, import boundaries, typecheck, test + coverage minimums, build — the same check CI runs)
 6. **Commit** — Use the appropriate prefix:
    - Bug fix → `fix(scope): description`
    - Cleanup/config → `chore(scope): description`

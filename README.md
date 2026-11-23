@@ -54,7 +54,8 @@ Claude delegates to focused agents with domain-specific context:
 - **Architecture decisions** — records stack choices in `decisions.md` for future reference
 
 ### CI/CD & DevOps
-- **GitHub Actions CI** — lint, test (with PostgreSQL), build on every PR
+- **One enforced gate — `pnpm verify`** — lint, import-boundary check, typecheck, tests with per-layer coverage minimums, build. The same command runs in every workflow command and in CI
+- **GitHub Actions CI** — runs `pnpm verify` (with PostgreSQL) on every PR; a Playwright smoke workflow is added when the `e2e` integration is enabled
 - **PR template** — structured PR descriptions with checklists
 - **Deploy scripts** — staging and production with safety gates and auto-rollback
 - **Environment wizard** — interactive setup for dev/staging/production `.env` files
@@ -192,7 +193,7 @@ See `.claude/rules/ai-workflow.md` "Planning Checkpoints" for the full table and
 | `/quickbranch [task]` | PR-ready small fix — new branch + `docs/quickbranches/` entry (5-30 min) |
 | `/debug [error]` | Systematic debugging: reproduce → check gotchas → isolate → fix → document |
 | `/scaffold [type] [name]` | Scaffold: `endpoint`, `page`, `hook`, `service`, or `domain-lib` |
-| `/review` | Pre-PR self-review: lint, tests, code quality checklist |
+| `/review` | Pre-PR self-review: `pnpm verify` + code quality checklist |
 
 ### Entity Workflows
 
@@ -291,7 +292,7 @@ git switch -c feature/F001-google-oauth
 
 ```
 /start-coding google-oauth 1
-# Claude implements → lint/test/build → updates STATUS.md → commits that step's files → STOPS
+# Claude implements → pnpm verify → updates STATUS.md → commits that step's files → STOPS
 # You review the diff
 /start-coding google-oauth 2
 ```
@@ -302,7 +303,7 @@ git switch -c feature/F001-google-oauth
 /start-coding google-oauth all
 ```
 
-Claude runs every remaining step; after each it runs lint → test → build (always — not only when tests changed) → **updates STATUS.md** → commits only the files that step touched. **🛑 After the last step, HARD STOP** — Claude reports:
+Claude runs every remaining step; after each it runs `pnpm verify` (always — lint, boundaries, typecheck, tests + coverage, build) → **updates STATUS.md** → commits only the files that step touched. **🛑 After the last step, HARD STOP** — Claude reports:
 
 > All N steps complete, ready for your review. Run `/complete-feature google-oauth` when you've reviewed the work.
 
@@ -618,7 +619,7 @@ claude-dev-starter/
 │       └── ai-workflow.md           ← Feature workflow, brain.md protocol
 │
 ├── .github/
-│   ├── workflows/ci.yml             ← CI: lint, test, build on every PR
+│   ├── workflows/ci.yml             ← CI: `pnpm verify` on every PR (e2e.yml added when e2e is enabled)
 │   ├── renovate.json                ← Weekly auto-bump PRs (paired with /check-updates)
 │   └── pull_request_template.md     ← Structured PR template
 │

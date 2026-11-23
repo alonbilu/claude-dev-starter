@@ -18,22 +18,21 @@ Read every changed file. Understand the full scope of changes.
 ### 2. Run Automated Checks
 
 ```bash
-pnpm nx affected -t lint
-pnpm nx affected -t test
-pnpm nx affected -t build
+pnpm verify
 ```
 
-If any fail, fix them before continuing the review.
+One command, the same one CI runs: lint, import boundaries, typecheck, test + coverage
+minimums, build. If it fails, fix it before continuing the review.
 
 ### 3. Code Quality Checklist
 
 For each changed file, check:
 
 **Architecture:**
-- [ ] No import boundary violations (libs → apps is forbidden)
+- [ ] No import boundary violations — enforced by `pnpm verify` (`scripts/check-boundaries.js`); don't re-check by eye
 - [ ] Business logic in `libs/domain/`, NOT in controllers or components
 - [ ] Reusable code in `libs/shared/`, not duplicated across features
-- [ ] No circular dependencies
+- [ ] No circular dependencies — also enforced by `pnpm verify`
 
 **Types & Schemas:**
 - [ ] All types imported from `@app/types` (not defined locally)
@@ -54,7 +53,7 @@ For each changed file, check:
 - [ ] SQL injection safe (Prisma parameterized queries)
 
 **Testing:**
-- [ ] New services have tests (70%+ coverage for domain services)
+- [ ] New services have tests (coverage minimums are enforced by `pnpm verify` — check the tests are *meaningful*, not just present)
 - [ ] No `it.skip` or `describe.skip` in new tests
 - [ ] External services mocked
 - [ ] Test DB used for integration tests (port 5443, not 5442)
@@ -105,9 +104,7 @@ Output a summary:
 Files changed: [N]
 Lines: +[X] / -[Y]
 
-✅ Lint: pass
-✅ Tests: pass
-✅ Build: pass
+✅ pnpm verify: green (lint · boundaries · typecheck · test + coverage · build)
 
 Issues found: [N]
 [List any issues with file:line references]

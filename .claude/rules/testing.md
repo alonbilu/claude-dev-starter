@@ -29,6 +29,22 @@ so Vitest is the better fit there.
 | Controllers | Not required (logic-free) |
 | Presentational React components | Not required |
 
+### These minimums are enforced
+
+| | |
+|---|---|
+| **Defined in** | `tools/coverage-thresholds.cjs` — the only place the numbers live. Change it and this table in the same commit. |
+| **Applied by** | `jest.preset.js` (every Jest project inherits its layer's minimum) and the `coverage` block of each Vitest config. Wired by `scripts/setup-quality-gates.js`. |
+| **Checked when** | Tests run with `--coverage`. `pnpm verify` and CI always do; plain `pnpm nx test [project]` and watch mode do not, so a single-file run is never failed by the gate. |
+| **Metric** | Lines and statements. Branches and functions are reported, not gated. |
+| **What counts** | Every source file in the project (`src/**/*.ts(x)`, minus specs, `.d.ts` and `index.ts` barrels) — including files no test imports. A service with no test lowers coverage; it cannot hide. |
+| **Repositories** | `libs/domain/database` is gated at 80% on `src/lib/repositories/` only, once that folder exists. |
+| **Not gated** | `apps/*`, `libs/shared/types`, `libs/shared/config`, `libs/shared/ui` (no minimum is defined for them above). |
+
+A gated library with **no tests at all** fails (`No tests found`), by design.
+
+To see the numbers for one project: `pnpm nx test [project] --coverage`.
+
 ---
 
 ## Jest Configuration
@@ -56,6 +72,9 @@ const config: Config = {
 
 export default config;
 ```
+
+Do not add `coverageThreshold` or `collectCoverageFrom` here — generated projects set
+`preset: '<root>/jest.preset.js'`, which supplies both from `tools/coverage-thresholds.cjs`.
 
 ### jest.setup.ts — First line must be reflect-metadata
 ```typescript
@@ -102,6 +121,10 @@ export default defineConfig({
 // vitest.setup.ts
 import '@testing-library/jest-dom/vitest';
 ```
+
+In generated projects the `coverage` block also spreads `vitestCoverage(import.meta.dirname)`
+from `tools/coverage-thresholds.cjs`. No frontend layer has a minimum today, so it adds
+nothing until one is listed there — that is the place to add one.
 
 Use `@testing-library/react` for component tests. Do NOT import `reflect-metadata` here — that
 is a backend/Jest concern. Never point Vitest at NestJS code.
@@ -223,7 +246,12 @@ pnpm nx e2e client-e2e --ui               # interactive runner
 **Scope:**
 - E2E covers happy-path user flows end-to-end (signup → first-feature → settings).
 - Do NOT exhaustively retest backend logic in E2E — that belongs in Jest integration tests.
-- Run E2E in CI on every PR against a freshly-seeded test DB + a built client+API.
+- **CI:** when the `e2e` integration is enabled in `PROJECT.md`, `.github/workflows/e2e.yml`
+  runs a Chromium smoke pass of `client-e2e` on every PR. It is installed by
+  `scripts/setup-quality-gates.js` from `docs/templates/ci/e2e.yml`; with `e2e` disabled the
+  workflow does not exist and **no E2E runs in CI**. The template serves the built client and
+  provides a Postgres service; flows that need the API must add migrate/seed/start steps to
+  the installed workflow (marked in the file).
 - One spec per top-level user journey; not one per component.
 
 ---
@@ -248,6 +276,7 @@ pnpm nx test [project]              # run tests
 pnpm nx test [project] --watch      # watch mode (use during development)
 pnpm nx test [project] --coverage   # with coverage report
 pnpm nx affected -t test            # only test changed projects
+pnpm verify                         # the full gate, incl. coverage minimums (what CI runs)
 ```
 
 ---
@@ -271,11 +300,9 @@ pnpm nx affected -t test            # only test changed projects
 ## Testing Checklist (Per Step)
 
 - [ ] Tests written for all new services and utilities
-- [ ] `pnpm nx test [project]` passes
 - [ ] No `it.skip` or `describe.skip` in new tests
 - [ ] External services are mocked
 - [ ] Test DB used for integration tests (not dev DB)
-- [ ] `pnpm nx lint [project]` passes
-- [ ] `pnpm nx build [project]` succeeds
+- [ ] `pnpm verify` is green (lint, boundaries, typecheck, tests + coverage minimums, build)
 
 **Never mark a step complete if tests fail.**

@@ -31,10 +31,9 @@ If the user has declared a default tier in `PROJECT.md` under `claude.max_plan` 
    ```
 6. Run quick health check:
    ```bash
-   pnpm nx affected -t lint 2>&1 | tail -5
-   pnpm nx affected -t test --no-coverage 2>&1 | tail -10
+   pnpm verify 2>&1 | tail -15
    ```
-7. If lint or tests fail, warn prominently before continuing
+7. If `pnpm verify` is red, warn prominently before continuing
 8. Load relevant rules based on current step
 
 ## Output

@@ -28,6 +28,12 @@
 ### Root Cause
 [What caused this — fill in as you investigate]
 
+### Regression test
+- **Test:** `[path/to/file.spec.ts]` — `[test name]`
+- **Red before the fix:** [paste the failing assertion / error from running it WITHOUT the fix]
+- **Green after the fix:** Yes / No
+- [If no automated test is possible: why, and how the fix was verified instead]
+
 ---
 
 ## Fix
@@ -50,9 +56,10 @@
 ## Validation
 
 - [ ] Reproduces original bug (confirm broken state first)
-- [ ] Fix resolves the bug
+- [ ] Regression test written and seen to FAIL before the fix
+- [ ] Same test PASSES with the fix
 - [ ] No regression in related functionality
-- [ ] All tests pass
+- [ ] `pnpm verify` is green
 - [ ] Tested manually in dev environment
 
 ---

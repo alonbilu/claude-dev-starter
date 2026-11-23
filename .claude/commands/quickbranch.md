@@ -93,16 +93,16 @@ Make the change. Keep it minimal. No speculative refactoring.
 
 ### 8. Validate
 ```bash
-pnpm nx affected -t lint
-pnpm nx affected -t test
+pnpm verify
 ```
-Fix any new errors. Pre-existing errors in untouched files are not your problem (note them in the doc if relevant).
+Must exit 0 (lint, import boundaries, typecheck, test + coverage minimums, build — the same
+check CI runs). Fix any new errors. Pre-existing errors in untouched files are not your problem (note them in the doc if relevant).
 
 ### 9. Update doc entry
 Fill in the `## Work done` section:
 - What actually changed (files + one-line summary each)
 - Any deviation from the original Plan, with reason
-- Validation output (lint/test status)
+- Validation output (`pnpm verify` result)
 
 Set `status: done` in frontmatter.
 

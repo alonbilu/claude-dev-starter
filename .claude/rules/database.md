@@ -150,7 +150,7 @@ When modifying a Prisma schema, follow this **exact order** and do NOT defer any
 5. Update API DTOs
 6. Update frontend forms/queries
 7. Update seed data
-8. Run tests: `pnpm nx affected -t test`
+8. Run the full gate: `pnpm verify`
 
 **Never defer to "later session" — this creates type drift across the codebase.**
 

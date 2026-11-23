@@ -36,12 +36,21 @@ After the script finishes, every `git commit` runs Biome on staged `.ts/.tsx/.js
 ## Commands
 
 ```bash
+pnpm verify                          # the full gate: lint + boundaries + typecheck + test/coverage + build
 pnpm check                           # lint entire workspace
 pnpm check:fix                       # auto-fix all fixable issues
 pnpm format                          # format entire workspace
-pnpm nx lint [project]               # lint specific project
-pnpm nx lint [project] -- --write    # lint + auto-fix specific project
+npx biome check apps/api             # lint one folder
 ```
+
+**Lint is a workspace-level Biome run, not an Nx target.** The generator creates projects
+with `--linter=none`, so there is no per-project `lint` target and `pnpm nx affected -t lint`
+runs nothing (and exits 0). The lint gate is `biome ci .`, run by `pnpm verify` locally and in
+CI. Biome checks the whole workspace in well under a second, so there is nothing to gain from
+scoping it to affected projects.
+
+After any `nx g ...` generator, run `pnpm check:fix` — generated files are not formatted to
+this config and will fail the gate otherwise.
 
 ### Pre-Commit Hook (Automatic)
 
@@ -200,9 +209,10 @@ git stash pop                # retry
 
 ---
 
-## Nx Project Lint Target
+## Nx Project Lint Target (optional)
 
-Each project's `project.json` should have:
+Not created by the generator and not needed for the gate (see "Commands" above). If you want
+`pnpm nx lint [project]` for convenience, add to that project's `project.json`:
 
 ```json
 {

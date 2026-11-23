@@ -426,11 +426,31 @@ chore: complete F003 email-verification (v1.2.0)
 
 1. Implement code
 2. Write tests immediately
-3. Run: `pnpm nx test [project] --watch`
-4. Mark step complete ONLY when tests pass
-5. Also run: `pnpm nx lint [project]` and `pnpm nx build [project]`
+3. Iterate with: `pnpm nx test [project] --watch`
+4. Run `pnpm verify` — mark the step complete ONLY when it exits 0
 
-**Coverage minimums:**
+### `pnpm verify` — the one definition of green
+
+`pnpm verify` (`scripts/verify.sh`) is the single gate. `/start-coding`, `/quick`,
+`/quickbranch`, `/review`, `/hotfix`, `/debug` and CI all run exactly this command, so a
+check added to it is enforced everywhere at once:
+
+| Step | What fails it |
+|------|---------------|
+| lint | `biome ci .` — lint errors or unformatted files, whole workspace |
+| boundaries | a forbidden cross-layer import or a circular dependency (`scripts/check-boundaries.js`) |
+| typecheck | `nx affected -t typecheck` |
+| test + coverage | a failing test, or a layer below its coverage minimum |
+| build | `nx affected -t build` |
+
+"Affected" is measured against `origin/main` (or `$NX_BASE` in CI) and includes uncommitted
+changes. `pnpm verify --all` checks every project. Never substitute a subset
+("I only ran the tests for the lib I touched") and never report a step as done on red.
+
+**Bug fixes start with a failing test.** `/debug` and `/hotfix` require a test that
+reproduces the bug and is seen to fail *before* the fix, then pass after it.
+
+**Coverage minimums** (enforced — defined in `tools/coverage-thresholds.cjs`, see `testing.md`):
 | Layer | Minimum |
 |-------|---------|
 | `libs/domain/*` services | 70% |
@@ -480,10 +500,7 @@ When ANY Zod schema in `libs/shared/types` changes, update ALL of these in the S
 
 ## Before Marking Any Step Complete
 
-- [ ] Code compiles (`pnpm nx build [project]`)
-- [ ] Linting passes (`pnpm nx lint [project]`)
-- [ ] Tests pass (`pnpm nx test [project]`)
-- [ ] No import boundary violations
+- [ ] `pnpm verify` exits 0 (lint, import boundaries, typecheck, tests + coverage minimums, build)
 - [ ] No duplicate code created — searched before writing
 - [ ] All types imported from shared types lib
 - [ ] Docs updated — API/OpenAPI doc, code doc-comments, README/module docs
@@ -499,7 +516,7 @@ Not everything needs the full feature workflow. Use these for small tasks:
 |---------|-------------|---------------|
 | `/quick [task]` | Small fix, 5-15 min, <5 files, current branch | No |
 | `/quickbranch [task]` | Small but PR-ready, 5-30 min, own branch | `docs/quickbranches/{date}-{slug}.md` |
-| `/debug [error]` | Debugging an error systematically | No (but may update stack-gotchas.md) |
+| `/debug [error]` | Debugging an error systematically — failing test before the fix | No (but may update stack-gotchas.md) |
 | `/scaffold [type] [name]` | Generate boilerplate (endpoint, page, hook, service, domain-lib) | No |
 
 **Scope guard:** If a `/quick` task grows beyond 15 minutes, suggest `/quickbranch`. If it needs a new DB table, touches multiple modules, or needs registry tracking, suggest `/new-feature` instead.

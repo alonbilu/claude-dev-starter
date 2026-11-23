@@ -58,7 +58,7 @@ For critical production bugs:
 
 | Command | Purpose | Next |
 |---------|---------|------|
-| **`/hotfix`** | Start a hotfix for a production bug | */implement* |
+| **`/hotfix`** | Start a hotfix for a production bug (regression test first) | */implement* |
 | **`/complete-hotfix`** | Finish hotfix, patch version bump, changelog | `/create-pr` |
 
 ---
@@ -71,9 +71,10 @@ For small tasks that don't need the full feature workflow:
 |---------|---------|
 | **`/quick [task]`** | Fastest lane — no branch, no docs, commit on current branch (5-15 min) |
 | **`/quickbranch [task]`** | PR-ready small fix — new branch + `docs/quickbranches/` entry (5-30 min) |
-| **`/debug [error]`** | Systematic debugging: reproduce → check gotchas → isolate → fix → document |
+| **`/debug [error]`** | Systematic debugging: reproduce → check gotchas → isolate → failing test → fix → document |
 | **`/scaffold [type] [name]`** | Scaffold: `endpoint`, `page`, `hook`, `service`, or `domain-lib` |
-| **`/review`** | Pre-PR self-review: lint, tests, code quality checklist |
+| **`/review`** | Pre-PR self-review: `pnpm verify` + code quality checklist |
+| **`pnpm verify`** | (shell) The one definition of green: lint, import boundaries, typecheck, tests + coverage, build |
 
 ---
 
