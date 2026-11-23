@@ -16,11 +16,14 @@ git pull origin main
 echo "  Installing dependencies..."
 pnpm install --frozen-lockfile
 
-echo "  Building affected projects..."
-pnpm nx affected -t build --configuration=production
+# run-many, NOT affected: right after `git pull` HEAD is main, so `nx affected` (which diffs
+# against main) finds nothing and builds nothing. Nx's cache keeps unchanged projects fast.
+echo "  Building..."
+pnpm nx run-many -t build --configuration=production
 
+# Raw Prisma from the workspace root (see .claude/rules/database.md — never via Nx).
 echo "  Running database migrations..."
-pnpm nx run database:migrate:deploy
+npx prisma migrate deploy --schema=libs/domain/database/prisma/schema.prisma
 
 echo "  Reloading application..."
 pm2 reload all

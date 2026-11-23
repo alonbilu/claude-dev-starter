@@ -153,7 +153,12 @@ fi
 # This file is the actual source of truth in pnpm 11; rewrite it to set every entry to true.
 # (Lesson from a 90-minute debug session — see stack-gotchas.md → "Scaffolding & Tooling".)
 hdr "Rewriting pnpm-workspace.yaml allowBuilds (the real pnpm 11 approval mechanism)"
-node -e "
+# Re-runnable: pnpm appends a NEW placeholder entry ("set this to true or false") every time
+# an install pulls in a package with a build script it has not seen, and then exits non-zero
+# with ERR_PNPM_IGNORED_BUILDS. Known-needed builds are set to true; anything else pnpm
+# flagged is set to an explicit false (denied, no error) and listed so you can review it.
+normalize_allow_builds() {
+  node -e "
 const fs = require('fs');
 const path = 'pnpm-workspace.yaml';
 
@@ -165,33 +170,52 @@ const requiredBuilds = [
   'sharp', 'unrs-resolver', 'cypress', '@nx/nx-linux-x64-gnu'
 ];
 
-const block =
-  'allowBuilds:\n' +
-  requiredBuilds.map(k => \"  '\" + k + \"': true\").join('\n') +
-  '\nignoredBuiltDependencies: []\n';
-
 let content = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
 
-// Strip any existing allowBuilds: / ignoredBuiltDependencies: blocks (and their indented bodies)
-const lines = content.split('\n');
+// Strip any existing allowBuilds: / ignoredBuiltDependencies: blocks (and their indented
+// bodies), remembering every package name pnpm listed under allowBuilds.
+const lines = content.split('\\n');
 const out = [];
-let skip = false;
+const seen = [];
+let skip = null;
 for (const line of lines) {
-  if (line.match(/^(allowBuilds|ignoredBuiltDependencies):/)) { skip = true; continue; }
+  const top = line.match(/^(allowBuilds|ignoredBuiltDependencies):/);
+  if (top) { skip = top[1]; continue; }
   if (skip) {
-    if (line.match(/^\s+\S/) || line === '') continue;
-    skip = false;
+    if (line.match(/^\\s+\\S/) || line === '') {
+      const m = skip === 'allowBuilds' && line.match(/^\\s+'?([^':]+(?:\\/[^':]+)?)'?\\s*:/);
+      if (m) seen.push(m[1]);
+      continue;
+    }
+    skip = null;
   }
   out.push(line);
 }
-content = out.join('\n').replace(/\n+\$/, '\n');
-if (!content.endsWith('\n')) content += '\n';
+const denied = seen.filter((k) => !requiredBuilds.includes(k));
+
+const block =
+  'allowBuilds:\\n' +
+  requiredBuilds.map(k => \"  '\" + k + \"': true\").join('\\n') + '\\n' +
+  denied.map(k => \"  '\" + k + \"': false\\n\").join('') +
+  'ignoredBuiltDependencies: []\\n';
+
+content = out.join('\\n').replace(/\\n+\$/, '\\n');
+if (content && !content.endsWith('\\n')) content += '\\n';
 content += block;
 
 fs.writeFileSync(path, content);
-console.log('  rewrote ' + requiredBuilds.length + ' allowBuilds entries to true');
+console.log('  ' + requiredBuilds.length + ' allowBuilds entries set to true');
+if (denied.length) console.log('  build scripts NOT approved (set to false — review if you need them): ' + denied.join(', '));
 "
+}
+normalize_allow_builds
 ok "pnpm-workspace.yaml allowBuilds normalized"
+
+# `pnpm add` exits non-zero the first time it meets an unapproved build script (after
+# writing a placeholder for it). Normalize the placeholders and retry once.
+pnpm_add() {
+  pnpm add "$@" || { normalize_allow_builds; pnpm add "$@"; }
+}
 
 # ───────────────────────────────────────────────────────────────
 # [5] Install Nx generators (idempotent)
@@ -201,7 +225,7 @@ NX_PKGS=("@nx/js")
 $HAS_FRONTEND && NX_PKGS+=("@nx/react" "@nx/vite")
 $HAS_BACKEND && NX_PKGS+=("@nx/nest" "@nx/esbuild")
 info "pnpm add -D ${NX_PKGS[*]}"
-pnpm add -D "${NX_PKGS[@]}"
+pnpm_add -D "${NX_PKGS[@]}"
 ok "generator plugins installed"
 
 # ───────────────────────────────────────────────────────────────
@@ -245,6 +269,8 @@ if $HAS_BACKEND; then
   fi
 fi
 
+# Every lib gets --importPath=@app/<name>: without it Nx aliases the lib by its bare name
+# ("types", "utils"), and every `@app/*` import in the kit's rules and examples fails to resolve.
 # Shared libs — always
 for libdef in \
   "types:libs/shared/types:jest" \
@@ -255,7 +281,7 @@ for libdef in \
     ok "$dir already exists; skipping"
   else
     info "generating $dir ($runner)"
-    pnpm nx g @nx/js:library --name="$name" --directory="$dir" --linter=none --unitTestRunner="$runner" --no-interactive
+    pnpm nx g @nx/js:library --name="$name" --directory="$dir" --importPath="@app/$name" --linter=none --unitTestRunner="$runner" --no-interactive
   fi
 done
 
@@ -265,7 +291,7 @@ if $HAS_FRONTEND; then
     ok "libs/shared/ui already exists; skipping"
   else
     info "generating libs/shared/ui (vitest)"
-    pnpm nx g @nx/js:library --name=ui --directory=libs/shared/ui --linter=none --unitTestRunner=vitest --bundler=vite --no-interactive
+    pnpm nx g @nx/js:library --name=ui --directory=libs/shared/ui --importPath=@app/ui --linter=none --unitTestRunner=vitest --bundler=vite --no-interactive
   fi
 fi
 
@@ -275,7 +301,7 @@ if $HAS_DATABASE; then
     ok "libs/domain/database already exists; skipping"
   else
     info "generating libs/domain/database (jest)"
-    pnpm nx g @nx/js:library --name=database --directory=libs/domain/database --linter=none --unitTestRunner=jest --no-interactive
+    pnpm nx g @nx/js:library --name=database --directory=libs/domain/database --importPath=@app/database --linter=none --unitTestRunner=jest --no-interactive
   fi
 fi
 
@@ -285,7 +311,7 @@ if $HAS_BACKEND; then
     ok "libs/backend/core already exists; skipping"
   else
     info "generating libs/backend/core (NestJS lib)"
-    pnpm nx g @nx/nest:library --name=core --directory=libs/backend/core --linter=none --no-interactive
+    pnpm nx g @nx/nest:library --name=core --directory=libs/backend/core --importPath=@app/core --linter=none --unitTestRunner=jest --no-interactive
   fi
 fi
 
@@ -323,28 +349,30 @@ ok "domain/shared libs cleaned"
 hdr "Installing kit-mandatory deps"
 
 # Core runtime — every project type gets these
-pnpm add reflect-metadata zod
+pnpm_add reflect-metadata zod
 
 # Frontend stack
 if $HAS_FRONTEND; then
-  pnpm add react-hook-form @hookform/resolvers \
+  pnpm_add react-hook-form @hookform/resolvers \
            @tanstack/react-router @tanstack/react-query
-  pnpm add -D @testing-library/react @testing-library/jest-dom jsdom @vitejs/plugin-react
+  pnpm_add -D @testing-library/react @testing-library/jest-dom jsdom @vitejs/plugin-react
 fi
 
 # Backend stack — security middleware + OpenAPI are mandatory (api.md)
 if $HAS_BACKEND; then
-  pnpm add helmet @nestjs/throttler @nestjs/swagger
+  pnpm_add helmet @nestjs/throttler @nestjs/swagger
 fi
 
 # Database stack
 if $HAS_DATABASE; then
-  pnpm add @prisma/client @prisma/adapter-pg pg
-  pnpm add -D prisma
+  # Pinned to the 7.x line the kit documents (database.md). Unpinned, npm's `latest` tag can
+  # resolve to the next major, whose CLI has no `prisma migrate` at all.
+  pnpm_add @prisma/client@^7 @prisma/adapter-pg@^7 pg
+  pnpm_add -D prisma@^7
 fi
 
 # Linting / formatting (always)
-pnpm add -D @biomejs/biome
+pnpm_add -D @biomejs/biome
 
 # ───────────────────────────────────────────────────────────────
 # [9] Install integration-specific deps based on PROJECT.md
@@ -356,11 +384,11 @@ case "$AUTH_PROVIDER" in
   zitadel)
     info "Zitadel auth"
     # @zitadel/client + @zitadel/proto are the current canonical packages (verify with `pnpm view`)
-    pnpm add @zitadel/client @zitadel/proto || warn "Zitadel package install failed — verify package names with: pnpm view @zitadel/client"
+    pnpm_add @zitadel/client @zitadel/proto || warn "Zitadel package install failed — verify package names with: pnpm view @zitadel/client"
     ;;
   better-auth|"")
     info "Better Auth (default)"
-    pnpm add better-auth @thallesp/nestjs-better-auth || warn "Better Auth install failed — check package names"
+    pnpm_add better-auth @thallesp/nestjs-better-auth || warn "Better Auth install failed — check package names"
     ;;
 esac
 
@@ -370,54 +398,55 @@ if integration_enabled hydra; then
 fi
 
 # Logging provider — pick one based on logging_provider in PROJECT.md (or skip)
-LOGGING_PROVIDER=$(grep -E '^logging_provider:' PROJECT.md 2>/dev/null | head -1 | awk '{print $2}')
+# `|| true`: with pipefail, an unmatched grep would abort the script under `set -e`.
+LOGGING_PROVIDER=$(grep -E '^logging_provider:' PROJECT.md 2>/dev/null | head -1 | awk '{print $2}' || true)
 if integration_enabled logging; then
   case "$LOGGING_PROVIDER" in
-    axiom|"") info "Axiom logging"; pnpm add @axiomhq/js ;;
-    grafana-cloud) info "Grafana Cloud logging (Loki Pino transport)"; pnpm add pino pino-loki ;;
-    better-stack) info "Better Stack logging"; pnpm add @logtail/pino ;;
+    axiom|"") info "Axiom logging"; pnpm_add @axiomhq/js ;;
+    grafana-cloud) info "Grafana Cloud logging (Loki Pino transport)"; pnpm_add pino pino-loki ;;
+    better-stack) info "Better Stack logging"; pnpm_add @logtail/pino ;;
   esac
 fi
 
 # Tracing — OpenTelemetry
 if integration_enabled tracing; then
   info "OpenTelemetry tracing"
-  pnpm add @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node
-  $HAS_FRONTEND && pnpm add @opentelemetry/sdk-trace-web
+  pnpm_add @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node
+  $HAS_FRONTEND && pnpm_add @opentelemetry/sdk-trace-web
 fi
 
 # Feature flags
-FF_PROVIDER=$(grep -E '^feature_flags_provider:' PROJECT.md 2>/dev/null | head -1 | awk '{print $2}')
+FF_PROVIDER=$(grep -E '^feature_flags_provider:' PROJECT.md 2>/dev/null | head -1 | awk '{print $2}' || true)
 if integration_enabled feature-flags; then
   case "$FF_PROVIDER" in
-    growthbook|"") info "GrowthBook"; pnpm add @growthbook/growthbook-react ;;
-    unleash) info "Unleash"; pnpm add unleash-client ;;
-    launchdarkly) info "LaunchDarkly"; pnpm add launchdarkly-node-server-sdk ;;
+    growthbook|"") info "GrowthBook"; pnpm_add @growthbook/growthbook-react ;;
+    unleash) info "Unleash"; pnpm_add unleash-client ;;
+    launchdarkly) info "LaunchDarkly"; pnpm_add launchdarkly-node-server-sdk ;;
   esac
 fi
 
 # Email
 if integration_enabled email; then
   info "Resend email"
-  pnpm add resend
+  pnpm_add resend
 fi
 
 # Payments
 if integration_enabled payments; then
   info "Stripe"
-  pnpm add stripe
+  pnpm_add stripe
 fi
 
 # Queue (BullMQ + Redis/Valkey)
 if integration_enabled queue; then
   info "BullMQ"
-  pnpm add @nestjs/bullmq bullmq ioredis
+  pnpm_add @nestjs/bullmq bullmq ioredis
 fi
 
 # Storage (S3)
 if integration_enabled storage; then
   info "S3 (AWS SDK v3)"
-  pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+  pnpm_add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
 fi
 
 # E2E (Playwright already installed when @nx/react app was generated; verify only)
@@ -428,7 +457,7 @@ fi
 # i18n
 if integration_enabled i18n; then
   info "react-i18next"
-  $HAS_FRONTEND && pnpm add i18next react-i18next i18next-browser-languagedetector
+  $HAS_FRONTEND && pnpm_add i18next react-i18next i18next-browser-languagedetector
 fi
 
 ok "integration deps installed"
@@ -492,6 +521,7 @@ fi
 # [13] Final passes — rebuild, nx reset, project discovery assertion
 # ───────────────────────────────────────────────────────────────
 hdr "Final passes"
+normalize_allow_builds
 info "pnpm rebuild (force any blocked postinstalls to actually run)"
 pnpm rebuild
 info "pnpm nx reset (clear stale plugin cache)"

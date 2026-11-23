@@ -6,6 +6,64 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ---
 
+## [1.7.0] — Unreleased
+
+Hardening release, in three parts: fix what is simply wrong (A), turn prose rules into checks
+that fail (B), then add narrow lanes for unattended work (C). The goal is that "green" means
+something before any agent is trusted to work without a human reading every line.
+
+### Fixed — Part A: bugs and contradictions
+
+- **Production rollback never worked.** `scripts/production-deploy.sh` backed up with
+  `cp -r "$APP_DIR/dist" "$BACKUP_PATH"` (so the backup's top level *is* dist's contents) and
+  restored with `cp -r "$BACKUP_PATH/dist" …`, which fails with "cannot stat"; `set -e` then
+  exited before `pm2 reload`. A failed health check left the broken build live. Rollback now
+  moves the failed `dist/` aside, copies the backup in its place (replace, not merge) and
+  reloads. A failed backup aborts the deploy instead of being swallowed by `|| true`, and a
+  first deploy with no `dist/` says rollback is unavailable.
+- **Rollback is honest about migrations.** It restores the build only. The script now says so
+  at the migration prompt and, if migrations were applied before a failed health check, in the
+  failure output. Documented in `deployment.md` → "Rollback — what it does and does not do".
+- **Deploys built nothing.** Both deploy scripts ran `nx affected -t build` straight after
+  `git pull origin main`. With HEAD on main and a clean tree, nothing is affected (confirmed
+  on a generated workspace: `nx show projects --affected -t build` → `[]`), so the old build
+  was reloaded. Both now run `nx run-many -t build --configuration=production`.
+- **Deploy migrations used an Nx target the generator never creates**
+  (`database:migrate:deploy`), contradicting `database.md` and `deployment.md`. Both deploy
+  scripts now call raw Prisma from the workspace root (`npx prisma migrate deploy --schema=…`),
+  and production shows pending migrations with `prisma migrate status` instead of a
+  `--dry-run` flag that does not exist.
+- **`/start-coding` was looser than `ai-workflow.md`.** It ran tests only "if tests were
+  added/modified" and never built. It now runs lint, test and build after every step, stops
+  without committing if any fails, and stages the step's files by path instead of `git add .`.
+- **`scripts/init-workspace.sh` did not complete on a fresh clone** (found while generating a
+  scratch workspace to verify the items above):
+  - pnpm appends a new `allowBuilds` placeholder whenever an install meets an unseen build
+    script, then exits non-zero. The rewrite ran once, after `nx init`, so the next
+    `pnpm add` aborted the script. It is now a re-runnable function, `pnpm add` retries once
+    after normalizing, and packages outside the known list are set to an explicit `false`
+    (and printed) rather than left as placeholders or silently approved.
+  - `LOGGING_PROVIDER=$(grep … | head | awk)` aborted the script under `set -euo pipefail`
+    whenever `logging_provider:` was absent from `PROJECT.md` — the default.
+  - Libraries were generated without `--importPath`, so the aliases were `types`, `utils`, …
+    and none of the `@app/*` imports used throughout the rules resolved. All libs now get
+    `@app/<name>`.
+  - `libs/backend/core` was generated without a test runner, so it had no `test` target.
+  - Prisma was installed unpinned and resolved to an 8.0 release candidate, whose CLI has no
+    `prisma migrate`. Pinned to `^7`, the line `database.md` documents.
+
+### Added — Part A
+
+- **`scripts/tests/test-production-deploy.sh`** — runs the real deploy script in a temp
+  directory with `git`/`pnpm`/`npx`/`pm2`/`curl` stubbed. Covers failed health check (dist
+  replaced, nothing from the failed build left, `pm2` reloaded twice), success, the
+  migrations-not-rolled-back warning, and the confirmation gate. It fails against the 1.6.0
+  script and passes against this one.
+- `production-deploy.sh` accepts `BACKUP_DIR`, `HEALTH_URL`, `HEALTH_RETRY_DELAY` and
+  `PRISMA_SCHEMA` overrides (defaults unchanged).
+
+---
+
 ## [1.6.0] — 2026-05-18
 
 Closes the post-setup verification loop. v1.5.x got the workspace scaffolding clean — but
