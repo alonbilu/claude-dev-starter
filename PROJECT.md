@@ -48,7 +48,9 @@ auth_provider: better-auth
 - [ ] secrets       # Production secret management — Doppler / Infisical / SOPS / Vault (pick at setup)
 - [ ] feature-flags # Feature flags / experiments — GrowthBook / Unleash / LaunchDarkly (pick at setup)
 - [ ] i18n          # Localization — react-i18next + ICU MessageFormat
-- [ ] e2e           # End-to-end testing — Playwright
+- [ ] e2e           # End-to-end testing — Playwright (adds .github/workflows/e2e.yml)
+- [ ] error-tracking # Error tracking — Sentry (backend + frontend); feeds the /fix-issue lane via its GitHub integration
+- [ ] ai-review     # Independent Claude review comment on every PR (adds .github/workflows/claude-review.yml)
 
 ## Deployment Target
 <!-- Choose one: digital-ocean | vercel | aws | docker-self-hosted | cloudflare | none -->

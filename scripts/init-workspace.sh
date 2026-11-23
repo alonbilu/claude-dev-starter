@@ -411,6 +411,13 @@ if integration_enabled logging; then
   esac
 fi
 
+# Error tracking — Sentry (separate from logging)
+if integration_enabled error-tracking; then
+  info "Sentry error tracking"
+  $HAS_BACKEND && pnpm_add @sentry/nestjs
+  $HAS_FRONTEND && pnpm_add @sentry/react
+fi
+
 # Tracing — OpenTelemetry
 if integration_enabled tracing; then
   info "OpenTelemetry tracing"

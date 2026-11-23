@@ -452,7 +452,10 @@ Which optional integrations do you need?
   [ ] secrets    — Production secret management (Doppler / Infisical / SOPS / Vault)
   [ ] feature-flags — Feature flags / experiments (GrowthBook / Unleash / LaunchDarkly)
   [ ] i18n       — Localization (react-i18next)
-  [ ] e2e        — End-to-end testing (Playwright)
+  [ ] e2e        — End-to-end testing (Playwright) — also adds a Playwright smoke workflow to CI
+  [ ] error-tracking — Error tracking (Sentry, backend + frontend)
+  [ ] ai-review  — Independent Claude review comment on every PR (needs an ANTHROPIC_API_KEY
+                   repo secret + the Claude GitHub App; see docs/UNATTENDED.md)
 
 Type integration names to enable (space-separated), or press Enter to skip all:
 ```
@@ -772,8 +775,14 @@ coverage minimums, and `.github/workflows/e2e.yml` when `e2e` is enabled), and i
 runs `pnpm verify --all` — so success means the new workspace lints, type-checks, passes its
 tests above the coverage minimums, and builds.
 
-If the user enables or disables the `e2e` integration later, re-run
-`node scripts/setup-quality-gates.js` to add or remove the workflow.
+If the user enables or disables the `e2e` or `ai-review` integration later, re-run
+`node scripts/setup-quality-gates.js` to add or remove the matching workflow
+(`.github/workflows/e2e.yml`, `.github/workflows/claude-review.yml`).
+
+If `ai-review` was enabled, tell the user the two manual steps the script cannot do: install
+the Claude GitHub App (`/install-github-app`) and add the `ANTHROPIC_API_KEY` repository
+secret. Until then the workflow skips itself and passes. If `error-tracking` was enabled,
+point them at `docs/UNATTENDED.md` → "Getting production errors into GitHub issues".
 
 If **no**: skip Step 5b and Step 6's app-level steps (B–E below) — there are no apps to
 install / build / migrate against until the workspace is scaffolded.

@@ -73,7 +73,8 @@ For small tasks that don't need the full feature workflow:
 | **`/quickbranch [task]`** | PR-ready small fix — new branch + `docs/quickbranches/` entry (5-30 min) |
 | **`/debug [error]`** | Systematic debugging: reproduce → check gotchas → isolate → failing test → fix → document |
 | **`/scaffold [type] [name]`** | Scaffold: `endpoint`, `page`, `hook`, `service`, or `domain-lib` |
-| **`/review`** | Pre-PR self-review: `pnpm verify` + code quality checklist |
+| **`/review`** | Pre-PR review: `pnpm verify` + independent read-only `code-reviewer` agent |
+| **`/fix-issue [number]`** | Unattended bug fix from a GitHub issue: failing test → fix → `pnpm verify` → **draft** PR. Never prompts, never merges |
 | **`pnpm verify`** | (shell) The one definition of green: lint, import boundaries, typecheck, tests + coverage, build |
 
 ---
@@ -181,6 +182,13 @@ gh release view v1.2.0
 /quickbranch chore remove unused imports from billing module
 ```
 
+### "I want an agent to take a first pass at a bug report"
+```
+/fix-issue 123                         # interactive
+claude -p "/fix-issue 123" --settings .claude/settings.unattended.json --permission-mode dontAsk
+```
+Ends in a draft PR (or a comment on the issue saying why it stopped). See `docs/UNATTENDED.md`.
+
 ### "I'm debugging an error"
 ```
 /debug TypeError: Cannot read properties of undefined
@@ -284,6 +292,7 @@ For specialized workflows:
 
 For detailed workflows, see:
 - [`docs/WORKFLOW-GUIDE.md`](../WORKFLOW-GUIDE.md) — complete step-by-step walkthrough (idea → discussion → spec → plan → implement → complete → PR → merge)
+- [`docs/UNATTENDED.md`](../UNATTENDED.md) — unattended lanes: independent PR review, `/fix-issue`, the locked-down headless profile
 - [`docs/GITHUB-WORKFLOW.md`](../GITHUB-WORKFLOW.md) — GitHub PR review and merge operations
 - [`docs/GITHUB-CLI-REFERENCE.md`](../GITHUB-CLI-REFERENCE.md) — complete `gh` CLI command reference
 - [`docs/WORKFLOW-OPTIONS.md`](../WORKFLOW-OPTIONS.md) — when to use Features vs Services vs SubModules

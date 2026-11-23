@@ -2,10 +2,20 @@
 # Stop hook: Remind to run /update-status if there's an active feature
 # Outputs JSON with decision:"block" if active feature found and status not updated
 
+#
+# Bypass for unattended runs: when CLAUDE_UNATTENDED=1 (or CI=true) the hook exits silently.
+# A headless run has nobody to answer "please run /update-status" — a blocking reminder just
+# makes the agent do unrelated work or burn turns until the stop-hook cap. Set by
+# .claude/settings.unattended.json and by the CI review workflow; see docs/UNATTENDED.md.
+
 set -euo pipefail
 
 # Read JSON from stdin (stop hook context)
 INPUT=$(cat)
+
+if [ "${CLAUDE_UNATTENDED:-}" = "1" ] || [ "${CI:-}" = "true" ]; then
+  exit 0
+fi
 
 # Check if stop_hook_active is set (prevent infinite loop)
 if echo "$INPUT" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; then

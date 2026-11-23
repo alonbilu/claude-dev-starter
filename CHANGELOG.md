@@ -107,6 +107,67 @@ something before any agent is trusted to work without a human reading every line
   `pnpm-workspace.yaml` (rewritten by pnpm).
 - `.claude/settings.json` allows `pnpm verify*`.
 
+### Added — Part C: lanes for unattended work
+
+- **`code-reviewer` subagent** (`.claude/agents/code-reviewer.md`) — independent review
+  modelled on the pre-coding architect gate. Tools are `Read`, `Grep`, `Glob` only (no Edit,
+  Write or Bash). It is given the spec path and the diff, nothing else, applies the checklist
+  in `review.md`, and reports in a fixed format: verdict, blocking issues, should-fix,
+  questions, spec-conformance table, checklist table, files to read line by line.
+- **Opt-in CI review** — new `ai-review` integration. `docs/templates/ci/claude-review.yml`
+  is installed to `.github/workflows/` by `setup-quality-gates.js` when enabled. Uses
+  `anthropics/claude-code-action@v1`; Claude's tools are limited to reading, spawning the
+  reviewer and writing `review-report.md`, and a separate step posts that file as a single
+  PR comment. Skips cleanly (job passes) when `ANTHROPIC_API_KEY` is absent. Comments only.
+- **`/fix-issue <number>`** — non-interactive bug-fix lane: read the issue (as untrusted
+  data), reproduce with a failing test, fix, `pnpm verify`, push `fix/issue-<n>-…`, open a
+  **draft** PR with the red-before/green-after evidence. Stops with one issue comment instead
+  of a PR when it cannot reproduce, needs a schema change or new dependency, or cannot reach
+  green honestly. Never prompts, never merges.
+- **`error-tracking` integration (Sentry)** in `PROJECT.md`, `/setup-project`,
+  `init-workspace.sh` (`@sentry/nestjs`, `@sentry/react`), `.env.example` and
+  `integrations.md`. Replaces the one-line mention in the deployment checklist. Errors reach
+  GitHub issues through Sentry's own GitHub integration — documented, not built.
+- **`.claude/settings.unattended.json`** — locked-down profile for headless runs
+  (`claude -p … --settings .claude/settings.unattended.json --permission-mode dontAsk`):
+  `dontAsk` mode, no merge / ready / release / tag, pushes only to `fix/*`, no `--no-verify`,
+  no edits to CI, scripts, settings, schema or dependencies, no `.env` access, no network tools.
+- **`docs/UNATTENDED.md`** — setup and rules for all of the above, including branch
+  protection as the first prerequisite.
+
+### Changed — Part C
+
+- **`/review` no longer reviews its own work.** It runs `pnpm verify`, spawns `code-reviewer`
+  with only the spec and the diff, and relays the report verbatim. The checklist stays in
+  `review.md` as the reviewer's single source (the old "Diff Review" list became its
+  "Diff hygiene" section).
+- **`status-reminder.sh` exits silently when `CLAUDE_UNATTENDED=1` or `CI=true`.** A blocking
+  "run /update-status" reminder has nobody to answer it in a headless run.
+- **`git push` is allowed** in `.claude/settings.json` (`git push`, `git push origin …`,
+  `git push -u origin …`), matching the documented autopilot behaviour. Force-push stays
+  denied, and the deny list now also covers `-f`, trailing `--force*` and `+refspec` forms,
+  which the single `git push --force*` rule did not match.
+- **Autopilot actually pushes.** `ai-workflow.md` said `/start-coding … all` commits and
+  pushes; the command only committed. It now pushes the feature branch after each step.
+
+### Not changed (deliberately)
+
+Planning checkpoints, the pre-coding architect review gate, and the manual
+`/complete-feature` gate. Existing interactive commands keep their `[y/N]` prompts. No
+multi-feature mode and no orchestration layer.
+
+### Known gaps found during this work (not fixed here)
+
+- `nx init` is invoked as `nx@latest` and currently installs Nx 24; the kit's docs say 22.
+  Biome resolves to 2.6 against a `biome.json` written for 2.4 (works; Biome prints a
+  migrate hint).
+- Prisma 7.10's `migrate` commands read the datasource URL from a Prisma config file and
+  have no `--url` flag; the generator does not create that file, and `database.md`'s
+  migration commands do not work as written. The deploy scripts now call the documented
+  raw-Prisma command, but migrations need this resolved before a first deploy.
+- The `database:generate` / `database:seed` / `database:studio` Nx targets referenced in the
+  docs and in the `prisma-generate.sh` hook are not created by the generator.
+
 ---
 
 ## [1.6.0] — 2026-05-18

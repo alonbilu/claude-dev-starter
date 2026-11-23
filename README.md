@@ -41,6 +41,15 @@ Claude delegates to focused agents with domain-specific context:
 - **test-writer** — Jest tests, mocks, factories, coverage
 - **api-builder** — NestJS controllers, DTOs, modules, guards
 - **ui-builder** — React pages, components, forms, TanStack Query hooks
+- **code-reviewer** — independent, read-only reviewer (fresh context, spec + diff only) used by `/review` and the optional CI review
+
+### Unattended Lanes (opt-in)
+Narrow jobs that can run without you, each ending in a comment or a **draft** PR you merge yourself:
+- **Independent review on every PR** — the `code-reviewer` agent via Claude Code's GitHub Action (`ai-review` integration); skips cleanly without the API key
+- **`/fix-issue <n>`** — reproduces a GitHub issue with a failing test, fixes it, runs `pnpm verify`, opens a draft PR
+- **Locked-down headless profile** — `.claude/settings.unattended.json` (no merge, no force-push, no edits to CI/scripts/settings, no prompts)
+
+See [`docs/UNATTENDED.md`](docs/UNATTENDED.md).
 
 ### Institutional Memory
 - **`brain.md`** — always-loaded memory (≤200 lines): active work, top gotchas, insights
@@ -123,7 +132,8 @@ The framework defaults to this production-tested stack. During `/setup-project`,
 | Cache / queue | Redis 8 — or **Valkey** (drop-in, BSD-licensed) | Memcached |
 | Validation | Zod 4 (single source of truth) | — |
 | Testing | **Vitest** (frontend) + **Jest + ts-jest** (backend) | (**never Vitest** for NestJS — breaks DI) |
-| Logging | Axiom / Grafana Cloud / Better Stack (opt-in `logging`) | Sentry |
+| Logging | Axiom / Grafana Cloud / Better Stack (opt-in `logging`) | — |
+| Error tracking | Sentry (opt-in `error-tracking`) | — |
 | Linting | Biome 2.4 | (**never ESLint**) |
 
 ### Opt-in integrations (`PROJECT.md` → `Optional Integrations`)
@@ -147,7 +157,9 @@ setup + gotchas.
 | `secrets` | Production secret manager | **Doppler** (recommended for DO) / Infisical / SOPS / Vault |
 | `feature-flags` | Feature flags / experiments | GrowthBook / Unleash / LaunchDarkly |
 | `i18n` | Localization | react-i18next + ICU MessageFormat |
-| `e2e` | End-to-end testing | Playwright |
+| `e2e` | End-to-end testing (+ CI smoke workflow) | Playwright |
+| `error-tracking` | Error tracking — frontend + backend | Sentry |
+| `ai-review` | Independent Claude review comment on every PR | Claude Code GitHub Action |
 
 **Why React + Vite + NestJS over Next.js?** The default uses separated frontend/backend apps. This gives you full NestJS power (DI, guards, interceptors, queues, WebSockets) and independent scaling. Next.js is better for content/SEO-heavy sites with simple APIs. The setup wizard explains the full comparison if you consider swapping. See [`decisions.md`](.claude/knowledge/decisions.md) for the detailed architecture decision record.
 
@@ -193,7 +205,8 @@ See `.claude/rules/ai-workflow.md` "Planning Checkpoints" for the full table and
 | `/quickbranch [task]` | PR-ready small fix — new branch + `docs/quickbranches/` entry (5-30 min) |
 | `/debug [error]` | Systematic debugging: reproduce → check gotchas → isolate → fix → document |
 | `/scaffold [type] [name]` | Scaffold: `endpoint`, `page`, `hook`, `service`, or `domain-lib` |
-| `/review` | Pre-PR self-review: `pnpm verify` + code quality checklist |
+| `/review` | Pre-PR review: `pnpm verify` + independent read-only `code-reviewer` agent |
+| `/fix-issue [number]` | Unattended bug fix from a GitHub issue → draft PR (never prompts, never merges) |
 
 ### Entity Workflows
 
@@ -303,7 +316,7 @@ git switch -c feature/F001-google-oauth
 /start-coding google-oauth all
 ```
 
-Claude runs every remaining step; after each it runs `pnpm verify` (always — lint, boundaries, typecheck, tests + coverage, build) → **updates STATUS.md** → commits only the files that step touched. **🛑 After the last step, HARD STOP** — Claude reports:
+Claude runs every remaining step; after each it runs `pnpm verify` (always — lint, boundaries, typecheck, tests + coverage, build) → **updates STATUS.md** → commits only the files that step touched → pushes the feature branch. **🛑 After the last step, HARD STOP** — Claude reports:
 
 > All N steps complete, ready for your review. Run `/complete-feature google-oauth` when you've reviewed the work.
 

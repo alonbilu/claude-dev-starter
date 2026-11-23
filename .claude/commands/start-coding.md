@@ -147,7 +147,7 @@ If `{{STEP_NUMBER}}` is `1` (or `all` starting from 1) AND `STATUS.md` does NOT 
 
 **If `{{STEP_NUMBER}}` is `all`:**
 - Execute all remaining uncompleted steps in sequence
-- **After EACH step (same mandatory order as above):** `pnpm verify` → update `STATUS.md` → commit (staging only that step's files). Never skip the STATUS.md update even in autopilot — it's what makes resumption possible.
+- **After EACH step (same mandatory order as above):** `pnpm verify` → update `STATUS.md` → commit (staging only that step's files) → `git push -u origin <feature-branch>`. Push only the feature branch; if you are on `main`, do not push — stop and say so. Never force-push. If the push fails, report it and continue with the next step (the commits are safe locally). Never skip the STATUS.md update even in autopilot — it's what makes resumption possible.
 - Stop and ask if any step fails
 - **After the last step completes, STOP.** Do NOT auto-chain into `/complete-feature` or `/create-pr`. Report "all N steps complete, ready for your review → run `/complete-feature` when you've reviewed the work." The user must invoke `/complete-feature` and `/create-pr` manually after reviewing the actual code output.
 

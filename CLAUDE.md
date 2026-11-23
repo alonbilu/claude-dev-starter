@@ -208,7 +208,8 @@ pnpm check:fix                    # Biome fix entire workspace
 /quickbranch [task]          # PR-ready small fix — new branch + docs/quickbranches entry (5-30 min)
 /debug [error]               # Systematic debugging workflow
 /scaffold [type] [name]      # Scaffold: endpoint, page, hook, service, domain-lib
-/review                      # Pre-PR self-review (run before /create-pr)
+/review                      # Pre-PR review: pnpm verify + independent read-only reviewer (run before /create-pr)
+/fix-issue [number]          # Unattended bug fix: failing test → fix → pnpm verify → DRAFT PR (never prompts, never merges)
 
 # Module Workflow
 /new-module [name]           # Create a top-level domain module
@@ -219,7 +220,7 @@ pnpm check:fix                    # Biome fix entire workspace
 
 - **Auto-format:** Biome runs on every `.ts/.tsx/.js/.jsx` file after edits
 - **Prisma generate:** Auto-runs after `schema.prisma` changes
-- **Status reminder:** Reminds to run `/update-status` at session end
+- **Status reminder:** Reminds to run `/update-status` at session end (silent when `CLAUDE_UNATTENDED=1` or `CI=true`)
 
 ## Specialized Subagents
 
@@ -228,6 +229,14 @@ Claude delegates to focused agents for better output quality:
 - **test-writer** — Vitest (frontend) + Jest (backend) tests, mocks, coverage
 - **api-builder** — NestJS controllers, DTOs, modules
 - **ui-builder** — React routes, forms, TanStack Router + Query hooks
+- **code-reviewer** — independent, read-only review of a diff against its spec (spawned by `/review` and the optional CI review)
+
+## Unattended Lanes
+
+Narrow jobs that may run without a human — independent PR review, `/fix-issue`, Renovate.
+Each ends in a comment or a draft PR; none merges. Rules and setup: `docs/UNATTENDED.md` and
+`.claude/rules/ai-workflow.md` → "Unattended Lanes". Headless runs use
+`.claude/settings.unattended.json`.
 
 ---
 
