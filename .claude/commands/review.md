@@ -1,8 +1,13 @@
 ---
-description: Pre-PR self-review — catch issues before teammates see them
+description: Pre-PR review — pnpm verify, then an independent read-only reviewer with fresh context
 ---
 
 Review changes before creating a PR.
+
+The session that wrote the code is the worst-placed to review it: it reads what it meant to
+write. So this command does two things only — proves the branch is green, then hands the diff
+to the **`code-reviewer` subagent**, which starts with no memory of this session and cannot
+edit files. You relay its report; the user decides what to do with it.
 
 ## Steps
 
@@ -24,7 +29,40 @@ pnpm verify
 One command, the same one CI runs: lint, import boundaries, typecheck, test + coverage
 minimums, build. If it fails, fix it before continuing the review.
 
-### 3. Code Quality Checklist
+### 3. Independent review (code-reviewer subagent)
+
+1. Save the diff where the reviewer can read it (inside `.git/`, so it can never be committed):
+   ```bash
+   git diff main...HEAD > .git/REVIEW.diff
+   ```
+2. Find the spec: if the branch belongs to a feature, it is
+   `docs/features/active/F[XXX]-[name]/3-spec.md`; for a hotfix,
+   `docs/hotfixes/active/HF[XXX]-[name]/1-hotfix.md`; for a quickbranch, its
+   `docs/quickbranches/` entry. Otherwise `none`.
+3. Spawn the `code-reviewer` agent (`subagent_type: code-reviewer`) with **exactly** this
+   prompt and nothing else:
+   ```
+   DIFF: .git/REVIEW.diff
+   SPEC: <path, or none>
+   BASE: main
+   Review this diff per your instructions and return the report in the fixed format.
+   ```
+   **Do not add your own summary, explanation, test results or opinion of the change.** The
+   reviewer is only independent if it sees the spec and the diff, not your account of them.
+   One agent, one pass — do not split the diff across several reviewers.
+4. When it returns, show its report to the user **in full and unedited** (keep the tables).
+   Do not filter out findings you disagree with; if you think one is wrong, say so *after*
+   the report, with evidence.
+5. **Do not fix anything yet.** The user decides which findings to act on. A BLOCK or
+   REQUEST CHANGES verdict means "not ready for PR" until the user says otherwise.
+
+If the `code-reviewer` agent is unavailable, say so and stop — do not fall back to reviewing
+your own work and calling it a review.
+
+### Code Quality Checklist (applied by the reviewer)
+
+This is the checklist the `code-reviewer` agent applies — it reads this section. Keep it here
+as the single source; add new guards here, not in the agent file.
 
 For each changed file, check:
 
@@ -80,23 +118,15 @@ For each changed file, check:
       fails SILENTLY, and the failure is invisible until someone diffs intent against text. Verify every
       replacement matched at edit time AND grep-verify per finding before commit.
 
-### 4. Diff Review
+**Diff hygiene:**
+- [ ] No leftover `console.log` or debug statements
+- [ ] No TODO/FIXME that should have been resolved in this change
+- [ ] No overly complex logic that could be simplified
+- [ ] Error handling present at system boundaries (HTTP, DB, queue, external APIs)
 
-Review the actual code changes:
-```bash
-git diff main...HEAD
-```
+### 4. Report
 
-Look for:
-- Leftover `console.log` or debug statements
-- TODO/FIXME comments that should be resolved
-- Unused variables or imports (Biome should catch these)
-- Overly complex logic that could be simplified
-- Missing error handling at system boundaries
-
-### 5. Report
-
-Output a summary:
+Output, in this order:
 
 ```
 🔍 Pre-PR Review — [branch name]
@@ -104,20 +134,28 @@ Output a summary:
 Files changed: [N]
 Lines: +[X] / -[Y]
 
-✅ pnpm verify: green (lint · boundaries · typecheck · test + coverage · build)
+pnpm verify: green | RED (which steps)
 
-Issues found: [N]
-[List any issues with file:line references]
-
-Recommendation: [Ready for PR / Fix N issues first]
+Independent review (code-reviewer): [APPROVE | REQUEST CHANGES | BLOCK]
 ```
+
+…followed by the reviewer's report, verbatim. End with:
+
+```
+Recommendation: [Ready for PR / Not ready — N blocking issue(s)]
+```
+
+The same reviewer can run on every pull request in CI — see `docs/UNATTENDED.md` →
+"Independent review on every PR".
 
 ---
 
 ## Rules
 
-- Be thorough but practical — flag real issues, not style preferences
-- Biome handles formatting — don't flag formatting issues
+- You (the authoring session) do not review — you run `pnpm verify`, spawn the reviewer, and relay
+- Never pass the reviewer your own description of the change
+- Never apply the reviewer's suggestions without the user's say-so
+- Biome handles formatting — the reviewer does not flag formatting issues
 - If you find a new gotcha, add it to `.claude/knowledge/stack-gotchas.md`
 
 Usage:

@@ -262,7 +262,8 @@ directory, stubbed `git`/`pnpm`/`npx`/`pm2`/`curl`). Run it after editing the de
 - [ ] Health check working: `GET /api/v1/health`
 - [ ] CORS configured for production domain
 - [ ] SSL/HTTPS configured
-- [ ] Error tracking / logging set up (Axiom `logging` integration, or Sentry)
+- [ ] Error tracking set up (`error-tracking` integration — Sentry; DSNs verified with `node scripts/verify-observability.js`)
+- [ ] Logging set up (`logging` integration)
 - [ ] Uptime monitoring set up (UptimeRobot is free)
 - [ ] Database backup taken before major migrations
 

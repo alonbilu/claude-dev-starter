@@ -112,7 +112,7 @@ git checkout -b feature/F001-google-oauth
 **Autopilot (faster, less control):**
 ```bash
 /start-coding google-oauth all
-# Claude implements all remaining steps, auto-commits between each
+# Claude implements all remaining steps; after each: pnpm verify → STATUS.md → commit → push
 # Stops and reports if any step fails
 ```
 
@@ -356,13 +356,40 @@ git branch -d feature/F[XXX]-[name]
 
 ## Pre-PR Review
 
-Before creating a PR, run a self-review:
+Before creating a PR, run:
 
 ```bash
 /review
 ```
 
-This checks for: import violations, duplicate code, missing tests, hardcoded values, security issues, and unused code. Fix any issues before sharing with teammates.
+It does two things:
+
+1. Runs `pnpm verify` — lint, import boundaries, typecheck, tests with coverage minimums, build.
+   This is the same command CI runs; if it is red, the review stops there.
+2. Hands the diff and the spec to the **`code-reviewer` subagent**, which starts with fresh
+   context and read-only tools. The session that wrote the code does not review it and does
+   not give the reviewer its own summary. You get the reviewer's report verbatim (verdict,
+   blocking issues, spec conformance table, checklist, files to read line by line) and decide
+   what to act on.
+
+The same reviewer can comment on every pull request in CI (opt-in `ai-review` integration).
+
+---
+
+## Unattended Lanes
+
+A few narrow jobs can run without you at the keyboard. Each ends in a comment or a **draft**
+PR that you review and merge — none of them merges, releases or deploys, and feature work
+keeps all of its human gates.
+
+| Lane | How | Ends in |
+|------|-----|---------|
+| Independent review on every PR | enable `ai-review` in `PROJECT.md`, run `node scripts/setup-quality-gates.js` | one PR comment |
+| Bug fix from a GitHub issue | `/fix-issue 123` (or headless: `claude -p "/fix-issue 123" --settings .claude/settings.unattended.json --permission-mode dontAsk`) | draft PR, or a comment on the issue explaining why it stopped |
+| Dependency updates | Renovate (`.github/renovate.json`) | PR, gated by CI |
+
+Setup, the locked-down settings profile, and how to get production errors into GitHub issues:
+[`docs/UNATTENDED.md`](UNATTENDED.md).
 
 ---
 
@@ -448,7 +475,9 @@ docs/features/
 |---------|------|
 | `/quick [task]` | Small fix (5-15 min, no feature docs, current branch) |
 | `/quickbranch [task]` | Small PR-ready fix (5-30 min, own branch + `docs/quickbranches/`) |
-| `/debug [error]` | Systematic debugging workflow |
+| `/debug [error]` | Systematic debugging workflow (failing test before the fix) |
+| `/review` | `pnpm verify` + independent read-only reviewer, before `/create-pr` |
+| `/fix-issue [number]` | Unattended bug fix from a GitHub issue → draft PR |
 | `/scaffold [type] [name]` | Generate boilerplate (endpoint, page, hook, service, domain-lib) |
 | `/new-module [name]` | Create a top-level domain module |
 | `/new-submodule [parent] [name]` | Add SubModule to a Module |

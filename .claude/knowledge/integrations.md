@@ -184,6 +184,69 @@ Batch client events and flush on `visibilitychange` so logs survive tab close.
 
 ---
 
+## Error Tracking — Sentry
+
+Opt-in integration (`- [x] error-tracking` in `PROJECT.md`). Separate from `logging`: logs
+tell you what happened, an error tracker groups exceptions, counts them, and — through its
+GitHub integration — turns them into issues the `/fix-issue` lane can work from.
+
+### Environment variables
+
+```bash
+SENTRY_DSN=https://<key>@o<org>.ingest.sentry.io/<project>        # backend
+VITE_SENTRY_DSN=https://<key>@o<org>.ingest.sentry.io/<project>   # frontend (public by design)
+```
+
+Add both to the Zod env schema in `libs/shared/config/` as optional strings. Check them with
+`node scripts/verify-observability.js` (sends a real test event).
+
+### Backend (NestJS) — `@sentry/nestjs`
+
+```typescript
+// apps/api/src/instrument.ts — MUST be the first import in main.ts
+import * as Sentry from '@sentry/nestjs';
+
+Sentry.init({
+  dsn: process.env['SENTRY_DSN'],
+  environment: process.env['NODE_ENV'],
+  enabled: Boolean(process.env['SENTRY_DSN']),
+});
+```
+
+Register `SentryModule.forRoot()` (from `@sentry/nestjs/setup`) in `AppModule` and
+`SentryGlobalFilter` as an `APP_FILTER` so unhandled exceptions are reported.
+
+### Frontend (React + Vite) — `@sentry/react`
+
+```typescript
+// apps/client/src/main.tsx — before rendering
+import * as Sentry from '@sentry/react';
+
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+  environment: import.meta.env.MODE,
+  enabled: Boolean(import.meta.env.VITE_SENTRY_DSN),
+});
+```
+
+### Errors → GitHub issues
+
+Use Sentry's own GitHub integration (Settings → Integrations → GitHub); the kit does not
+build a bridge. See `docs/UNATTENDED.md` → "Getting production errors into GitHub issues".
+
+### Gotchas
+
+- `instrument.ts` must be imported before anything else in `main.ts`, or auto-instrumentation
+  misses modules that were already loaded.
+- Never send request bodies or PII by default — leave `sendDefaultPii` off unless you have a
+  reason and a privacy review.
+- Keep it disabled in tests (`enabled` is false when the DSN is unset) so test runs do not
+  create issues.
+- Check the SDK docs for the version you install — the setup API has changed between majors:
+  <https://docs.sentry.io/platforms/javascript/guides/nestjs/>.
+
+---
+
 ## Tracing — OpenTelemetry (optional, pairs with Grafana Cloud)
 
 Enable the `tracing` integration. If you picked Grafana Cloud for `logging_provider`, traces

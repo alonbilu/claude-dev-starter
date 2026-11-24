@@ -76,11 +76,20 @@ and `node scripts/verify-observability.js` to confirm credentials work end-to-en
 
 ---
 
-## Error tracking — Sentry (opt-in, separate from `logging`)
+## Error tracking — `error-tracking` integration (Sentry; separate from `logging`)
 
 - [ ] 🔴 Sentry project created (Node and/or React platform)
 - [ ] 🔴 `SENTRY_DSN` (backend) + `VITE_SENTRY_DSN` (frontend) in `.env`
+- [ ] ⚪ Sentry's GitHub integration installed for the repo (so errors can become GitHub issues for `/fix-issue` — see `docs/UNATTENDED.md`)
 - [ ] 🟢 Verify: `node scripts/verify-observability.js`
+
+---
+
+## Independent PR review — `ai-review` integration
+
+- [ ] 🔴 Claude GitHub App installed on the repository (`/install-github-app`)
+- [ ] 🔴 `ANTHROPIC_API_KEY` added as a repository Actions secret (never in `.env`)
+- [ ] 🟢 Verify: open a PR — a "Independent review" comment appears. Without the secret the job skips and passes.
 
 ---
 
