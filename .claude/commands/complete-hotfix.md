@@ -9,7 +9,7 @@ Complete hotfix: {{HOTFIX_NAME}}
 1. Find `docs/hotfixes/active/HF[XXX]-{{HOTFIX_NAME}}/`
    - NOT FOUND → list available active hotfixes, stop
 2. Read `STATUS.md` — verify checklist is complete (all boxes checked)
-3. Verify all tests pass: `pnpm nx affected -t test`
+3. Verify all tests pass: `pnpm verify`
 4. Verify no uncommitted changes: `git status`
 
 If NOT ready → STOP, explain what's missing.

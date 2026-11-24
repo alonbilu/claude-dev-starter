@@ -1,7 +1,9 @@
 # package.json Reference
 
-This file documents the scripts and lint-staged config to add to your root `package.json`.
-Copy the relevant sections when initializing a new workspace.
+This file documents the scripts and lint-staged config in the root `package.json`.
+`scripts/init-workspace.sh` adds them for you (via `scripts/setup-quality-gates.js` and
+`scripts/install-pre-commit.sh`); this is the reference, and what to copy when adopting the kit
+in an existing workspace.
 
 ---
 
@@ -10,6 +12,8 @@ Copy the relevant sections when initializing a new workspace.
 ```json
 {
   "scripts": {
+    "verify": "bash scripts/verify.sh",
+    "verify:all": "bash scripts/verify.sh --all",
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "format": "biome format --write .",
@@ -18,6 +22,9 @@ Copy the relevant sections when initializing a new workspace.
   }
 }
 ```
+
+`verify` is the one definition of green — lint, import boundaries, typecheck, tests with
+coverage minimums, build. See `.claude/rules/ai-workflow.md` → "`pnpm verify`".
 
 ## lint-staged (Wires Biome to Pre-Commit Hook)
 
@@ -42,6 +49,8 @@ Copy the relevant sections when initializing a new workspace.
   "private": true,
   "packageManager": "pnpm@11.x.x",
   "scripts": {
+    "verify": "bash scripts/verify.sh",
+    "verify:all": "bash scripts/verify.sh --all",
     "check": "biome check .",
     "check:fix": "biome check --write .",
     "format": "biome format --write .",

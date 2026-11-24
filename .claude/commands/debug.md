@@ -25,7 +25,7 @@ Read `.claude/knowledge/stack-gotchas.md` and search for patterns matching this 
 ```bash
 grep -i "error_keyword" .claude/knowledge/stack-gotchas.md
 ```
-If a matching gotcha exists, follow its documented solution. Skip to Step 5.
+If a matching gotcha exists, follow its documented solution. Skip to Step 5 (the failing test still comes before the fix).
 
 ### 3. Isolate
 
@@ -45,17 +45,32 @@ Test: [How I'll verify this theory]
 ```
 This prevents shotgun debugging. If your theory is wrong, form a new one.
 
-### 5. Fix & Verify
+### 5. Write a failing test (BEFORE the fix)
 
-Implement the fix, then verify:
+Turn the theory into a test that reproduces the bug, and run it:
 ```bash
-pnpm nx test [project]
-pnpm nx lint [project]
-pnpm nx build [project]
+pnpm nx test [project] -- [path/to/file.spec.ts]
 ```
-Confirm the original error is resolved AND no new errors introduced.
+It must **fail**, and fail for the reason in your theory — not because of a typo, a missing
+import, or a fixture that never reaches the faulty code. If it passes, the theory (or the
+test) is wrong: go back to Step 4. Do not change production code yet.
 
-### 6. Document
+Skip this step only when the failure is not a behaviour bug: the error *is* an already-failing
+test, a build/type error, or a tooling/config problem. In those cases the failing command
+from Step 1 is the regression check — say which one you are using.
+
+### 6. Fix & Verify
+
+Implement the fix, then:
+```bash
+pnpm nx test [project] -- [path/to/file.spec.ts]   # the test from Step 5 — must now PASS
+pnpm verify                                         # lint, boundaries, typecheck, test + coverage, build
+```
+Confirm the original error is resolved AND no new errors introduced. If you are not certain
+the test exercises the fix, revert the production change, confirm the test goes red again,
+then restore it.
+
+### 7. Document
 
 If this was a **new gotcha** not already in `stack-gotchas.md`:
 - Append to `.claude/knowledge/stack-gotchas.md` under the relevant section

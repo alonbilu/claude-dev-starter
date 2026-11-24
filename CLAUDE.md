@@ -118,6 +118,9 @@ gh release create
 ❌ libs/* → apps/*           (forbidden)
 ❌ libs/shared/* → libs/domain/* (forbidden)
 
+Enforced: `pnpm verify` fails on a forbidden import or a circular dependency
+(scripts/check-boundaries.js reads the Nx project graph).
+
 NEVER use `import type` for NestJS injectable services — erased at compile time, DI breaks.
 ALWAYS use explicit @Inject(Service) in constructor params — esbuild strips metadata.
 ```
@@ -171,9 +174,12 @@ pnpm nx run database:studio
 pnpm nx g @nx/js:library [name] --directory=libs/domain/[name]
 # IMPORTANT: After generating, remove the "build" target from project.json
 
-# Test & Lint
+# Verify — the ONE definition of green (same command locally, in every workflow command, and in CI)
+pnpm verify                       # affected: lint + import boundaries + typecheck + test/coverage + build
+pnpm verify --all                 # every project
+
+# Individual pieces
 pnpm nx test [project]
-pnpm nx lint [project]
 pnpm nx affected -t test
 pnpm nx affected -t build
 pnpm check:fix                    # Biome fix entire workspace

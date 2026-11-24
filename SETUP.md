@@ -320,10 +320,10 @@ npx prisma migrate deploy --schema=libs/domain/database/prisma/schema.prisma   #
 ## Biome Linting
 
 ```bash
+pnpm verify               # the full gate: lint + boundaries + typecheck + test/coverage + build
 pnpm check                # lint entire workspace
 pnpm check:fix            # auto-fix
 pnpm format               # format entire workspace
-pnpm nx lint [project]    # lint specific project
 ```
 
 Pre-commit hook runs automatically. If it fails and stashes your changes:

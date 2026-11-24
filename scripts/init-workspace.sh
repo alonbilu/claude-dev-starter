@@ -18,6 +18,8 @@
 #   8. Boots docker compose + waits for postgres healthy
 #   9. Runs `pnpm rebuild`, `pnpm nx reset`, and asserts every expected project
 #      shows up in `pnpm nx show projects`
+#  10. Wires the quality gates (scripts/setup-quality-gates.js), formats the generated
+#      files with Biome, and requires `pnpm verify --all` to pass
 #
 # Every step here is the distilled output of a real downstream user's run with
 # 17 reported gotchas. See `.claude/knowledge/stack-gotchas.md` →
@@ -172,6 +174,7 @@ const requiredBuilds = [
 
 let content = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
 
+// Entries may be bare, single-quoted or double-quoted (Biome reformats this file).
 // Strip any existing allowBuilds: / ignoredBuiltDependencies: blocks (and their indented
 // bodies), remembering every package name pnpm listed under allowBuilds.
 const lines = content.split('\\n');
@@ -183,8 +186,8 @@ for (const line of lines) {
   if (top) { skip = top[1]; continue; }
   if (skip) {
     if (line.match(/^\\s+\\S/) || line === '') {
-      const m = skip === 'allowBuilds' && line.match(/^\\s+'?([^':]+(?:\\/[^':]+)?)'?\\s*:/);
-      if (m) seen.push(m[1]);
+      const m = skip === 'allowBuilds' && line.match(/^\\s+['\\x22]?([^'\\x22:]+)['\\x22]?\\s*:/);
+      if (m) seen.push(m[1].trim());
       continue;
     }
     skip = null;
@@ -499,6 +502,43 @@ hdr "Installing husky + lint-staged"
 bash scripts/install-pre-commit.sh
 
 # ───────────────────────────────────────────────────────────────
+# [11b] Quality gates — `pnpm verify`, coverage minimums, opt-in CI workflows
+# ───────────────────────────────────────────────────────────────
+hdr "Wiring quality gates (pnpm verify, coverage minimums, CI workflows)"
+
+# libs/backend is a coverage-gated layer, and the Nest library generator ships no test.
+# Without one, `nx test core` exits 1 ("No tests found") and verify is red out of the box.
+if $HAS_BACKEND && [ -d libs/backend/core/src/lib ] && ! ls libs/backend/core/src/lib/*.spec.ts >/dev/null 2>&1; then
+  MODULE_FILE=$(ls libs/backend/core/src/lib/*.module.ts 2>/dev/null | head -1 || true)
+  if [ -n "$MODULE_FILE" ]; then
+    MODULE_BASE=$(basename "$MODULE_FILE" .ts)
+    MODULE_CLASS=$(grep -oE 'export class [A-Za-z0-9_]+' "$MODULE_FILE" | head -1 | awk '{print $3}' || true)
+    if [ -n "$MODULE_CLASS" ]; then
+      cat > "libs/backend/core/src/lib/${MODULE_BASE}.spec.ts" <<SPEC
+import { Test } from '@nestjs/testing';
+import { ${MODULE_CLASS} } from './${MODULE_BASE}';
+
+describe('${MODULE_CLASS}', () => {
+  it('compiles', async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [${MODULE_CLASS}] }).compile();
+    expect(moduleRef.get(${MODULE_CLASS})).toBeInstanceOf(${MODULE_CLASS});
+  });
+});
+SPEC
+      ok "wrote libs/backend/core/src/lib/${MODULE_BASE}.spec.ts"
+    fi
+  fi
+fi
+
+node scripts/setup-quality-gates.js
+ok "quality gates wired"
+
+# Nx generators do not format to the kit's Biome config; without this pass the very first
+# `pnpm verify` fails on formatting of generated files.
+info "biome check --write . (normalize generated files)"
+node_modules/.bin/biome check --write . >/dev/null 2>&1 || warn "biome reported issues it could not auto-fix — run: pnpm check"
+
+# ───────────────────────────────────────────────────────────────
 # [12] Docker compose boot + healthy-wait
 # ───────────────────────────────────────────────────────────────
 if [ -z "${SKIP_DOCKER:-}" ] && $HAS_DATABASE; then
@@ -554,6 +594,17 @@ $HAS_FRONTEND && { info "pnpm nx build client"; pnpm nx build client; ok "client
 $HAS_BACKEND  && { info "pnpm nx build api";    pnpm nx build api;    ok "api build OK"; }
 
 # ───────────────────────────────────────────────────────────────
+# [15] The workspace must start green: lint, boundaries, typecheck, test + coverage, build
+# ───────────────────────────────────────────────────────────────
+hdr "pnpm verify --all (the workspace must start green)"
+if pnpm verify --all; then
+  ok "verify is green"
+else
+  warn "pnpm verify --all failed on the fresh workspace — fix this before writing features."
+  exit 1
+fi
+
+# ───────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════════════════════════"
 echo " ✓ Workspace scaffolding complete."
@@ -568,5 +619,6 @@ if $HAS_DATABASE; then
 fi
 $HAS_BACKEND  && echo "  • Run the API:    pnpm nx serve api"
 $HAS_FRONTEND && echo "  • Run the client: pnpm nx serve client"
+echo "  • Check everything: pnpm verify   (lint, boundaries, typecheck, test + coverage, build)"
 echo "  • Start a feature: /new-feature [name]"
 echo ""

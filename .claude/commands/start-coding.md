@@ -112,13 +112,13 @@ If `{{STEP_NUMBER}}` is `1` (or `all` starting from 1) AND `STATUS.md` does NOT 
 7. **After completing the step (MANDATORY, in this order):**
    - **Run the full check — ALWAYS, every step, whether or not the step touched tests:**
      ```bash
-     pnpm nx affected -t lint
-     pnpm nx affected -t test
-     pnpm nx affected -t build
+     pnpm verify
      ```
-     All three must pass. A step that only changed production code can still break an
-     existing test or the build — "no tests were modified" is not a reason to skip.
-     If any fails: fix it and re-run. If you cannot make it pass, STOP — do not update
+     `pnpm verify` is the one definition of green (lint, import boundaries, typecheck,
+     test + coverage minimums, build — see `scripts/verify.sh`). It must exit 0. A step that
+     only changed production code can still break an existing test or the build — "no tests
+     were modified" is not a reason to skip.
+     If it fails: fix it and re-run. If you cannot make it pass, STOP — do not update
      STATUS.md as complete and do not commit.
    - **Update `STATUS.md` — ALWAYS, every step, no exceptions:**
      - Check off the step in the progress table
@@ -147,7 +147,7 @@ If `{{STEP_NUMBER}}` is `1` (or `all` starting from 1) AND `STATUS.md` does NOT 
 
 **If `{{STEP_NUMBER}}` is `all`:**
 - Execute all remaining uncompleted steps in sequence
-- **After EACH step (same mandatory order as above):** lint → test → build → update `STATUS.md` → commit (staging only that step's files). Never skip the STATUS.md update even in autopilot — it's what makes resumption possible.
+- **After EACH step (same mandatory order as above):** `pnpm verify` → update `STATUS.md` → commit (staging only that step's files). Never skip the STATUS.md update even in autopilot — it's what makes resumption possible.
 - Stop and ask if any step fails
 - **After the last step completes, STOP.** Do NOT auto-chain into `/complete-feature` or `/create-pr`. Report "all N steps complete, ready for your review → run `/complete-feature` when you've reviewed the work." The user must invoke `/complete-feature` and `/create-pr` manually after reviewing the actual code output.
 
@@ -157,7 +157,7 @@ If `{{STEP_NUMBER}}` is `1` (or `all` starting from 1) AND `STATUS.md` does NOT 
 - Ask before deciding if the plan is ambiguous
 - **Never skip the STATUS.md update.** It's part of the step, not cleanup — a step that completes without a STATUS.md update is an incomplete step.
 - Write tests in the same step as the code (not after)
-- Lint, test and build run after every step — never conditionally
+- `pnpm verify` runs after every step — never conditionally, never a subset of it
 - Never `git add .` — stage the step's files by path
 
 Usage:

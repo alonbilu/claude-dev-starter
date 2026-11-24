@@ -255,7 +255,7 @@ directory, stubbed `git`/`pnpm`/`npx`/`pm2`/`curl`). Run it after editing the de
 
 ## Deployment Checklist
 
-- [ ] All tests pass (`pnpm nx affected -t test`)
+- [ ] `pnpm verify --all` is green (lint, boundaries, typecheck, tests + coverage, build)
 - [ ] Build succeeds (`pnpm nx run-many -t build --configuration=production`)
 - [ ] No empty secrets in `.env.production`
 - [ ] Pending migrations reviewed

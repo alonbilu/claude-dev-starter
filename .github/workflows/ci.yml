@@ -15,31 +15,11 @@ env:
   PNPM_VERSION: '11'
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
-
-      - uses: nrwl/nx-set-shas@v4
-
-      - run: pnpm nx affected -t lint
-
-  test:
-    name: Test
+  # One job, one command. `pnpm verify` is the same check the commands run locally
+  # (scripts/verify.sh): lint, import boundaries, typecheck, test + coverage minimums, build.
+  # Add checks to scripts/verify.sh, not here, so local and CI cannot drift apart.
+  verify:
+    name: Verify
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -74,29 +54,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Sets NX_BASE / NX_HEAD, which scripts/verify.sh uses for `nx affected`.
       - uses: nrwl/nx-set-shas@v4
 
-      - run: pnpm nx affected -t test --no-coverage
+      - run: pnpm verify
 
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
-
-      - uses: nrwl/nx-set-shas@v4
-
-      - run: pnpm nx affected -t build
+# End-to-end tests are a separate workflow (.github/workflows/e2e.yml) that exists only when
+# the `e2e` integration is enabled in PROJECT.md — see scripts/setup-quality-gates.js.

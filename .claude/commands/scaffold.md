@@ -84,7 +84,8 @@ Creates a domain service with test file.
 Creates a new Nx domain library.
 
 **Steps:**
-1. Run: `pnpm nx g @nx/js:library [name] --directory=libs/domain/[name]`
+1. Run: `pnpm nx g @nx/js:library --name=[name] --directory=libs/domain/[name] --importPath=@app/[name] --linter=none --unitTestRunner=jest`
+   (`--importPath` is what makes `@app/[name]` resolve; the lib inherits the 70% domain coverage minimum automatically)
 2. Remove `"build"` target from `libs/domain/[name]/project.json`
 3. Create barrel export in `libs/domain/[name]/src/index.ts`
 4. Verify path alias in `tsconfig.base.json`
@@ -95,7 +96,7 @@ Creates a new Nx domain library.
 
 ## After Scaffolding
 
-- Run: `pnpm nx lint [project]`
+- Run: `pnpm check:fix` (Nx generators do not format to the Biome config), then `pnpm verify`
 - If new entity: remind user to create Zod schema in `libs/shared/types/`
 - If new API endpoint: remind user about auth (`@AllowAnonymous()` if public)
 - Show user what was created and what they need to fill in

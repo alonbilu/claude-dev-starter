@@ -133,7 +133,7 @@ git push origin feature/F001-google-oauth
 
 Claude will:
 - Verify all steps are done
-- Run final validation (`test`, `lint`, `build`)
+- Run final validation (`pnpm verify` — lint, import boundaries, typecheck, tests + coverage, build)
 - Archive feature docs to `docs/features/completed/`
 - Bump version + update CHANGELOG
 - Prepare the feature for PR creation

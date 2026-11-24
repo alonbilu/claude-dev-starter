@@ -1045,9 +1045,7 @@ test.describe('Resource Management', () => {
 - [ ] Document known limitations
 
 **Deployment Checklist:**
-- [ ] Run full test suite: `pnpm nx affected -t test`
-- [ ] Run linter: `pnpm nx affected -t lint`
-- [ ] Run build: `pnpm nx affected -t build`
+- [ ] Run the full gate: `pnpm verify --all`
 - [ ] Test production build locally
 - [ ] Create database backup
 - [ ] Deploy database migrations: `pnpm nx run database:migrate:deploy`

@@ -21,9 +21,7 @@
 
 <!-- How was this tested? What should reviewers verify? -->
 
-- [ ] Unit tests pass (`pnpm nx test [project]`)
-- [ ] Lint passes (`pnpm nx affected -t lint`)
-- [ ] Build succeeds (`pnpm nx affected -t build`)
+- [ ] `pnpm verify` is green (lint, import boundaries, typecheck, test + coverage, build)
 - [ ] Manual testing: _describe what you tested_
 
 ## Checklist
