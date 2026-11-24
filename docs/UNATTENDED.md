@@ -48,6 +48,11 @@ approve, request changes, push or merge — you still review and merge.
    or install it from GitHub. Repository admin access is required.
 4. Add the repository secret `ANTHROPIC_API_KEY` (Settings → Secrets and variables → Actions).
 5. Commit and push the workflow.
+6. **Pin the action to a commit SHA.** The workflow passes your API key to
+   `anthropics/claude-code-action`, and the template references it by the movable tag `@v1`.
+   Merge the Renovate PR that pins GitHub Actions to digests (the kit's `renovate.json`
+   enables `helpers:pinGitHubActionDigests`), or pin it by hand:
+   `uses: anthropics/claude-code-action@<40-char-sha> # v1.x.y`.
 
 Reference: <https://code.claude.com/docs/en/github-actions>. The workflow uses
 `anthropics/claude-code-action@v1` with the `prompt` and `claude_args` inputs.
@@ -65,6 +70,10 @@ Reference: <https://code.claude.com/docs/en/github-actions>. The workflow uses
 - **Cost:** one review per push to an open PR. `concurrency` cancels a review that is
   superseded by a newer push.
 - The PR title, body and code are treated as material to review, never as instructions.
+
+`id-token: write` is in the job's permissions because the action's default GitHub App
+authentication needs it (per the action's docs). It lets the job request an OIDC token; it
+grants no repository access by itself.
 
 It is not a required check and should not be made one: a model's verdict is input to your
 review, not a gate.
