@@ -291,7 +291,7 @@ git switch -c feature/F001-google-oauth
 
 ```
 /start-coding google-oauth 1
-# Claude implements → lint/test → updates STATUS.md → commits → STOPS
+# Claude implements → lint/test/build → updates STATUS.md → commits that step's files → STOPS
 # You review the diff
 /start-coding google-oauth 2
 ```
@@ -302,7 +302,7 @@ git switch -c feature/F001-google-oauth
 /start-coding google-oauth all
 ```
 
-Claude runs every remaining step; after each it runs lint → test → **updates STATUS.md** → commits. **🛑 After the last step, HARD STOP** — Claude reports:
+Claude runs every remaining step; after each it runs lint → test → build (always — not only when tests changed) → **updates STATUS.md** → commits only the files that step touched. **🛑 After the last step, HARD STOP** — Claude reports:
 
 > All N steps complete, ready for your review. Run `/complete-feature google-oauth` when you've reviewed the work.
 

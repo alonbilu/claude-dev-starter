@@ -46,12 +46,18 @@ openssl rand -base64 32
 ## Build
 
 ```bash
-pnpm nx affected -t build --configuration=production
+pnpm nx run-many -t build --configuration=production   # deploy: build everything deployable
 pnpm nx build api --configuration=production
 pnpm nx build client --configuration=production
 ```
 
 Output: `dist/apps/[name]/`
+
+**Deploys use `run-many`, never `affected`.** `nx affected` diffs against `main`; on a server
+that has just run `git pull origin main`, HEAD *is* main, nothing is "affected", and the
+deploy would reload the old build. `affected` is for PRs and local work (where there is a
+base to compare against); the deploy scripts build every project that has a `build` target
+and rely on Nx's cache to skip what hasn't changed.
 
 ---
 
@@ -126,6 +132,7 @@ Run migrations **BEFORE** deploying the new app version — never after.
 | `scripts/staging-setup.sh` | Bootstrap a new staging server (calls `harden-server.sh` first) |
 | `scripts/staging-deploy.sh` | Deploy to staging |
 | `scripts/production-deploy.sh` | Deploy to production (with safety gates) |
+| `scripts/tests/test-production-deploy.sh` | Temp-directory test of the production deploy + rollback path |
 | `scripts/trim-context.sh` | Audit and archive context window bloat |
 
 ---
@@ -219,15 +226,37 @@ the secret-management section instead.
 1. Confirm by typing `deploy`
 2. Verify branch is `main` and working tree is clean
 3. Verify `NODE_ENV=production` and no `localhost` in `.env.production`
-4. Show pending migrations — confirm before applying
-5. Health check retry loop (3x) — auto-rollback if all fail
+4. Back up the current `dist/` (a failed backup aborts the deploy)
+5. Show pending migrations (`prisma migrate status`) — confirm before applying
+6. Health check retry loop (3x) — auto-rollback of the build if all fail
+
+### Rollback — what it does and does not do
+
+On a failed health check the script **replaces** `dist/` with the backup taken in gate 4
+(the failed build is moved aside first, so no files from it survive) and runs
+`pm2 reload all` again.
+
+**Rollback does NOT undo database migrations.** If you answered `y` at the migration prompt,
+the restored build is now running against the new schema, and the script says so in its
+output. To stay safe:
+
+- Write migrations that the *previous* build can tolerate (expand → deploy → contract):
+  add columns/tables first, remove or rename only in a later release.
+- Back up the database before any migration that is not backwards-compatible; recovery from
+  those is a database restore or a forward-fix migration, not this script.
+
+If there was no `dist/` to back up (first deploy), there is nothing to roll back to and the
+script reports that instead of pretending.
+
+The rollback path is covered by `bash scripts/tests/test-production-deploy.sh` (temp
+directory, stubbed `git`/`pnpm`/`npx`/`pm2`/`curl`). Run it after editing the deploy script.
 
 ---
 
 ## Deployment Checklist
 
 - [ ] All tests pass (`pnpm nx affected -t test`)
-- [ ] Build succeeds (`pnpm nx affected -t build`)
+- [ ] Build succeeds (`pnpm nx run-many -t build --configuration=production`)
 - [ ] No empty secrets in `.env.production`
 - [ ] Pending migrations reviewed
 - [ ] Health check working: `GET /api/v1/health`
