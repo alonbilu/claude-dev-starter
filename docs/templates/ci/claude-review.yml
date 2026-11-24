@@ -50,6 +50,11 @@ jobs:
         if: steps.gate.outputs.enabled == 'true'
         run: git diff "origin/${{ github.base_ref }}...HEAD" > .git/REVIEW.diff
 
+      # SUPPLY CHAIN: this step hands ANTHROPIC_API_KEY to a third-party action, and `@v1` is a
+      # tag its publisher can move. Pin it to a full commit SHA before relying on this workflow:
+      #   uses: anthropics/claude-code-action@<40-char-sha> # v1.x.y
+      # The kit's Renovate config (helpers:pinGitHubActionDigests) opens a PR that does this for
+      # every action in .github/workflows/ and keeps the SHAs current.
       - name: Review
         if: steps.gate.outputs.enabled == 'true'
         uses: anthropics/claude-code-action@v1

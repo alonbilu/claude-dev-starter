@@ -150,6 +150,13 @@ something before any agent is trusted to work without a human reading every line
 - **Autopilot actually pushes.** `ai-workflow.md` said `/start-coding … all` commits and
   pushes; the command only committed. It now pushes the feature branch after each step.
 
+### Security — Part C follow-up
+
+- GitHub Actions are pinned to commit SHAs by Renovate (`helpers:pinGitHubActionDigests` added
+  to `.github/renovate.json`). The review workflow hands `ANTHROPIC_API_KEY` to
+  `anthropics/claude-code-action`, which the template references by the movable tag `@v1`;
+  the template and `docs/UNATTENDED.md` now say to pin it before relying on the workflow.
+
 ### Not changed (deliberately)
 
 Planning checkpoints, the pre-coding architect review gate, and the manual
